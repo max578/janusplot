@@ -186,16 +186,16 @@ is a coarsened Morse-theoretic critical-point classification
 
 ### Project context
 
-* Standalone scratch package; not intended for independent release.
-  Merged into `AAGI-AUS/effectsurf` as a single PR once the
-  effectsurf v0.3 security + governance sweep is complete.
+* Standalone CRAN release target (`max578/janusplot`). An earlier
+  plan to merge into `AAGI-AUS/effectsurf` was superseded on
+  2026-04-21; this package now ships on its own.
 * Accompanying R Journal paper *Beyond Pearson: Visualising
   Asymmetric Non-linear Associations with Generalised Additive
   Models* is in preparation (see `paper/` in the dev workspace).
 
 ### Dependency diet
 
-Imports kept minimal for the effectsurf merge: `mgcv`, `ggplot2`,
+Imports kept minimal: `mgcv`, `ggplot2`,
 `patchwork`, `grid`, `stats`, `cli`, `rlang`. Optional: `data.table`,
 `future.apply`, `vdiffr`, `withr`, `palmerpenguins`, `MASS`,
 `agridat`, `knitr`, `rmarkdown`.

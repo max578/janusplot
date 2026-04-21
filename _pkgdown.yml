@@ -1,11 +1,20 @@
-url: ~
+url: https://max578.github.io/janusplot/
+
 template:
   bootstrap: 5
   bootswatch: cosmo
-  theme: gruvbox-light
   light-switch: true
   bslib:
     primary: "#08306b"
+
+home:
+  title: janusplot — asymmetric smoothed-association matrices
+  description: >
+    Pairwise, asymmetric, GAM-based visual primitive for exploring
+    non-linear associations between continuous variables. mgcv fits,
+    inference surface (EDF, F-tests, CI envelopes), asymmetry index,
+    and a 24-category shape taxonomy with a built-in sensitivity
+    study.
 
 navbar:
   type: default
@@ -13,26 +22,44 @@ navbar:
     left:  [intro, reference, articles, news]
     right: [search, github]
 
-home:
-  title: janusplot — asymmetric smoothed-association matrices
-  description: >
-    Pairwise, asymmetric, GAM-based visual primitive for exploring
-    non-linear associations between continuous variables. Real mgcv
-    fits, inference surface (EDF, F-tests, confidence envelopes),
-    partial smooths, random effects, and an asymmetry index.
-
-reference:
-  - title: "Main exports"
-    desc: "The two user-facing functions."
-    contents:
-      - janusplot
-      - janusplot_data
-
 articles:
-  - title: "Tutorial"
+  - title: "Getting started"
     navbar: ~
     contents:
       - janusplot
+
+  - title: "Shape classification + validation"
+    navbar: "Shapes"
+    contents:
+      - shape-recognition-sensitivity
+
+reference:
+  - title: "Matrix rendering"
+    desc: "Render an asymmetric smoothed-association matrix."
+    contents:
+      - has_keyword("smooth-associations")
+
+  - title: "Shape taxonomy"
+    desc: >
+      The 24-category objective shape descriptor. Public helpers for
+      computing shape metrics on any mgcv smooth, tuning the
+      classification cutoffs, and inspecting the hierarchy table.
+    contents:
+      - janusplot_shape_metrics
+      - janusplot_shape_cutoffs
+      - janusplot_shape_hierarchy
+
+  - title: "Shape-recognition sensitivity study"
+    desc: >
+      Characterise how reliably the classifier recovers ground-truth
+      shapes across sample-size and noise regimes. Ships with a
+      precomputed demo sweep and four diagnostic plots.
+    contents:
+      - janusplot_shape_sensitivity
+      - janusplot_shape_sensitivity_shapes
+      - janusplot_shape_sensitivity_summary
+      - janusplot_shape_sensitivity_plot
+      - shape_sensitivity_demo
 
 authors:
   Max Moldovan:
