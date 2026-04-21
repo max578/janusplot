@@ -317,7 +317,8 @@
   want_glyph <- "shape" %in% annotations
   shape_cat <- if (want_code || want_glyph) {
     .classify_shape(
-      fit_obj$shape$M, fit_obj$shape$C,
+      fit_obj$shape$monotonicity_index,
+      fit_obj$shape$convexity_index,
       fit_obj$shape$n_turning_points, fit_obj$shape$n_inflections,
       fit_obj$shape$flat_range_ratio, shape_cutoffs
     )

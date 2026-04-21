@@ -201,6 +201,55 @@ out$pairs[[1L]]$edf_xy
 out$pairs[[1L]]$asymmetry_index
 ```
 
+## Shape metrics explained
+
+Every fitted smooth is summarised by two continuous indices and two
+discrete counts. These drive the 24-category classifier and appear
+as columns in `janusplot(..., with_data = TRUE)$data` and as fields
+on each entry of `janusplot_data()$pairs`.
+
+Let `f(x)` be the fitted smooth on a dense grid of 200 equally-spaced
+points across the predictor range, with `f'` and `f''` the numerical
+first and second derivatives. Let `w(x)` be the empirical density of
+the predictor on the same grid, normalised to `sum(w) = 1`.
+
+- **`monotonicity_index`** (paper symbol `M`):
+
+    `M = sum(w * f') / sum(w * |f'|)  in  [-1, 1]`
+
+    `+1` means strictly increasing, `-1` strictly decreasing, `0` a
+    non-monotone curve (bowl, dome, wave).
+
+- **`convexity_index`** (paper symbol `C`):
+
+    `C = sum(w * f'') / sum(w * |f''|)  in  [-1, 1]`
+
+    `+1` means globally convex (bowl-up), `-1` globally concave
+    (bowl-down), `0` inflection-dominated (S-curve, sine, flat).
+
+Both indices are density-weighted so they describe the smooth
+*where the data actually live*, not extrapolated tails, and are
+scale-invariant: replacing `y` with `a * y + b` leaves them unchanged.
+
+- **`n_turning_points`** — count of interior extrema (sign changes
+  of `f'`), robust to noise via lobe-mass weighting.
+- **`n_inflections`** — count of interior curvature flips (sign
+  changes of `f''`), same robust counting.
+
+Together the pair `(n_turning_points, n_inflections)` drives the
+primary `shape_category` dispatch; `(monotonicity_index,
+convexity_index)` disambiguate within the monotone `(0, 0)` and
+single-extremum `(1, 0)` cells. The full taxonomy with 2-letter
+codes, archetypes, and thumbnail curves is available from
+`janusplot_shape_hierarchy()` and is rendered as the standing legend
+below every `janusplot()` call.
+
+Tune the thresholds applied to these indices via
+`janusplot_shape_cutoffs()`. See the
+[shape-recognition-sensitivity](shape-recognition-sensitivity.html)
+vignette for how faithfully the classifier recovers ground-truth
+shapes across sample-size and noise regimes.
+
 ## Limitations
 
 - Pairwise view, not conditional — always complement with a proper
@@ -209,6 +258,10 @@ out$pairs[[1L]]$asymmetry_index
   domain-specific tuning is encouraged.
 - The asymmetry index should not be interpreted causally without
   strong assumptions.
+- `monotonicity_index` and `convexity_index` are scale-invariant in
+  `y` but sensitive to the predictor-density weighting — they
+  describe the smooth on the observed support of `x`, not outside
+  it.
 
 ## Citation
 

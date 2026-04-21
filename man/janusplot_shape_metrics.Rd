@@ -31,8 +31,22 @@ If \code{NULL}, the model frame is used.}
 \code{\link[=janusplot_shape_cutoffs]{janusplot_shape_cutoffs()}}. Default uses package defaults.}
 }
 \value{
-A named list with components \code{M}, \code{C}, \code{n_turning_points},
-\code{n_inflections}, \code{flat_range_ratio}, \code{shape_category}.
+A named list with components:
+\describe{
+\item{\code{monotonicity_index}}{\code{M} in \verb{[-1, 1]}. See Description.}
+\item{\code{convexity_index}}{\code{C} in \verb{[-1, 1]}. See Description.}
+\item{\code{n_turning_points}}{Integer count of lobe-mass-weighted
+sign changes of \verb{f'}. Equals the number of interior extrema.}
+\item{\code{n_inflections}}{Integer count of lobe-mass-weighted
+sign changes of \verb{f''}.}
+\item{\code{flat_range_ratio}}{\code{range(f) / sd(y)} — small values
+indicate a degenerate flat smooth.}
+\item{\code{shape_category}}{One of 24 labels from
+\code{\link[=janusplot_shape_hierarchy]{janusplot_shape_hierarchy()}} dispatched on
+\verb{(n_turning_points, n_inflections)} with
+\verb{(monotonicity_index, convexity_index)} disambiguation for
+the monotone case.}
+}
 }
 \description{
 Compute the continuous monotonicity and convexity indices, inflection
@@ -44,11 +58,24 @@ from the janusplot internal machinery or a freshly fitted
 Both indices are bounded in \verb{[-1, 1]} and weighted by the empirical
 density of the predictor:
 \itemize{
-\item \code{M} — monotonicity index. \code{+1} strictly increasing, \code{-1} strictly
-decreasing, \code{0} non-monotone.
-\item \code{C} — convexity index. \code{+1} globally convex (bowl-up), \code{-1}
-globally concave (bowl-down), \code{0} inflection-dominated.
+\item \code{monotonicity_index} (paper symbol \code{M}). Let \code{f} be the fitted
+smooth evaluated on a dense grid of \code{n_grid} equally-spaced
+points across the predictor range, \verb{f'} its numerical first
+derivative, and \code{w} the empirical density of the predictor on
+the same grid with \code{sum(w) = 1}. Then
+\verb{monotonicity_index = sum(w * f') / sum(w * |f'|) in [-1, 1]}.
+\code{+1} is strictly increasing, \code{-1} strictly decreasing, \code{0}
+non-monotone.
+\item \code{convexity_index} (paper symbol \code{C}). With \verb{f''} the numerical
+second derivative on the same grid,
+\verb{convexity_index = sum(w * f'') / sum(w * |f''|) in [-1, 1]}.
+\code{+1} is globally convex (bowl-up), \code{-1} globally concave
+(bowl-down), \code{0} inflection-dominated (S-curve, sine, flat).
 }
+
+Both indices are scale-invariant (replacing \code{y -> a*y + b} leaves
+them unchanged) and density-weighted so they describe the smooth
+\emph{where the data actually live}, not extrapolated tails.
 }
 \examples{
 # On a fitted gam

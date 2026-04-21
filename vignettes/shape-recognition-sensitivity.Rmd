@@ -20,9 +20,11 @@ knitr::opts_chunk$set(
 
 `janusplot()` assigns every fitted smooth to one of 24 shape
 categories via a `(n_turning_points, n_inflections)` dispatch with
-additional `(M, C)` disambiguation for the monotone cases. How
-reliably does this classifier recover the ground-truth shape of a
-noisy sample? This vignette answers the question with a
+additional `(monotonicity_index, convexity_index)` disambiguation
+for the monotone cases (see the `janusplot` vignette for the full
+definition of the indices). How reliably does this classifier
+recover the ground-truth shape of a noisy sample? This vignette
+answers the question with a
 full-factorial sensitivity sweep.
 
 ## Design

@@ -1,5 +1,22 @@
 # janusplot (development version)
 
+### Breaking: shape-metric column names (2026-04-21)
+
+* User-facing `M` and `C` columns renamed to `monotonicity_index`
+  and `convexity_index` across every data surface: the flat data
+  frame from `janusplot(..., with_data = TRUE)`, `janusplot_data()`
+  per-pair lists (`monotonicity_index_yx` / `convexity_index_yx` /
+  `_xy` variants), the return of `janusplot_shape_metrics()`, the
+  raw output of `janusplot_shape_sensitivity()`, and the precomputed
+  `shape_sensitivity_demo` dataset. Paper symbols `M` / `C` remain
+  as mnemonics in the documentation. Internal classifier parameter
+  names (`M`, `C`) are unchanged because they match the math
+  convention.
+* New "Shape metrics explained" section in the `janusplot`
+  vignette.
+* Callers referencing `result$M` / `result$C` must update to
+  `result$monotonicity_index` / `result$convexity_index`.
+
 ### Phase G — sensitivity study as a package feature (2026-04-21)
 
 * **`janusplot_shape_sensitivity()`** — new public function that runs a

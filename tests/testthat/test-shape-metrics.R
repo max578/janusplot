@@ -19,8 +19,8 @@ test_that("linear increasing recovers M ~ 1, C ~ 0, linear_up", {
   x <- seq(0, 10, length.out = 200L)
   y <- 2 * x
   m <- janusplot:::.compute_shape_metrics(.mk_fit(x, y))
-  expect_equal(m$M, 1, tolerance = 1e-6)
-  expect_lt(abs(m$C), 0.1)
+  expect_equal(m$monotonicity_index, 1, tolerance = 1e-6)
+  expect_lt(abs(m$convexity_index), 0.1)
   expect_equal(m$shape_category, "linear_up")
 })
 
@@ -28,7 +28,7 @@ test_that("linear decreasing recovers M ~ -1, linear_down", {
   x <- seq(0, 10, length.out = 200L)
   y <- -1.5 * x + 7
   m <- janusplot:::.compute_shape_metrics(.mk_fit(x, y))
-  expect_equal(m$M, -1, tolerance = 1e-6)
+  expect_equal(m$monotonicity_index, -1, tolerance = 1e-6)
   expect_equal(m$shape_category, "linear_down")
 })
 
@@ -36,8 +36,8 @@ test_that("y = x^2 on [0, 10] recovers convex_up", {
   x <- seq(0, 10, length.out = 200L)
   y <- x^2
   m <- janusplot:::.compute_shape_metrics(.mk_fit(x, y))
-  expect_gt(m$M, 0.5)
-  expect_gt(m$C, 0.5)
+  expect_gt(m$monotonicity_index, 0.5)
+  expect_gt(m$convexity_index, 0.5)
   expect_equal(m$shape_category, "convex_up")
 })
 
@@ -45,8 +45,8 @@ test_that("y = log1p(x) recovers concave_up (saturating growth)", {
   x <- seq(0.01, 10, length.out = 200L)
   y <- log1p(x)
   m <- janusplot:::.compute_shape_metrics(.mk_fit(x, y))
-  expect_gt(m$M, 0.5)
-  expect_lt(m$C, -0.3)
+  expect_gt(m$monotonicity_index, 0.5)
+  expect_lt(m$convexity_index, -0.3)
   expect_equal(m$shape_category, "concave_up")
 })
 
@@ -54,8 +54,8 @@ test_that("inverted parabola on [0, 10] recovers inverted_u", {
   x <- seq(0, 10, length.out = 200L)
   y <- -(x - 5)^2
   m <- janusplot:::.compute_shape_metrics(.mk_fit(x, y))
-  expect_lt(abs(m$M), 0.3)
-  expect_lt(m$C, -0.5)
+  expect_lt(abs(m$monotonicity_index), 0.3)
+  expect_lt(m$convexity_index, -0.5)
   expect_equal(m$shape_category, "inverted_u")
 })
 
@@ -63,8 +63,8 @@ test_that("upright parabola on [0, 10] recovers u_shape", {
   x <- seq(0, 10, length.out = 200L)
   y <- (x - 5)^2
   m <- janusplot:::.compute_shape_metrics(.mk_fit(x, y))
-  expect_lt(abs(m$M), 0.3)
-  expect_gt(m$C, 0.5)
+  expect_lt(abs(m$monotonicity_index), 0.3)
+  expect_gt(m$convexity_index, 0.5)
   expect_equal(m$shape_category, "u_shape")
 })
 
@@ -73,7 +73,7 @@ test_that("tanh on [-5, 5] recovers s_shape", {
   y <- tanh(x)
   m <- janusplot:::.compute_shape_metrics(.mk_fit(x, y))
   expect_equal(m$n_inflections, 1L)
-  expect_gt(abs(m$M), 0.5)
+  expect_gt(abs(m$monotonicity_index), 0.5)
   expect_equal(m$shape_category, "s_shape")
 })
 
@@ -118,7 +118,7 @@ test_that("janusplot_shape_metrics() works on a freshly fitted gam", {
   # curvature is detected), or s_shape (if it overshoots once).
   expect_true(m$shape_category %in%
                 c("linear_up", "concave_up", "s_shape"))
-  expect_gt(m$M, 0.5)
+  expect_gt(m$monotonicity_index, 0.5)
 })
 
 test_that("janusplot_shape_metrics() rejects bogus inputs", {

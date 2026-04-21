@@ -162,7 +162,8 @@ If \code{with_data = FALSE} (default), a \link[ggplot2:ggplot]{ggplot2::ggplot} 
 with two elements: \code{plot} (the ggplot) and \code{data} (a tidy table
 with columns \code{var_x}, \code{var_y}, \code{position}, \code{n_used}, \code{edf},
 \code{pvalue}, \code{signif}, \code{dev_exp}, \code{asymmetry_index}, \code{cor_pearson},
-\code{cor_spearman}, \code{cor_kendall}, \code{tie_ratio}, \code{M}, \code{C},
+\code{cor_spearman}, \code{cor_kendall}, \code{tie_ratio},
+\code{monotonicity_index}, \code{convexity_index},
 \code{n_turning_points}, \code{n_inflections}, \code{flat_range_ratio},
 \code{shape_category}, \code{colour_value}, one row per off-diagonal cell).
 }

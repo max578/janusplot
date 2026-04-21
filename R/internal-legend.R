@@ -95,7 +95,7 @@
 .present_shape_categories <- function(fits, cutoffs) {
   vapply(fits, function(f) {
     .classify_shape(
-      f$shape$M, f$shape$C,
+      f$shape$monotonicity_index, f$shape$convexity_index,
       f$shape$n_turning_points, f$shape$n_inflections,
       f$shape$flat_range_ratio, cutoffs
     )

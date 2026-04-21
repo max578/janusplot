@@ -63,21 +63,21 @@
   )
   if (is.null(fit)) {
     return(data.frame(
-      truth             = truth,
-      n                 = n,
-      sigma             = sigma,
-      seed              = seed,
-      predicted         = NA_character_,
-      correct           = NA,
-      archetype_truth   = unname(archetype_truth[truth]),
-      archetype_pred    = NA_character_,
-      archetype_correct = NA,
-      M                 = NA_real_,
-      C                 = NA_real_,
-      n_turn            = NA_integer_,
-      n_inflect         = NA_integer_,
-      error             = "gam_fit_failed",
-      stringsAsFactors  = FALSE
+      truth              = truth,
+      n                  = n,
+      sigma              = sigma,
+      seed               = seed,
+      predicted          = NA_character_,
+      correct            = NA,
+      archetype_truth    = unname(archetype_truth[truth]),
+      archetype_pred     = NA_character_,
+      archetype_correct  = NA,
+      monotonicity_index = NA_real_,
+      convexity_index    = NA_real_,
+      n_turn             = NA_integer_,
+      n_inflect          = NA_integer_,
+      error              = "gam_fit_failed",
+      stringsAsFactors   = FALSE
     ))
   }
   m <- janusplot_shape_metrics(fit, x_name = "x", newdata = d,
@@ -85,21 +85,21 @@
   arche_pred <- .shape_lookup(m$shape_category, "archetype")
   arche_true <- unname(archetype_truth[truth])
   data.frame(
-    truth             = truth,
-    n                 = n,
-    sigma             = sigma,
-    seed              = seed,
-    predicted         = m$shape_category,
-    correct           = isTRUE(m$shape_category == truth),
-    archetype_truth   = arche_true,
-    archetype_pred    = arche_pred,
-    archetype_correct = isTRUE(arche_pred == arche_true),
-    M                 = m$M,
-    C                 = m$C,
-    n_turn            = m$n_turning_points,
-    n_inflect         = m$n_inflections,
-    error             = NA_character_,
-    stringsAsFactors  = FALSE
+    truth              = truth,
+    n                  = n,
+    sigma              = sigma,
+    seed               = seed,
+    predicted          = m$shape_category,
+    correct            = isTRUE(m$shape_category == truth),
+    archetype_truth    = arche_true,
+    archetype_pred     = arche_pred,
+    archetype_correct  = isTRUE(arche_pred == arche_true),
+    monotonicity_index = m$monotonicity_index,
+    convexity_index    = m$convexity_index,
+    n_turn             = m$n_turning_points,
+    n_inflect          = m$n_inflections,
+    error              = NA_character_,
+    stringsAsFactors   = FALSE
   )
 }
 
@@ -176,7 +176,10 @@ janusplot_shape_sensitivity_shapes <- function() {
 #'   \item{`archetype_truth`}{Expected archetype for `truth`.}
 #'   \item{`archetype_pred`}{Archetype of `predicted`.}
 #'   \item{`archetype_correct`}{Logical — archetype-level correctness.}
-#'   \item{`M`, `C`}{Raw monotonicity / convexity indices for the fit.}
+#'   \item{`monotonicity_index`}{Monotonicity index `M` (see
+#'     [janusplot_shape_metrics()]).}
+#'   \item{`convexity_index`}{Convexity index `C` (see
+#'     [janusplot_shape_metrics()]).}
 #'   \item{`n_turn`, `n_inflect`}{Recovered turning-point and
 #'     inflection counts.}
 #'   \item{`error`}{`"gam_fit_failed"` when `mgcv::gam()` errored;
