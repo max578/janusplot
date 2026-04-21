@@ -13,3 +13,4 @@ revdep/
 .vscode/
 # Local audit artefacts — not part of the shipping package
 audit_*.md
+README.html
