@@ -1,0 +1,175 @@
+---
+title: "Shape-recognition sensitivity study"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Shape-recognition sensitivity study}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse  = TRUE,
+  comment   = "#>",
+  fig.align = "center",
+  fig.width = 8,
+  fig.height = 6,
+  dpi       = 110
+)
+```
+
+`janusplot()` assigns every fitted smooth to one of 24 shape
+categories via a `(n_turning_points, n_inflections)` dispatch with
+additional `(M, C)` disambiguation for the monotone cases. How
+reliably does this classifier recover the ground-truth shape of a
+noisy sample? This vignette answers the question with a
+full-factorial sensitivity sweep.
+
+## Design
+
+For each combination of ground-truth shape, sample size `n`, and
+noise level `sigma`, the sweep:
+
+1. Generates `n` points from the noiseless canonical curve on
+   `x ∈ [0, 1]`, with `y` normalised to `[0, 1]` so that `sigma` is
+   the fraction of y-range that Gaussian noise contributes — an
+   SNR-comparable scale across shapes.
+2. Fits `mgcv::gam(y ~ s(x), method = "REML")`.
+3. Classifies the fit via `janusplot_shape_metrics()`.
+4. Records correctness at the **fine** (24-category) and
+   **archetype** (7-family) levels.
+
+The design factors are orthogonal and replicated. See
+`?janusplot_shape_sensitivity` for the function surface. The 14
+canonical ground-truth shapes cover five of the seven archetypes
+(`chaotic` and `degenerate` have no realistic deterministic
+generator).
+
+```{r setup-pkg}
+library(janusplot)
+library(ggplot2)
+
+janusplot_shape_sensitivity_shapes()
+```
+
+## Pre-registered hypotheses
+
+The sweep's hypotheses are pinned in
+`simulation/PLAN.md` (Scenario 4):
+
+- **H1.** At `n = 500`, `sigma = 0.05`, archetype accuracy
+  exceeds 0.90 for every shape.
+- **H2.** Fine-category accuracy exceeds 0.75 at `n = 500`,
+  `sigma = 0.05` for monotone + unimodal shapes; wave and multimodal
+  tolerate less noise.
+- **H3.** Rippled variants require `n ≥ 200` and `sigma ≤ 0.10`
+  to resolve.
+- **H4.** At `sigma = 0.40`, archetype accuracy collapses below 0.50
+  for all but the simplest shapes.
+
+## Precomputed demo
+
+The package ships a small-footprint precomputed sweep — 6 shapes
+(one per non-degenerate archetype) × 3 sample sizes × 4 noise levels ×
+30 replicates = 2160 fits — so you can explore the API without
+running the full sweep yourself.
+
+```{r demo-data}
+data("shape_sensitivity_demo")
+str(shape_sensitivity_demo, vec.len = 2)
+```
+
+### Recovery curves (headline figure)
+
+```{r recovery-curves}
+janusplot_shape_sensitivity_plot(shape_sensitivity_demo,
+                                 "recovery_curves")
+```
+
+Every shape is recovered near-perfectly at low noise; the
+informative picture is where each shape's curve falls off as sigma
+grows. The unimodal and monotone-curved families tolerate more noise
+than the multimodal ones.
+
+### Archetype confusion
+
+```{r archetype-confusion, fig.width = 6, fig.height = 5}
+janusplot_shape_sensitivity_plot(shape_sensitivity_demo,
+                                 "confusion_archetype")
+```
+
+The off-diagonals reveal the classifier's failure modes. A `unimodal`
+truth misclassified as `wave` or `multimodal` means the spline
+invented extra turning points under noise.
+
+### Archetype-level accuracy grid
+
+```{r accuracy-grid}
+janusplot_shape_sensitivity_plot(shape_sensitivity_demo,
+                                 "accuracy_grid")
+```
+
+Per-shape heatmap of `P(archetype correct)` across the `(n, sigma)`
+design. Reading across a row shows the noise-tolerance profile of
+one sample size; reading up a column shows the sample-size
+sensitivity at one noise level.
+
+### Numerical summary
+
+```{r summary}
+head(janusplot_shape_sensitivity_summary(shape_sensitivity_demo,
+                                         level = "archetype"), 10)
+```
+
+## Running your own sweep
+
+The demo is a starting point. For the publication-grade figure
+use the full default grid (14 shapes × 4 sample sizes × 5 noise levels
+× 200 reps = 56 000 fits):
+
+```{r full-sweep, eval = FALSE}
+# Configure parallel execution (optional) — you control the plan.
+future::plan(future::multisession, workers = 4L)
+
+res <- janusplot_shape_sensitivity(parallel = TRUE)
+
+# Save for your paper
+saveRDS(res, "shape_sensitivity_full.rds")
+janusplot_shape_sensitivity_plot(res, "recovery_curves")
+```
+
+### Custom shape subsets + cutoffs
+
+Every argument is tunable. Below, we rerun only the bimodal/wave
+family under stricter monotonicity thresholds to see whether
+tightening `mono_strong` buys any fine-accuracy improvement for these
+categories.
+
+```{r custom-subset, eval = FALSE}
+strict <- janusplot_shape_cutoffs(mono_strong = 0.95, curv_low = 0.1)
+
+res_strict <- janusplot_shape_sensitivity(
+  shapes     = c("wave", "bimodal", "bi_wave"),
+  n_grid     = c(200L, 500L),
+  sigma_grid = c(0.05, 0.10, 0.20),
+  n_rep      = 100L,
+  cutoffs    = strict
+)
+
+janusplot_shape_sensitivity_summary(res_strict, level = "fine")
+```
+
+## References
+
+- Pya, N., & Wood, S. N. (2015). Shape constrained additive models.
+  *Statistics and Computing*, 25(3), 543–559.
+- Calabrese, E. J. (2008). Hormesis: why it is important to
+  toxicology and toxicologists. *Environmental Toxicology and
+  Chemistry*, 27(7), 1451–1474.
+- Milnor, J. (1963). *Morse Theory*. Princeton University Press.
+- Meyer, M. C. (2008). Inference using shape-restricted regression
+  splines. *Annals of Applied Statistics*, 2(3), 1013–1033.
+
+```{r session-info}
+sessionInfo()
+```

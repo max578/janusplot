@@ -1,0 +1,12 @@
+linters: linters_with_defaults(
+    line_length_linter    = line_length_linter(100L),
+    indentation_linter    = NULL,
+    object_name_linter    = NULL,
+    object_length_linter  = object_length_linter(40L),
+    commented_code_linter = NULL
+  )
+exclusions: list(
+    "R/RcppExports.R",
+    "tests/testthat/_snaps"
+  )
+encoding: "UTF-8"

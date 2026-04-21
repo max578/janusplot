@@ -1,0 +1,217 @@
+---
+title: "Asymmetric Smoothed-Association Matrices"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    fig_width: 7
+    fig_height: 7
+vignette: >
+  %\VignetteIndexEntry{Asymmetric Smoothed-Association Matrices}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse   = TRUE,
+  comment    = "#>",
+  fig.alt    = paste(
+    "Asymmetric smoothed-association matrix produced by",
+    "janusplot(); diagonal cells hold variable labels,",
+    "off-diagonal cells show the fitted mgcv::gam spline",
+    "with a 95% confidence envelope, raw-data scatter,",
+    "and per-cell annotations for n, EDF, and smooth",
+    "significance glyph."
+  ),
+  fig.width  = 7,
+  fig.height = 7,
+  dpi        = 110,
+  eval       = TRUE
+)
+library(ggplot2)
+set.seed(2026L)
+```
+
+## Why Pearson is not enough
+
+A Pearson correlation matrix gives one scalar per pair of variables.
+Two numbers are discarded in that collapse:
+
+1. The *shape* of the association — linear, monotone non-linear,
+   U-shaped, or irregular.
+2. The *direction* — whether $y$ is a smooth function of $x$
+   differs in general from whether $x$ is a smooth function of $y$,
+   because leverage and noise are directional.
+
+`janusplot()` renders both recoveries visually for every pair in a
+matrix layout, using proper `mgcv::gam()` fits (not loess) so EDF,
+F-tests, and random effects are available.
+
+## Quick start
+
+```{r quickstart}
+library(janusplot)
+
+# Four numeric columns from mtcars (32 rows: small but illustrative)
+janusplot(mtcars[, c("mpg", "hp", "wt", "qsec")])
+```
+
+Each off-diagonal cell shows:
+
+- raw scatter (light grey),
+- the fitted spline (blue line) and 95% CI ribbon,
+- EDF (effective degrees of freedom) in the bottom-right,
+- *n* used in the bottom-left,
+- a signif-glyph in the top-right (`***` / `**` / `*` / `·`).
+
+The cell fill is keyed to EDF: darker = more non-linear.
+
+## Non-linear detection
+
+A synthetic quadratic + sinusoidal example. The matrix makes it
+obvious which variables are genuinely non-linearly related to which.
+
+```{r nonlinear}
+n <- 300
+x1 <- runif(n, -3, 3)
+x2 <- x1^2 + rnorm(n, sd = 0.6)   # quadratic on x1
+x3 <- sin(x1) + rnorm(n, sd = 0.4) # sinusoidal on x1
+x4 <- rnorm(n)                     # independent
+d  <- data.frame(x1 = x1, x2 = x2, x3 = x3, x4 = x4)
+
+janusplot(d)
+```
+
+EDF for `x2 ~ s(x1)` and `x3 ~ s(x1)` should clearly exceed 1; the
+cell fills reflect that. Cells involving `x4` should be close to EDF =
+1 (linear / flat).
+
+## Asymmetry — a heteroscedastic example
+
+When the noise scale depends on a predictor, the two directional smooths
+diverge: $y \sim s(x)$ recovers the mean relationship; $x \sim s(y)$ is
+distorted by the variance asymmetry.
+
+```{r asym}
+n <- 400
+x <- runif(n, 0, 5)
+y <- 0.5 * x + rnorm(n, sd = 0.3 + 0.4 * x)   # variance grows with x
+d <- data.frame(x = x, y = y, z = rnorm(n))
+
+janusplot(d)
+```
+
+The `A = ...` label per cell reports the asymmetry index
+$A_{ij} = |EDF_{y|x} - EDF_{x|y}| / (EDF_{y|x} + EDF_{x|y}) \in [0, 1]$,
+shown by default in the bottom-left corner alongside `EDF = ...`.
+
+## Partial smooths (controlling for covariates)
+
+Pass `adjust =` as a one-sided formula RHS to include fixed covariates
+and/or random effects in every pairwise GAM.
+
+```{r adjust, eval = requireNamespace("palmerpenguins", quietly = TRUE)}
+library(palmerpenguins)
+pp <- na.omit(penguins)
+
+# Without covariate
+janusplot(pp[, c("bill_length_mm", "bill_depth_mm",
+                 "flipper_length_mm", "body_mass_g")])
+
+# With species as a fixed effect — resolves Simpson's-paradox geometry
+janusplot(pp, vars = c("bill_length_mm", "bill_depth_mm",
+                       "flipper_length_mm", "body_mass_g"),
+         adjust = ~ species)
+```
+
+## Changing the palette
+
+The cell fill encodes the EDF (or deviance-explained) of the smooth and
+is accompanied by a shared colourbar legend. Choose a palette with
+`palette = `.
+
+```{r palette-viridis, fig.height = 5, fig.width = 6}
+d <- data.frame(
+  x1 = runif(200, -3, 3),
+  x2 = rnorm(200),
+  x3 = rnorm(200)
+)
+d$x2 <- d$x1^2 + rnorm(200, sd = 0.8)  # non-linear
+
+janusplot(d, palette = "viridis")  # default, colourblind-safe
+```
+
+```{r palette-brewer, fig.height = 5, fig.width = 6}
+janusplot(d, palette = "RdYlBu")   # diverging, colourblind-safe
+```
+
+```{r palette-turbo, fig.height = 5, fig.width = 6}
+janusplot(d, palette = "turbo")    # high-contrast, NOT colourblind-safe
+```
+
+**Colourblind-safe choices:**
+
+- *Sequential:* `viridis` (default), `magma`, `inferno`, `plasma`,
+  `cividis`, `mako`, `rocket`, `YlOrRd`, `YlGnBu`, `Blues`, `Greens`.
+- *Diverging:* `RdYlBu`, `RdBu`, `PuOr`.
+
+**High-contrast but not colourblind-safe:** `turbo`, `Spectral`.
+
+## Handling missing data
+
+```{r missing}
+# airquality has genuine NAs in Ozone and Solar.R
+janusplot(airquality[, c("Ozone", "Solar.R", "Wind", "Temp")],
+          na_action = "pairwise")
+```
+
+`na_action = "pairwise"` uses all rows for which *that* pair is
+complete; `"complete"` restricts to rows complete across every
+variable (matching listwise deletion).
+
+## Scaling up — `order = "hclust"`
+
+For k large, reorder the axes by hierarchical clustering on
+|correlation|:
+
+```{r hclust, eval = requireNamespace("MASS", quietly = TRUE)}
+data(Boston, package = "MASS")
+janusplot(Boston[, c("medv", "lstat", "rm", "age",
+                     "indus", "nox", "dis")],
+          order = "hclust")
+```
+
+## Programmatic access — `janusplot_data()`
+
+Returns raw GAM fits and per-cell metrics without constructing a
+ggplot — useful for custom rendering or downstream analysis.
+
+```{r data}
+# Re-create the heteroscedastic example
+n <- 400
+het <- data.frame(
+  x = runif(n, 0, 5),
+  y = NA_real_
+)
+het$y <- 0.5 * het$x + rnorm(n, sd = 0.3 + 0.4 * het$x)
+
+out <- janusplot_data(het, vars = c("x", "y"))
+out$pairs[[1L]]$edf_yx
+out$pairs[[1L]]$edf_xy
+out$pairs[[1L]]$asymmetry_index
+```
+
+## Limitations
+
+- Pairwise view, not conditional — always complement with a proper
+  multivariate model.
+- EDF depends on basis dimension `k`; defaults are sensible but
+  domain-specific tuning is encouraged.
+- The asymmetry index should not be interpreted causally without
+  strong assumptions.
+
+## Citation
+
+```{r cite}
+citation("janusplot")
+```

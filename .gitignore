@@ -1,0 +1,15 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.DS_Store
+*.Rcheck
+*.tar.gz
+*.tgz
+docs/
+inst/doc/
+revdep/
+.idea/
+.vscode/
+# Local audit artefacts — not part of the shipping package
+audit_*.md

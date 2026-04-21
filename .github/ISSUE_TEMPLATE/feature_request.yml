@@ -1,0 +1,36 @@
+name: Feature request
+description: Propose a new capability or API change.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you solving?
+      description: Describe the use case, not the proposed solution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed API / change
+      description: |
+        Sketch the function signature, argument semantics, and a small
+        example.
+      render: r
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Existing workarounds or packages that partially solve this.
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: "This is within the package's one-sentence mission (asymmetric smoothed-association matrices via GAM)."
+        - label: "I have checked the [open issues](https://github.com/max578/janusplot/issues) for duplicates."

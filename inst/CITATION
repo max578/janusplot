@@ -1,0 +1,19 @@
+citHeader("To cite janusplot in publications use:")
+
+bibentry(
+  bibtype  = "Manual",
+  title    = "janusplot: Asymmetric Smoothed-Association Matrices via GAM Fits",
+  author   = person("Max", "Moldovan", comment = c(ORCID = "0000-0001-9680-8474")),
+  year     = "2026",
+  note     = "R package version 0.0.0.9000",
+  url      = "https://github.com/max578/janusplot"
+)
+
+bibentry(
+  bibtype  = "Article",
+  title    = "Beyond Pearson: Visualising Asymmetric Non-linear Associations with Generalised Additive Models",
+  author   = person("Max", "Moldovan"),
+  journal  = "The R Journal",
+  year     = "2026",
+  note     = "In preparation"
+)

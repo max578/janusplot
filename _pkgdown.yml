@@ -1,0 +1,39 @@
+url: ~
+template:
+  bootstrap: 5
+  bootswatch: cosmo
+  theme: gruvbox-light
+  light-switch: true
+  bslib:
+    primary: "#08306b"
+
+navbar:
+  type: default
+  structure:
+    left:  [intro, reference, articles, news]
+    right: [search, github]
+
+home:
+  title: janusplot — asymmetric smoothed-association matrices
+  description: >
+    Pairwise, asymmetric, GAM-based visual primitive for exploring
+    non-linear associations between continuous variables. Real mgcv
+    fits, inference surface (EDF, F-tests, confidence envelopes),
+    partial smooths, random effects, and an asymmetry index.
+
+reference:
+  - title: "Main exports"
+    desc: "The two user-facing functions."
+    contents:
+      - janusplot
+      - janusplot_data
+
+articles:
+  - title: "Tutorial"
+    navbar: ~
+    contents:
+      - janusplot
+
+authors:
+  Max Moldovan:
+    href: https://orcid.org/0000-0001-9680-8474

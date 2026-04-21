@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: "If you use janusplot in research, please cite both the package and the accompanying paper."
+title: "janusplot: Asymmetric Smoothed-Association Matrices via GAM Fits"
+type: software
+version: 0.0.0.9000
+authors:
+  - given-names: Max
+    family-names: Moldovan
+    email: max.moldovan@adelaide.edu.au
+    affiliation: Adelaide University
+    orcid: "https://orcid.org/0000-0001-9680-8474"
+repository-code: "https://github.com/max578/janusplot"
+url: "https://max578.github.io/janusplot/"
+license: GPL-3.0-or-later
+keywords:
+  - R
+  - visualisation
+  - generalised-additive-models
+  - mgcv
+  - asymmetric-associations
+  - pairwise-plot
+  - exploratory-data-analysis
+  - causal-discovery-diagnostic
+preferred-citation:
+  type: article
+  title: "Beyond Pearson: Visualising Asymmetric Non-linear Associations with Generalised Additive Models"
+  authors:
+    - given-names: Max
+      family-names: Moldovan
+      orcid: "https://orcid.org/0000-0001-9680-8474"
+  journal: "The R Journal"
+  year: 2026
+  notes: "In preparation"
