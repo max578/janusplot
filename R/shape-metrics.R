@@ -522,7 +522,8 @@ janusplot_shape_hierarchy <- function() {
   y  <- pred$fit
   ok <- is.finite(x) & is.finite(y)
   if (sum(ok) < 3L) return(.na_shape_raw())
-  x <- x[ok]; y <- y[ok]
+  x <- x[ok]
+  y <- y[ok]
 
   raw_x <- if (!is.null(fit_obj$raw) && nrow(fit_obj$raw) > 0L) {
     fit_obj$raw[[fit_obj$x_name]]

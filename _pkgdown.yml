@@ -37,7 +37,8 @@ reference:
   - title: "Matrix rendering"
     desc: "Render an asymmetric smoothed-association matrix."
     contents:
-      - has_keyword("smooth-associations")
+      - janusplot
+      - janusplot_data
 
   - title: "Shape taxonomy"
     desc: >
