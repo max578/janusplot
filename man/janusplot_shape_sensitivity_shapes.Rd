@@ -10,6 +10,8 @@ janusplot_shape_sensitivity_shapes()
 Character vector of length 14 — the generator names.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Return the names of every canonical ground-truth shape that
 \code{\link[=janusplot_shape_sensitivity]{janusplot_shape_sensitivity()}} can simulate from. Fourteen shapes
 spanning five archetypes (\code{monotone_linear}, \code{monotone_curved},

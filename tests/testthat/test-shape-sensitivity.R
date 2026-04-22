@@ -17,7 +17,8 @@ test_that("janusplot_shape_sensitivity runs and returns a well-formed data frame
   expect_equal(nrow(res), 3L * 2L * 2L * 3L)
   expect_true(all(c("truth", "n", "sigma", "seed", "predicted",
                     "correct", "archetype_truth", "archetype_pred",
-                    "archetype_correct", "M", "C",
+                    "archetype_correct",
+                    "monotonicity_index", "convexity_index",
                     "n_turn", "n_inflect", "error") %in% names(res)))
   # Every truth in, every truth accounted for
   expect_setequal(unique(res$truth), c("linear_up", "u_shape", "wave"))

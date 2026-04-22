@@ -1,12 +1,15 @@
 #' Asymmetric smoothed-association matrix
 #'
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Render a pairwise, asymmetric matrix of smoothed associations between
 #' numeric variables. Each cell \[i, j\] where `i != j` shows the fitted
 #' spline from [mgcv::gam()]:
 #' * Upper triangle (`i < j`): `gam(x_j ~ s(x_i) + <adjust>)`.
 #' * Lower triangle (`i > j`): `gam(x_i ~ s(x_j) + <adjust>)`.
-#' * Diagonal: variable name label.
+#' * Diagonal: blank panel when labels live on the border (default),
+#'   or a variable-name label when `labels = "diagonal"`.
 #'
 #' The two triangles intentionally differ — the asymmetry reveals
 #' heteroscedasticity, leverage, and directional non-linearity that a
@@ -73,6 +76,19 @@
 #'   in `annotations`. Default is `"ascii"` for maximum portability
 #'   across typesetting pipelines; switch to `"unicode"` only when
 #'   the target font is known to cover the curve glyph set.
+#' @param labels One of `"border"` (default), `"diagonal"`, or
+#'   `"none"`. Controls where variable names are rendered:
+#'   * `"border"` — names along the top (rotated per `label_srt`) and
+#'     left margins of the matrix; diagonal cells are left blank.
+#'     Mirrors `corrplot`'s `tl.pos = "lt"` convention.
+#'   * `"diagonal"` — names centred on the diagonal cells (the
+#'     pre-0.1 layout).
+#'   * `"none"` — labels suppressed entirely; diagonal cells blank.
+#' @param label_srt Numeric. Rotation (degrees) of top labels when
+#'   `labels = "border"`. Default `45`; set to `0` for horizontal or
+#'   `90` for vertical. Ignored when `labels != "border"`.
+#' @param label_cex Positive numeric multiplier on the border-label
+#'   font size. Default `1`. Ignored when `labels = "none"`.
 #' @param signif_glyph Logical. If `TRUE` (default), annotate cells
 #'   with `·` / `*` / `**` reflecting the smooth's F-test p-value.
 #' @param show_asymmetry Deprecated. Use `annotations` instead
@@ -112,7 +128,8 @@
 #'   with two elements: `plot` (the ggplot) and `data` (a tidy table
 #'   with columns `var_x`, `var_y`, `position`, `n_used`, `edf`,
 #'   `pvalue`, `signif`, `dev_exp`, `asymmetry_index`, `cor_pearson`,
-#'   `cor_spearman`, `cor_kendall`, `tie_ratio`, `M`, `C`,
+#'   `cor_spearman`, `cor_kendall`, `tie_ratio`,
+#'   `monotonicity_index`, `convexity_index`,
 #'   `n_turning_points`, `n_inflections`, `flat_range_ratio`,
 #'   `shape_category`, `colour_value`, one row per off-diagonal cell).
 #'
@@ -152,6 +169,9 @@ janusplot <- function(
     shape_cutoffs = janusplot_shape_cutoffs(),
     show_shape_legend = TRUE,
     glyph_style = c("ascii", "unicode"),
+    labels = c("border", "diagonal", "none"),
+    label_srt = 45,
+    label_cex = 1,
     signif_glyph = TRUE,
     show_asymmetry = NULL,
     na_action = c("pairwise", "complete"),
@@ -165,16 +185,21 @@ janusplot <- function(
   order       <- rlang::arg_match(order)
   na_action   <- rlang::arg_match(na_action)
   glyph_style <- rlang::arg_match(glyph_style)
+  labels      <- rlang::arg_match(labels)
 
-  # Dual-alias: fill_by -> colour_by (one-warning deprecation).
+  if (!is.numeric(label_srt) || length(label_srt) != 1L ||
+      is.na(label_srt)) {
+    cli::cli_abort("{.arg label_srt} must be a single numeric value.")
+  }
+  .check_scalar_positive(label_cex, "label_cex")
+
+  # Dual-alias: fill_by -> colour_by (soft deprecation).
   if (!is.null(fill_by)) {
-    cli::cli_warn(
-      c(
-        "!" = "{.arg fill_by} is deprecated; use {.arg colour_by} instead.",
-        i  = "Forwarding {.val {fill_by}} to {.arg colour_by}."
-      ),
-      .frequency    = "regularly",
-      .frequency_id = "janusplot_fill_by_deprecated"
+    lifecycle::deprecate_warn(
+      when = "0.0.0.9000",
+      what = "janusplot(fill_by = )",
+      with = "janusplot(colour_by = )",
+      details = paste0("Forwarding \"", fill_by, "\" to colour_by.")
     )
     colour_by <- fill_by
   }
@@ -197,17 +222,12 @@ janusplot <- function(
     ))
   }
 
-  # Dual-alias: show_asymmetry -> annotations.
+  # Dual-alias: show_asymmetry -> annotations (soft deprecation).
   if (!is.null(show_asymmetry)) {
-    cli::cli_warn(
-      c(
-        "!" = paste(
-          "{.arg show_asymmetry} is deprecated; pass",
-          "{.code annotations = c(\"A\", ...)} instead."
-        )
-      ),
-      .frequency    = "regularly",
-      .frequency_id = "janusplot_show_asymmetry_deprecated"
+    lifecycle::deprecate_warn(
+      when = "0.0.0.9000",
+      what = "janusplot(show_asymmetry = )",
+      with = "janusplot(annotations = )"
     )
     if (isTRUE(show_asymmetry)) {
       annotations <- union(annotations, "A")
@@ -287,8 +307,11 @@ janusplot <- function(
     )
   }
 
-  diag_cells <- lapply(vars, .build_diagonal_cell,
-                       text_sizes = text_sizes)
+  diag_cells <- if (labels == "diagonal") {
+    lapply(vars, .build_diagonal_cell, text_sizes = text_sizes)
+  } else {
+    replicate(length(vars), .build_blank_diagonal_cell(), simplify = FALSE)
+  }
 
   # Shape legend is a standing reference: it now renders the full
   # taxonomy regardless of which categories are present in the
@@ -302,7 +325,8 @@ janusplot <- function(
   composite <- .assemble_matrix(
     cells_by_ij, diag_cells, vars,
     colour_by = colour_by, colour_limits = colour_limits,
-    palette = palette, shape_legend_plot = shape_legend_plot
+    palette = palette, shape_legend_plot = shape_legend_plot,
+    labels = labels, label_srt = label_srt, label_cex = label_cex
   )
   plot_out <- if (isTRUE(show_glossary)) {
     .add_glossary(composite, signif_glyph, annotations, colour_by,
@@ -334,36 +358,36 @@ janusplot <- function(
     position <- if (ij[1L] < ij[2L]) "upper" else "lower"
     asym_key <- paste(sort(ij), collapse = "_")
     shape_cat <- .classify_shape(
-      f$shape$M, f$shape$C,
+      f$shape$monotonicity_index, f$shape$convexity_index,
       f$shape$n_turning_points, f$shape$n_inflections,
       f$shape$flat_range_ratio, shape_cutoffs
     )
     data.frame(
-      var_x            = f$x_name,
-      var_y            = f$y_name,
-      position         = position,
-      n_used           = f$n_used,
-      edf              = f$edf,
-      pvalue           = f$pvalue,
-      signif           = .pvalue_to_glyph(f$pvalue),
-      dev_exp          = f$dev_exp,
-      asymmetry_index  = asym_tbl[[asym_key]] %||% NA_real_,
-      cor_pearson      = f$corr$cor_pearson,
-      cor_spearman     = f$corr$cor_spearman,
-      cor_kendall      = f$corr$cor_kendall,
-      tie_ratio        = f$corr$tie_ratio,
-      M                = f$shape$M,
-      C                = f$shape$C,
-      n_turning_points = f$shape$n_turning_points,
-      n_inflections    = f$shape$n_inflections,
-      flat_range_ratio = f$shape$flat_range_ratio,
-      shape_category   = shape_cat,
-      shape_code       = .shape_lookup(shape_cat, "code"),
-      shape_archetype  = .shape_lookup(shape_cat, "archetype"),
-      shape_monotonic  = .shape_lookup(shape_cat, "monotonic"),
-      shape_linear     = .shape_lookup(shape_cat, "linear"),
-      colour_value     = .colour_value(f, colour_by),
-      stringsAsFactors = FALSE
+      var_x              = f$x_name,
+      var_y              = f$y_name,
+      position           = position,
+      n_used             = f$n_used,
+      edf                = f$edf,
+      pvalue             = f$pvalue,
+      signif             = .pvalue_to_glyph(f$pvalue),
+      dev_exp            = f$dev_exp,
+      asymmetry_index    = asym_tbl[[asym_key]] %||% NA_real_,
+      cor_pearson        = f$corr$cor_pearson,
+      cor_spearman       = f$corr$cor_spearman,
+      cor_kendall        = f$corr$cor_kendall,
+      tie_ratio          = f$corr$tie_ratio,
+      monotonicity_index = f$shape$monotonicity_index,
+      convexity_index    = f$shape$convexity_index,
+      n_turning_points   = f$shape$n_turning_points,
+      n_inflections      = f$shape$n_inflections,
+      flat_range_ratio   = f$shape$flat_range_ratio,
+      shape_category     = shape_cat,
+      shape_code         = .shape_lookup(shape_cat, "code"),
+      shape_archetype    = .shape_lookup(shape_cat, "archetype"),
+      shape_monotonic    = .shape_lookup(shape_cat, "monotonic"),
+      shape_linear       = .shape_lookup(shape_cat, "linear"),
+      colour_value       = .colour_value(f, colour_by),
+      stringsAsFactors   = FALSE
     )
   })
   out <- do.call(rbind, rows)
@@ -445,6 +469,8 @@ janusplot <- function(
 #' Raw GAM fits and per-cell metrics for a smoothed-association matrix
 #'
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Companion to [janusplot()] returning the raw list of GAM fits plus
 #' per-cell metrics (EDF, F-test p-value, deviance explained, asymmetry
 #' index, pairwise correlations, shape descriptors) without constructing
@@ -455,7 +481,8 @@ janusplot <- function(
 #'   objects in the return (large memory footprint for `k` above ~15).
 #'   Default `FALSE` — retains summary metrics and prediction grids only.
 #' @param shape_cutoffs Named list of classification thresholds used to
-#'   map the continuous shape indices (`M`, `C`) into discrete
+#'   map the continuous shape indices (`monotonicity_index`,
+#'   `convexity_index`) into discrete
 #'   `shape_category` labels. Defaults from [janusplot_shape_cutoffs()].
 #'
 #' @returns A list with components:
@@ -468,9 +495,13 @@ janusplot <- function(
 #'     `dev_exp_xy`, `n_used`, `asymmetry_index`, plus Pearson /
 #'     Spearman / Kendall correlations (`cor_pearson`, `cor_spearman`,
 #'     `cor_kendall`), the maximum tie ratio across `x` and `y`
-#'     (`tie_ratio`), and per-direction shape descriptors (`M_yx`,
-#'     `C_yx`, `M_xy`, `C_xy`, `n_turning_yx`, `n_inflect_yx`,
-#'     `n_turning_xy`, `n_inflect_xy`, `shape_yx`, `shape_xy`).}
+#'     (`tie_ratio`), and per-direction shape descriptors
+#'     (`monotonicity_index_yx`, `convexity_index_yx`,
+#'     `monotonicity_index_xy`, `convexity_index_xy`,
+#'     `n_turning_yx`, `n_inflect_yx`, `n_turning_xy`,
+#'     `n_inflect_xy`, `shape_yx`, `shape_xy`).
+#'     See [janusplot_shape_metrics()] for the definition of the
+#'     monotonicity and convexity indices.}
 #'   \item{`call`}{Match call.}
 #' }
 #'
@@ -514,45 +545,45 @@ janusplot_data <- function(
       f_yx <- fits[[sprintf("%d_%d", i, j)]]   # y = vars[j] ~ s(vars[i])
       f_xy <- fits[[sprintf("%d_%d", j, i)]]   # y = vars[i] ~ s(vars[j])
       shape_yx <- .classify_shape(
-        f_yx$shape$M, f_yx$shape$C,
+        f_yx$shape$monotonicity_index, f_yx$shape$convexity_index,
         f_yx$shape$n_turning_points, f_yx$shape$n_inflections,
         f_yx$shape$flat_range_ratio, shape_cutoffs
       )
       shape_xy <- .classify_shape(
-        f_xy$shape$M, f_xy$shape$C,
+        f_xy$shape$monotonicity_index, f_xy$shape$convexity_index,
         f_xy$shape$n_turning_points, f_xy$shape$n_inflections,
         f_xy$shape$flat_range_ratio, shape_cutoffs
       )
       corr <- f_yx$corr %||% f_xy$corr
       pairs_out[[length(pairs_out) + 1L]] <- list(
-        i                  = i,
-        j                  = j,
-        var_i              = vars[i],
-        var_j              = vars[j],
-        fit_yx             = if (keep_fits) f_yx$fit else NULL,
-        fit_xy             = if (keep_fits) f_xy$fit else NULL,
-        pred_yx            = f_yx$pred,
-        pred_xy            = f_xy$pred,
-        edf_yx             = f_yx$edf,
-        edf_xy             = f_xy$edf,
-        pvalue_yx          = f_yx$pvalue,
-        pvalue_xy          = f_xy$pvalue,
-        dev_exp_yx         = f_yx$dev_exp,
-        dev_exp_xy         = f_xy$dev_exp,
-        n_used             = min(f_yx$n_used, f_xy$n_used),
-        asymmetry_index    = .compute_asymmetry_index(f_yx$edf, f_xy$edf),
-        cor_pearson        = corr$cor_pearson,
-        cor_spearman       = corr$cor_spearman,
-        cor_kendall        = corr$cor_kendall,
-        tie_ratio          = corr$tie_ratio,
-        M_yx               = f_yx$shape$M,
-        C_yx               = f_yx$shape$C,
-        M_xy               = f_xy$shape$M,
-        C_xy               = f_xy$shape$C,
-        n_turning_yx       = f_yx$shape$n_turning_points,
-        n_inflect_yx       = f_yx$shape$n_inflections,
-        n_turning_xy       = f_xy$shape$n_turning_points,
-        n_inflect_xy       = f_xy$shape$n_inflections,
+        i                      = i,
+        j                      = j,
+        var_i                  = vars[i],
+        var_j                  = vars[j],
+        fit_yx                 = if (keep_fits) f_yx$fit else NULL,
+        fit_xy                 = if (keep_fits) f_xy$fit else NULL,
+        pred_yx                = f_yx$pred,
+        pred_xy                = f_xy$pred,
+        edf_yx                 = f_yx$edf,
+        edf_xy                 = f_xy$edf,
+        pvalue_yx              = f_yx$pvalue,
+        pvalue_xy              = f_xy$pvalue,
+        dev_exp_yx             = f_yx$dev_exp,
+        dev_exp_xy             = f_xy$dev_exp,
+        n_used                 = min(f_yx$n_used, f_xy$n_used),
+        asymmetry_index        = .compute_asymmetry_index(f_yx$edf, f_xy$edf),
+        cor_pearson            = corr$cor_pearson,
+        cor_spearman           = corr$cor_spearman,
+        cor_kendall            = corr$cor_kendall,
+        tie_ratio              = corr$tie_ratio,
+        monotonicity_index_yx  = f_yx$shape$monotonicity_index,
+        convexity_index_yx     = f_yx$shape$convexity_index,
+        monotonicity_index_xy  = f_xy$shape$monotonicity_index,
+        convexity_index_xy     = f_xy$shape$convexity_index,
+        n_turning_yx           = f_yx$shape$n_turning_points,
+        n_inflect_yx           = f_yx$shape$n_inflections,
+        n_turning_xy           = f_xy$shape$n_turning_points,
+        n_inflect_xy           = f_xy$shape$n_inflections,
         shape_yx           = shape_yx,
         shape_xy           = shape_xy,
         shape_code_yx      = .shape_lookup(shape_yx, "code"),

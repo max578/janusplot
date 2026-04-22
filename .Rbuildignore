@@ -18,3 +18,10 @@
 ^CONTRIBUTING\.md$
 ^CODE_OF_CONDUCT\.md$
 ^SECURITY\.md$
+^SUPPORT\.md$
+^API_STABILITY\.md$
+^adr$
+^\.pre-commit-config\.yaml$
+^\.devcontainer$
+^renv$
+^renv\.lock$

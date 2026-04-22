@@ -75,6 +75,22 @@
       "identifier": "rlang",
       "name": "rlang",
       "version": ">= 1.1.0"
+    },
+    "6": {
+      "@type": "SoftwareApplication",
+      "identifier": "lifecycle",
+      "name": "lifecycle",
+      "version": ">= 1.0.0"
+    },
+    "7": {
+      "@type": "SoftwareApplication",
+      "identifier": "grid",
+      "name": "grid"
+    },
+    "8": {
+      "@type": "SoftwareApplication",
+      "identifier": "stats",
+      "name": "stats"
     }
   },
   "relatedLink": "https://max578.github.io/janusplot/"

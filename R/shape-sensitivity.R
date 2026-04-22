@@ -34,9 +34,9 @@
     skewed_peak  = function(x) .norm01(x * exp(-3 * x)),
     broad_peak   = function(x) .norm01(exp(-((x - 0.5) * 3)^4)),
     wave         = function(x) 0.5 + 0.5 * sin(2 * pi * (x - 0.25)),
-    bimodal      = function(x) .norm01(
-      exp(-((x - 0.25) * 6)^2) + exp(-((x - 0.75) * 6)^2)
-    ),
+    bimodal      = function(x) {
+      .norm01(exp(-((x - 0.25) * 6)^2) + exp(-((x - 0.75) * 6)^2))
+    },
     bi_wave      = function(x) 0.5 + 0.5 * sin(4 * pi * (x - 0.125))
   )
 }
@@ -63,21 +63,21 @@
   )
   if (is.null(fit)) {
     return(data.frame(
-      truth             = truth,
-      n                 = n,
-      sigma             = sigma,
-      seed              = seed,
-      predicted         = NA_character_,
-      correct           = NA,
-      archetype_truth   = unname(archetype_truth[truth]),
-      archetype_pred    = NA_character_,
-      archetype_correct = NA,
-      M                 = NA_real_,
-      C                 = NA_real_,
-      n_turn            = NA_integer_,
-      n_inflect         = NA_integer_,
-      error             = "gam_fit_failed",
-      stringsAsFactors  = FALSE
+      truth              = truth,
+      n                  = n,
+      sigma              = sigma,
+      seed               = seed,
+      predicted          = NA_character_,
+      correct            = NA,
+      archetype_truth    = unname(archetype_truth[truth]),
+      archetype_pred     = NA_character_,
+      archetype_correct  = NA,
+      monotonicity_index = NA_real_,
+      convexity_index    = NA_real_,
+      n_turn             = NA_integer_,
+      n_inflect          = NA_integer_,
+      error              = "gam_fit_failed",
+      stringsAsFactors   = FALSE
     ))
   }
   m <- janusplot_shape_metrics(fit, x_name = "x", newdata = d,
@@ -85,21 +85,21 @@
   arche_pred <- .shape_lookup(m$shape_category, "archetype")
   arche_true <- unname(archetype_truth[truth])
   data.frame(
-    truth             = truth,
-    n                 = n,
-    sigma             = sigma,
-    seed              = seed,
-    predicted         = m$shape_category,
-    correct           = isTRUE(m$shape_category == truth),
-    archetype_truth   = arche_true,
-    archetype_pred    = arche_pred,
-    archetype_correct = isTRUE(arche_pred == arche_true),
-    M                 = m$M,
-    C                 = m$C,
-    n_turn            = m$n_turning_points,
-    n_inflect         = m$n_inflections,
-    error             = NA_character_,
-    stringsAsFactors  = FALSE
+    truth              = truth,
+    n                  = n,
+    sigma              = sigma,
+    seed               = seed,
+    predicted          = m$shape_category,
+    correct            = isTRUE(m$shape_category == truth),
+    archetype_truth    = arche_true,
+    archetype_pred     = arche_pred,
+    archetype_correct  = isTRUE(arche_pred == arche_true),
+    monotonicity_index = m$monotonicity_index,
+    convexity_index    = m$convexity_index,
+    n_turn             = m$n_turning_points,
+    n_inflect          = m$n_inflections,
+    error              = NA_character_,
+    stringsAsFactors   = FALSE
   )
 }
 
@@ -110,6 +110,8 @@
 #' Canonical ground-truth shapes for the sensitivity study
 #'
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Return the names of every canonical ground-truth shape that
 #' [janusplot_shape_sensitivity()] can simulate from. Fourteen shapes
 #' spanning five archetypes (`monotone_linear`, `monotone_curved`,
@@ -130,6 +132,8 @@ janusplot_shape_sensitivity_shapes <- function() {
 #' Shape-recognition sensitivity study
 #'
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Run a full-factorial sensitivity sweep for the janusplot 24-category
 #' shape classifier. For each combination of ground-truth shape, sample
 #' size `n`, noise level `sigma`, and replicate, the sweep:
@@ -176,7 +180,10 @@ janusplot_shape_sensitivity_shapes <- function() {
 #'   \item{`archetype_truth`}{Expected archetype for `truth`.}
 #'   \item{`archetype_pred`}{Archetype of `predicted`.}
 #'   \item{`archetype_correct`}{Logical — archetype-level correctness.}
-#'   \item{`M`, `C`}{Raw monotonicity / convexity indices for the fit.}
+#'   \item{`monotonicity_index`}{Monotonicity index `M` (see
+#'     [janusplot_shape_metrics()]).}
+#'   \item{`convexity_index`}{Convexity index `C` (see
+#'     [janusplot_shape_metrics()]).}
 #'   \item{`n_turn`, `n_inflect`}{Recovered turning-point and
 #'     inflection counts.}
 #'   \item{`error`}{`"gam_fit_failed"` when `mgcv::gam()` errored;
@@ -286,6 +293,8 @@ janusplot_shape_sensitivity <- function(
 #' Summarise a shape-sensitivity sweep
 #'
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Aggregate the raw output of [janusplot_shape_sensitivity()] into a
 #' per-cell mean-accuracy table at either the fine (24-category) or
 #' archetype (7-family) level.
@@ -428,6 +437,8 @@ janusplot_shape_sensitivity_summary <- function(
 #' Visualise a shape-sensitivity sweep
 #'
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Produce one of four diagnostic plots from the raw data frame returned
 #' by [janusplot_shape_sensitivity()]:
 #' \describe{

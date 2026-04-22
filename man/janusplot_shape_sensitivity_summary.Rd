@@ -15,6 +15,8 @@ janusplot_shape_sensitivity_summary(results, level = c("fine", "archetype"))
 A data frame with columns \code{truth}, \code{n}, \code{sigma}, \code{accuracy}.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Aggregate the raw output of \code{\link[=janusplot_shape_sensitivity]{janusplot_shape_sensitivity()}} into a
 per-cell mean-accuracy table at either the fine (24-category) or
 archetype (7-family) level.

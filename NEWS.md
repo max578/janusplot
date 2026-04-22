@@ -1,5 +1,38 @@
 # janusplot (development version)
 
+### Label placement — border vs. diagonal (2026-04-22)
+
+* **New `labels` parameter** with three modes: `"border"` (default —
+  variable names along the top + left margins, mirroring `corrplot`'s
+  `tl.pos = "lt"` convention), `"diagonal"` (previous in-matrix
+  layout), and `"none"` (suppressed). Default flipped to `"border"`
+  because border labels free the diagonal cells and scale better to
+  `k > 4` variables.
+* **New `label_srt`** — rotation of top labels when
+  `labels = "border"`. Default `45°` matches the visual reference;
+  `0` and `90` are accepted.
+* **New `label_cex`** — positive multiplier on border-label font
+  size. Default `1`.
+* Diagonal cells are now rendered as blank bordered panels whenever
+  `labels != "diagonal"`, giving the matrix a uniform grid reading.
+
+### Breaking: shape-metric column names (2026-04-21)
+
+* User-facing `M` and `C` columns renamed to `monotonicity_index`
+  and `convexity_index` across every data surface: the flat data
+  frame from `janusplot(..., with_data = TRUE)`, `janusplot_data()`
+  per-pair lists (`monotonicity_index_yx` / `convexity_index_yx` /
+  `_xy` variants), the return of `janusplot_shape_metrics()`, the
+  raw output of `janusplot_shape_sensitivity()`, and the precomputed
+  `shape_sensitivity_demo` dataset. Paper symbols `M` / `C` remain
+  as mnemonics in the documentation. Internal classifier parameter
+  names (`M`, `C`) are unchanged because they match the math
+  convention.
+* New "Shape metrics explained" section in the `janusplot`
+  vignette.
+* Callers referencing `result$M` / `result$C` must update to
+  `result$monotonicity_index` / `result$convexity_index`.
+
 ### Phase G — sensitivity study as a package feature (2026-04-21)
 
 * **`janusplot_shape_sensitivity()`** — new public function that runs a
@@ -186,16 +219,16 @@ is a coarsened Morse-theoretic critical-point classification
 
 ### Project context
 
-* Standalone scratch package; not intended for independent release.
-  Merged into `AAGI-AUS/effectsurf` as a single PR once the
-  effectsurf v0.3 security + governance sweep is complete.
+* Standalone CRAN release target (`max578/janusplot`). An earlier
+  plan to merge into `AAGI-AUS/effectsurf` was superseded on
+  2026-04-21; this package now ships on its own.
 * Accompanying R Journal paper *Beyond Pearson: Visualising
   Asymmetric Non-linear Associations with Generalised Additive
   Models* is in preparation (see `paper/` in the dev workspace).
 
 ### Dependency diet
 
-Imports kept minimal for the effectsurf merge: `mgcv`, `ggplot2`,
+Imports kept minimal: `mgcv`, `ggplot2`,
 `patchwork`, `grid`, `stats`, `cli`, `rlang`. Optional: `data.table`,
 `future.apply`, `vdiffr`, `withr`, `palmerpenguins`, `MASS`,
 `agridat`, `knitr`, `rmarkdown`.

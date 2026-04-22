@@ -52,7 +52,8 @@ objects in the return (large memory footprint for \code{k} above ~15).
 Default \code{FALSE} — retains summary metrics and prediction grids only.}
 
 \item{shape_cutoffs}{Named list of classification thresholds used to
-map the continuous shape indices (\code{M}, \code{C}) into discrete
+map the continuous shape indices (\code{monotonicity_index},
+\code{convexity_index}) into discrete
 \code{shape_category} labels. Defaults from \code{\link[=janusplot_shape_cutoffs]{janusplot_shape_cutoffs()}}.}
 
 \item{...}{Additional arguments passed to \code{\link[mgcv:gam]{mgcv::gam()}}.}
@@ -68,13 +69,19 @@ A list with components:
 \code{dev_exp_xy}, \code{n_used}, \code{asymmetry_index}, plus Pearson /
 Spearman / Kendall correlations (\code{cor_pearson}, \code{cor_spearman},
 \code{cor_kendall}), the maximum tie ratio across \code{x} and \code{y}
-(\code{tie_ratio}), and per-direction shape descriptors (\code{M_yx},
-\code{C_yx}, \code{M_xy}, \code{C_xy}, \code{n_turning_yx}, \code{n_inflect_yx},
-\code{n_turning_xy}, \code{n_inflect_xy}, \code{shape_yx}, \code{shape_xy}).}
+(\code{tie_ratio}), and per-direction shape descriptors
+(\code{monotonicity_index_yx}, \code{convexity_index_yx},
+\code{monotonicity_index_xy}, \code{convexity_index_xy},
+\code{n_turning_yx}, \code{n_inflect_yx}, \code{n_turning_xy},
+\code{n_inflect_xy}, \code{shape_yx}, \code{shape_xy}).
+See \code{\link[=janusplot_shape_metrics]{janusplot_shape_metrics()}} for the definition of the
+monotonicity and convexity indices.}
 \item{\code{call}}{Match call.}
 }
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Companion to \code{\link[=janusplot]{janusplot()}} returning the raw list of GAM fits plus
 per-cell metrics (EDF, F-test p-value, deviance explained, asymmetry
 index, pairwise correlations, shape descriptors) without constructing

@@ -52,7 +52,10 @@ A data frame with one row per fit. Columns:
 \item{\code{archetype_truth}}{Expected archetype for \code{truth}.}
 \item{\code{archetype_pred}}{Archetype of \code{predicted}.}
 \item{\code{archetype_correct}}{Logical — archetype-level correctness.}
-\item{\code{M}, \code{C}}{Raw monotonicity / convexity indices for the fit.}
+\item{\code{monotonicity_index}}{Monotonicity index \code{M} (see
+\code{\link[=janusplot_shape_metrics]{janusplot_shape_metrics()}}).}
+\item{\code{convexity_index}}{Convexity index \code{C} (see
+\code{\link[=janusplot_shape_metrics]{janusplot_shape_metrics()}}).}
 \item{\code{n_turn}, \code{n_inflect}}{Recovered turning-point and
 inflection counts.}
 \item{\code{error}}{\code{"gam_fit_failed"} when \code{mgcv::gam()} errored;
@@ -60,6 +63,8 @@ inflection counts.}
 }
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Run a full-factorial sensitivity sweep for the janusplot 24-category
 shape classifier. For each combination of ground-truth shape, sample
 size \code{n}, noise level \code{sigma}, and replicate, the sweep:

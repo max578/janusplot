@@ -21,6 +21,9 @@ janusplot(
   shape_cutoffs = janusplot_shape_cutoffs(),
   show_shape_legend = TRUE,
   glyph_style = c("ascii", "unicode"),
+  labels = c("border", "diagonal", "none"),
+  label_srt = 45,
+  label_cex = 1,
   signif_glyph = TRUE,
   show_asymmetry = NULL,
   na_action = c("pairwise", "complete"),
@@ -113,6 +116,24 @@ in \code{annotations}. Default is \code{"ascii"} for maximum portability
 across typesetting pipelines; switch to \code{"unicode"} only when
 the target font is known to cover the curve glyph set.}
 
+\item{labels}{One of \code{"border"} (default), \code{"diagonal"}, or
+\code{"none"}. Controls where variable names are rendered:
+\itemize{
+\item \code{"border"} — names along the top (rotated per \code{label_srt}) and
+left margins of the matrix; diagonal cells are left blank.
+Mirrors \code{corrplot}'s \code{tl.pos = "lt"} convention.
+\item \code{"diagonal"} — names centred on the diagonal cells (the
+pre-0.1 layout).
+\item \code{"none"} — labels suppressed entirely; diagonal cells blank.
+}}
+
+\item{label_srt}{Numeric. Rotation (degrees) of top labels when
+\code{labels = "border"}. Default \code{45}; set to \code{0} for horizontal or
+\code{90} for vertical. Ignored when \code{labels != "border"}.}
+
+\item{label_cex}{Positive numeric multiplier on the border-label
+font size. Default \code{1}. Ignored when \code{labels = "none"}.}
+
 \item{signif_glyph}{Logical. If \code{TRUE} (default), annotate cells
 with \verb{·} / \code{*} / \verb{**} reflecting the smooth's F-test p-value.}
 
@@ -162,18 +183,22 @@ If \code{with_data = FALSE} (default), a \link[ggplot2:ggplot]{ggplot2::ggplot} 
 with two elements: \code{plot} (the ggplot) and \code{data} (a tidy table
 with columns \code{var_x}, \code{var_y}, \code{position}, \code{n_used}, \code{edf},
 \code{pvalue}, \code{signif}, \code{dev_exp}, \code{asymmetry_index}, \code{cor_pearson},
-\code{cor_spearman}, \code{cor_kendall}, \code{tie_ratio}, \code{M}, \code{C},
+\code{cor_spearman}, \code{cor_kendall}, \code{tie_ratio},
+\code{monotonicity_index}, \code{convexity_index},
 \code{n_turning_points}, \code{n_inflections}, \code{flat_range_ratio},
 \code{shape_category}, \code{colour_value}, one row per off-diagonal cell).
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Render a pairwise, asymmetric matrix of smoothed associations between
 numeric variables. Each cell [i, j] where \code{i != j} shows the fitted
 spline from \code{\link[mgcv:gam]{mgcv::gam()}}:
 \itemize{
 \item Upper triangle (\code{i < j}): \verb{gam(x_j ~ s(x_i) + <adjust>)}.
 \item Lower triangle (\code{i > j}): \verb{gam(x_i ~ s(x_j) + <adjust>)}.
-\item Diagonal: variable name label.
+\item Diagonal: blank panel when labels live on the border (default),
+or a variable-name label when \code{labels = "diagonal"}.
 }
 
 The two triangles intentionally differ — the asymmetry reveals

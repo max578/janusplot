@@ -15,6 +15,8 @@
 #' Default cutoff thresholds for `shape_category` classification
 #'
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Returns the named list of thresholds used to map the continuous
 #' monotonicity (`M`) and convexity (`C`) indices (plus inflection
 #' counts) into a discrete `shape_category`. Expose so callers can
@@ -225,6 +227,8 @@ janusplot_shape_cutoffs <- function(...) {
 #' Shape-category taxonomy table
 #'
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Return the full janusplot shape taxonomy as a data frame with four
 #' hierarchy columns plus presentation fields. The taxonomy is the
 #' single source of truth consumed by the classifier, the cell
@@ -283,7 +287,7 @@ janusplot_shape_hierarchy <- function() {
 # Canonical (x, y) thumbnail for each shape category. The legend
 # renders these as mini-panels, which is font-independent and more
 # visually informative than a Unicode glyph. All thumbnails live on
-# x ∈ [0, 1] with y normalised to [0, 1] at draw time.
+# x in [0, 1] with y normalised to [0, 1] at draw time.
 .shape_thumbnail_df <- function(category, n = 80L) {
   x <- seq(0, 1, length.out = as.integer(n))
   y <- switch(category,
@@ -500,11 +504,11 @@ janusplot_shape_hierarchy <- function() {
 
 .na_shape_raw <- function() {
   list(
-    M                = NA_real_,
-    C                = NA_real_,
-    n_turning_points = NA_integer_,
-    n_inflections    = NA_integer_,
-    flat_range_ratio = NA_real_
+    monotonicity_index = NA_real_,
+    convexity_index    = NA_real_,
+    n_turning_points   = NA_integer_,
+    n_inflections      = NA_integer_,
+    flat_range_ratio   = NA_real_
   )
 }
 
@@ -518,7 +522,8 @@ janusplot_shape_hierarchy <- function() {
   y  <- pred$fit
   ok <- is.finite(x) & is.finite(y)
   if (sum(ok) < 3L) return(.na_shape_raw())
-  x <- x[ok]; y <- y[ok]
+  x <- x[ok]
+  y <- y[ok]
 
   raw_x <- if (!is.null(fit_obj$raw) && nrow(fit_obj$raw) > 0L) {
     fit_obj$raw[[fit_obj$x_name]]
@@ -598,11 +603,11 @@ janusplot_shape_hierarchy <- function() {
   }
 
   list(
-    M                = unname(M),
-    C                = unname(C),
-    n_turning_points = as.integer(n_turn),
-    n_inflections    = as.integer(n_inflect),
-    flat_range_ratio = unname(flat_ratio)
+    monotonicity_index = unname(M),
+    convexity_index    = unname(C),
+    n_turning_points   = as.integer(n_turn),
+    n_inflections      = as.integer(n_inflect),
+    flat_range_ratio   = unname(flat_ratio)
   )
 }
 
@@ -611,7 +616,8 @@ janusplot_shape_hierarchy <- function() {
                                    cutoffs = janusplot_shape_cutoffs()) {
   raw <- .compute_shape_metrics_raw(fit_obj)
   raw$shape_category <- .classify_shape(
-    raw$M, raw$C, raw$n_turning_points, raw$n_inflections,
+    raw$monotonicity_index, raw$convexity_index,
+    raw$n_turning_points, raw$n_inflections,
     raw$flat_range_ratio, cutoffs
   )
   raw
@@ -626,6 +632,8 @@ janusplot_shape_hierarchy <- function() {
 #' Shape metrics for a fitted univariate smooth
 #'
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Compute the continuous monotonicity and convexity indices, inflection
 #' and turning-point counts, and rule-based shape category for a fitted
 #' univariate smooth. Works on either a per-pair fit object returned
@@ -634,10 +642,23 @@ janusplot_shape_hierarchy <- function() {
 #'
 #' Both indices are bounded in `[-1, 1]` and weighted by the empirical
 #' density of the predictor:
-#' * `M` — monotonicity index. `+1` strictly increasing, `-1` strictly
-#'   decreasing, `0` non-monotone.
-#' * `C` — convexity index. `+1` globally convex (bowl-up), `-1`
-#'   globally concave (bowl-down), `0` inflection-dominated.
+#' * `monotonicity_index` (paper symbol `M`). Let `f` be the fitted
+#'   smooth evaluated on a dense grid of `n_grid` equally-spaced
+#'   points across the predictor range, `f'` its numerical first
+#'   derivative, and `w` the empirical density of the predictor on
+#'   the same grid with `sum(w) = 1`. Then
+#'   `monotonicity_index = sum(w * f') / sum(w * |f'|) in [-1, 1]`.
+#'   `+1` is strictly increasing, `-1` strictly decreasing, `0`
+#'   non-monotone.
+#' * `convexity_index` (paper symbol `C`). With `f''` the numerical
+#'   second derivative on the same grid,
+#'   `convexity_index = sum(w * f'') / sum(w * |f''|) in [-1, 1]`.
+#'   `+1` is globally convex (bowl-up), `-1` globally concave
+#'   (bowl-down), `0` inflection-dominated (S-curve, sine, flat).
+#'
+#' Both indices are scale-invariant (replacing `y -> a*y + b` leaves
+#' them unchanged) and density-weighted so they describe the smooth
+#' *where the data actually live*, not extrapolated tails.
 #'
 #' @param fit Either a list returned by a janusplot pair-fit helper
 #'   (must contain `pred` and `raw`), or a fitted [mgcv::gam()] with
@@ -652,8 +673,22 @@ janusplot_shape_hierarchy <- function() {
 #' @param cutoffs Named list of classification thresholds; see
 #'   [janusplot_shape_cutoffs()]. Default uses package defaults.
 #'
-#' @returns A named list with components `M`, `C`, `n_turning_points`,
-#'   `n_inflections`, `flat_range_ratio`, `shape_category`.
+#' @returns A named list with components:
+#'   \describe{
+#'     \item{`monotonicity_index`}{`M` in `[-1, 1]`. See Description.}
+#'     \item{`convexity_index`}{`C` in `[-1, 1]`. See Description.}
+#'     \item{`n_turning_points`}{Integer count of lobe-mass-weighted
+#'       sign changes of `f'`. Equals the number of interior extrema.}
+#'     \item{`n_inflections`}{Integer count of lobe-mass-weighted
+#'       sign changes of `f''`.}
+#'     \item{`flat_range_ratio`}{`range(f) / sd(y)` — small values
+#'       indicate a degenerate flat smooth.}
+#'     \item{`shape_category`}{One of 24 labels from
+#'       [janusplot_shape_hierarchy()] dispatched on
+#'       `(n_turning_points, n_inflections)` with
+#'       `(monotonicity_index, convexity_index)` disambiguation for
+#'       the monotone case.}
+#'   }
 #'
 #' @seealso [janusplot_shape_cutoffs()], [janusplot()], [janusplot_data()].
 #'
