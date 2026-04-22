@@ -37,7 +37,7 @@ jobs:
           covr::to_cobertura(cov)
         shell: Rscript {0}
 
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v6
         with:
           # Kept non-fatal until CODECOV_TOKEN is configured on the repo;
           # once wired up, flip to `true` on push events.
