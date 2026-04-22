@@ -205,15 +205,19 @@
     tie_ratio    = NA_real_
   )
   if (is.null(dat) || nrow(dat) < 3L) return(na_out)
-  x <- dat[[x_name]]; y <- dat[[y_name]]
+  x <- dat[[x_name]]
+  y <- dat[[y_name]]
   ok <- is.finite(x) & is.finite(y)
-  x <- x[ok]; y <- y[ok]
+  x <- x[ok]
+  y <- y[ok]
   if (length(x) < 3L) return(na_out)
-  safe_cor <- function(m) tryCatch(
-    stats::cor(x, y, method = m),
-    error = function(e) NA_real_,
-    warning = function(w) suppressWarnings(stats::cor(x, y, method = m))
-  )
+  safe_cor <- function(m) {
+    tryCatch(
+      stats::cor(x, y, method = m),
+      error = function(e) NA_real_,
+      warning = function(w) suppressWarnings(stats::cor(x, y, method = m))
+    )
+  }
   n <- length(x)
   tie_x <- 1 - length(unique(x)) / n
   tie_y <- 1 - length(unique(y)) / n

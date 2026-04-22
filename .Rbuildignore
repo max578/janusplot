@@ -20,6 +20,7 @@
 ^SECURITY\.md$
 ^SUPPORT\.md$
 ^API_STABILITY\.md$
+^adr$
 ^\.pre-commit-config\.yaml$
 ^\.devcontainer$
 ^renv$
