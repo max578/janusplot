@@ -58,7 +58,7 @@ accept a dependency we cannot review in-house.
 | YAML (CI) | Max Moldovan | — | `.github/workflows/` + config files. |
 
 No compiled code (C / C++ / Fortran / Rust) ships in this package.
-See `docs/adr/0003-imports-budget.md` for the dependency budget and
+See `adr/0003-imports-budget.md` for the dependency budget and
 `SUPPORT.md` for maintenance-capacity disclosure.
 
 ## Code of Conduct

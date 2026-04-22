@@ -34,9 +34,9 @@
     skewed_peak  = function(x) .norm01(x * exp(-3 * x)),
     broad_peak   = function(x) .norm01(exp(-((x - 0.5) * 3)^4)),
     wave         = function(x) 0.5 + 0.5 * sin(2 * pi * (x - 0.25)),
-    bimodal      = function(x) .norm01(
-      exp(-((x - 0.25) * 6)^2) + exp(-((x - 0.75) * 6)^2)
-    ),
+    bimodal      = function(x) {
+      .norm01(exp(-((x - 0.25) * 6)^2) + exp(-((x - 0.75) * 6)^2))
+    },
     bi_wave      = function(x) 0.5 + 0.5 * sin(4 * pi * (x - 0.125))
   )
 }

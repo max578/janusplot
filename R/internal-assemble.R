@@ -51,7 +51,8 @@
             vars[r - 1L], cex = label_cex
           )
         } else {
-          i <- r - 1L; j <- c_ - 1L
+          i <- r - 1L
+          j <- c_ - 1L
           if (i == j) {
             grid[[idx]] <- diag_cells[[i]]
           } else {
