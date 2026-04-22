@@ -24,6 +24,8 @@ A named list with numeric thresholds:
 }
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Returns the named list of thresholds used to map the continuous
 monotonicity (\code{M}) and convexity (\code{C}) indices (plus inflection
 counts) into a discrete \code{shape_category}. Expose so callers can

@@ -1,0 +1,21 @@
+{
+  "name": "janusplot development",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "REditorSupport.r",
+        "ms-toolsai.jupyter",
+        "eamodio.gitlens"
+      ],
+      "settings": {
+        "r.rterm.linux": "/usr/local/bin/radian",
+        "r.bracketedPaste": true
+      }
+    }
+  },
+  "postCreateCommand": "R -q -e 'pak::pak(\"local::.\", dependencies = TRUE)'",
+  "remoteUser": "vscode"
+}

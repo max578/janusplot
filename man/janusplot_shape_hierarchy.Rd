@@ -12,6 +12,8 @@ A data frame with 24 rows and columns \code{category},
 \code{label}, \code{gloss}.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Return the full janusplot shape taxonomy as a data frame with four
 hierarchy columns plus presentation fields. The taxonomy is the
 single source of truth consumed by the classifier, the cell

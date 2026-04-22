@@ -20,6 +20,8 @@ precomputed \link{shape_sensitivity_demo}.}
 A \link[ggplot2:ggplot]{ggplot2::ggplot} object.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Produce one of four diagnostic plots from the raw data frame returned
 by \code{\link[=janusplot_shape_sensitivity]{janusplot_shape_sensitivity()}}:
 \describe{

@@ -49,6 +49,8 @@ the monotone case.}
 }
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Compute the continuous monotonicity and convexity indices, inflection
 and turning-point counts, and rule-based shape category for a fitted
 univariate smooth. Works on either a per-pair fit object returned

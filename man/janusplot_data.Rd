@@ -80,6 +80,8 @@ monotonicity and convexity indices.}
 }
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Companion to \code{\link[=janusplot]{janusplot()}} returning the raw list of GAM fits plus
 per-cell metrics (EDF, F-test p-value, deviance explained, asymmetry
 index, pairwise correlations, shape descriptors) without constructing

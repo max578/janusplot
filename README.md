@@ -2,7 +2,7 @@
 <!-- README.md is auto-generated from README.Rmd — edit README.Rmd, then
      run rmarkdown::render("README.Rmd") to refresh README.md. -->
 
-# janusplot
+# janusplot <img src="man/figures/logo.png" align="right" height="139" alt="janusplot logo" />
 
 <!-- badges: start -->
 

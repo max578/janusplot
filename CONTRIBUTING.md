@@ -44,6 +44,23 @@ run the checks before you push.
 - Integer literals `1L` when semantically integer.
 - Australian English (`optimise`, `colour`, `behaviour`).
 
+## Maintainer competence matrix
+
+The package author maintains every language shipped in this
+repository. If a contribution introduces a language not listed below,
+please discuss in the linked issue before opening the PR — we may not
+accept a dependency we cannot review in-house.
+
+| Language | Primary | Secondary | Notes |
+|---|---|---|---|
+| R | Max Moldovan (`aut`/`cre`) | — | All package code lives under `R/`. |
+| Rmd (vignettes) | Max Moldovan | — | Vignettes under `vignettes/`. |
+| YAML (CI) | Max Moldovan | — | `.github/workflows/` + config files. |
+
+No compiled code (C / C++ / Fortran / Rust) ships in this package.
+See `docs/adr/0003-imports-budget.md` for the dependency budget and
+`SUPPORT.md` for maintenance-capacity disclosure.
+
 ## Code of Conduct
 
 Please note that the janusplot project is released with a [Contributor Code

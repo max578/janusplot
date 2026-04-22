@@ -1,5 +1,21 @@
 # janusplot (development version)
 
+### Label placement — border vs. diagonal (2026-04-22)
+
+* **New `labels` parameter** with three modes: `"border"` (default —
+  variable names along the top + left margins, mirroring `corrplot`'s
+  `tl.pos = "lt"` convention), `"diagonal"` (previous in-matrix
+  layout), and `"none"` (suppressed). Default flipped to `"border"`
+  because border labels free the diagonal cells and scale better to
+  `k > 4` variables.
+* **New `label_srt`** — rotation of top labels when
+  `labels = "border"`. Default `45°` matches the visual reference;
+  `0` and `90` are accepted.
+* **New `label_cex`** — positive multiplier on border-label font
+  size. Default `1`.
+* Diagonal cells are now rendered as blank bordered panels whenever
+  `labels != "diagonal"`, giving the matrix a uniform grid reading.
+
 ### Breaking: shape-metric column names (2026-04-21)
 
 * User-facing `M` and `C` columns renamed to `monotonicity_index`

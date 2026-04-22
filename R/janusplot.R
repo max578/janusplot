@@ -1,12 +1,15 @@
 #' Asymmetric smoothed-association matrix
 #'
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Render a pairwise, asymmetric matrix of smoothed associations between
 #' numeric variables. Each cell \[i, j\] where `i != j` shows the fitted
 #' spline from [mgcv::gam()]:
 #' * Upper triangle (`i < j`): `gam(x_j ~ s(x_i) + <adjust>)`.
 #' * Lower triangle (`i > j`): `gam(x_i ~ s(x_j) + <adjust>)`.
-#' * Diagonal: variable name label.
+#' * Diagonal: blank panel when labels live on the border (default),
+#'   or a variable-name label when `labels = "diagonal"`.
 #'
 #' The two triangles intentionally differ — the asymmetry reveals
 #' heteroscedasticity, leverage, and directional non-linearity that a
@@ -73,6 +76,19 @@
 #'   in `annotations`. Default is `"ascii"` for maximum portability
 #'   across typesetting pipelines; switch to `"unicode"` only when
 #'   the target font is known to cover the curve glyph set.
+#' @param labels One of `"border"` (default), `"diagonal"`, or
+#'   `"none"`. Controls where variable names are rendered:
+#'   * `"border"` — names along the top (rotated per `label_srt`) and
+#'     left margins of the matrix; diagonal cells are left blank.
+#'     Mirrors `corrplot`'s `tl.pos = "lt"` convention.
+#'   * `"diagonal"` — names centred on the diagonal cells (the
+#'     pre-0.1 layout).
+#'   * `"none"` — labels suppressed entirely; diagonal cells blank.
+#' @param label_srt Numeric. Rotation (degrees) of top labels when
+#'   `labels = "border"`. Default `45`; set to `0` for horizontal or
+#'   `90` for vertical. Ignored when `labels != "border"`.
+#' @param label_cex Positive numeric multiplier on the border-label
+#'   font size. Default `1`. Ignored when `labels = "none"`.
 #' @param signif_glyph Logical. If `TRUE` (default), annotate cells
 #'   with `·` / `*` / `**` reflecting the smooth's F-test p-value.
 #' @param show_asymmetry Deprecated. Use `annotations` instead
@@ -153,6 +169,9 @@ janusplot <- function(
     shape_cutoffs = janusplot_shape_cutoffs(),
     show_shape_legend = TRUE,
     glyph_style = c("ascii", "unicode"),
+    labels = c("border", "diagonal", "none"),
+    label_srt = 45,
+    label_cex = 1,
     signif_glyph = TRUE,
     show_asymmetry = NULL,
     na_action = c("pairwise", "complete"),
@@ -166,16 +185,21 @@ janusplot <- function(
   order       <- rlang::arg_match(order)
   na_action   <- rlang::arg_match(na_action)
   glyph_style <- rlang::arg_match(glyph_style)
+  labels      <- rlang::arg_match(labels)
 
-  # Dual-alias: fill_by -> colour_by (one-warning deprecation).
+  if (!is.numeric(label_srt) || length(label_srt) != 1L ||
+      is.na(label_srt)) {
+    cli::cli_abort("{.arg label_srt} must be a single numeric value.")
+  }
+  .check_scalar_positive(label_cex, "label_cex")
+
+  # Dual-alias: fill_by -> colour_by (soft deprecation).
   if (!is.null(fill_by)) {
-    cli::cli_warn(
-      c(
-        "!" = "{.arg fill_by} is deprecated; use {.arg colour_by} instead.",
-        i  = "Forwarding {.val {fill_by}} to {.arg colour_by}."
-      ),
-      .frequency    = "regularly",
-      .frequency_id = "janusplot_fill_by_deprecated"
+    lifecycle::deprecate_warn(
+      when = "0.0.0.9000",
+      what = "janusplot(fill_by = )",
+      with = "janusplot(colour_by = )",
+      details = paste0("Forwarding \"", fill_by, "\" to colour_by.")
     )
     colour_by <- fill_by
   }
@@ -198,17 +222,12 @@ janusplot <- function(
     ))
   }
 
-  # Dual-alias: show_asymmetry -> annotations.
+  # Dual-alias: show_asymmetry -> annotations (soft deprecation).
   if (!is.null(show_asymmetry)) {
-    cli::cli_warn(
-      c(
-        "!" = paste(
-          "{.arg show_asymmetry} is deprecated; pass",
-          "{.code annotations = c(\"A\", ...)} instead."
-        )
-      ),
-      .frequency    = "regularly",
-      .frequency_id = "janusplot_show_asymmetry_deprecated"
+    lifecycle::deprecate_warn(
+      when = "0.0.0.9000",
+      what = "janusplot(show_asymmetry = )",
+      with = "janusplot(annotations = )"
     )
     if (isTRUE(show_asymmetry)) {
       annotations <- union(annotations, "A")
@@ -288,8 +307,11 @@ janusplot <- function(
     )
   }
 
-  diag_cells <- lapply(vars, .build_diagonal_cell,
-                       text_sizes = text_sizes)
+  diag_cells <- if (labels == "diagonal") {
+    lapply(vars, .build_diagonal_cell, text_sizes = text_sizes)
+  } else {
+    replicate(length(vars), .build_blank_diagonal_cell(), simplify = FALSE)
+  }
 
   # Shape legend is a standing reference: it now renders the full
   # taxonomy regardless of which categories are present in the
@@ -303,7 +325,8 @@ janusplot <- function(
   composite <- .assemble_matrix(
     cells_by_ij, diag_cells, vars,
     colour_by = colour_by, colour_limits = colour_limits,
-    palette = palette, shape_legend_plot = shape_legend_plot
+    palette = palette, shape_legend_plot = shape_legend_plot,
+    labels = labels, label_srt = label_srt, label_cex = label_cex
   )
   plot_out <- if (isTRUE(show_glossary)) {
     .add_glossary(composite, signif_glyph, annotations, colour_by,
@@ -446,6 +469,8 @@ janusplot <- function(
 #' Raw GAM fits and per-cell metrics for a smoothed-association matrix
 #'
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Companion to [janusplot()] returning the raw list of GAM fits plus
 #' per-cell metrics (EDF, F-test p-value, deviance explained, asymmetry
 #' index, pairwise correlations, shape descriptors) without constructing

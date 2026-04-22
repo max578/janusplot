@@ -15,6 +15,8 @@
 #' Default cutoff thresholds for `shape_category` classification
 #'
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Returns the named list of thresholds used to map the continuous
 #' monotonicity (`M`) and convexity (`C`) indices (plus inflection
 #' counts) into a discrete `shape_category`. Expose so callers can
@@ -225,6 +227,8 @@ janusplot_shape_cutoffs <- function(...) {
 #' Shape-category taxonomy table
 #'
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Return the full janusplot shape taxonomy as a data frame with four
 #' hierarchy columns plus presentation fields. The taxonomy is the
 #' single source of truth consumed by the classifier, the cell
@@ -627,6 +631,8 @@ janusplot_shape_hierarchy <- function() {
 #' Shape metrics for a fitted univariate smooth
 #'
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Compute the continuous monotonicity and convexity indices, inflection
 #' and turning-point counts, and rule-based shape category for a fitted
 #' univariate smooth. Works on either a per-pair fit object returned

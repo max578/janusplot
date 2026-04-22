@@ -63,6 +63,8 @@ inflection counts.}
 }
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Run a full-factorial sensitivity sweep for the janusplot 24-category
 shape classifier. For each combination of ground-truth shape, sample
 size \code{n}, noise level \code{sigma}, and replicate, the sweep:

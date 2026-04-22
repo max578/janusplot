@@ -357,7 +357,85 @@
 }
 
 # ---------------------------------------------------------------
+# Blank diagonal cell — used when labels live on the border (or are
+# suppressed entirely). Same panel geometry as an off-diagonal cell
+# (no fill, thin grey border) so the matrix grid reads uniformly.
+# ---------------------------------------------------------------
+
+.build_blank_diagonal_cell <- function() {
+  ggplot2::ggplot() +
+    ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1) +
+    ggplot2::theme_void(base_size = 8) +
+    ggplot2::theme(
+      aspect.ratio     = 1,
+      plot.margin      = ggplot2::margin(3, 3, 3, 3),
+      plot.background  = ggplot2::element_rect(fill = NA, colour = NA),
+      panel.background = ggplot2::element_rect(fill = NA, colour = NA),
+      panel.border     = ggplot2::element_rect(fill = NA,
+                                               colour = "grey55",
+                                               linewidth = 0.35)
+    )
+}
+
+# ---------------------------------------------------------------
+# Border-label cells — variable names in the top strip (rotated)
+# and left strip (horizontal, right-aligned). Mirrors corrplot's
+# tl.pos = "lt" convention. No panel border, no aspect ratio;
+# widths / heights are set by the assembly layer.
+# ---------------------------------------------------------------
+
+.build_top_label_cell <- function(label, srt = 45, cex = 1) {
+  hj <- if (identical(srt, 0)) 0.5 else 0
+  vj <- if (identical(srt, 0)) 0 else 0.5
+  ggplot2::ggplot() +
+    ggplot2::annotate(
+      "text", x = 0.5, y = 0,
+      label = label, angle = srt,
+      hjust = hj, vjust = vj,
+      size = 3.5 * cex, colour = "grey10"
+    ) +
+    ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1) +
+    ggplot2::coord_cartesian(clip = "off") +
+    ggplot2::theme_void(base_size = 8) +
+    ggplot2::theme(
+      plot.margin      = ggplot2::margin(3, 3, 3, 3),
+      plot.background  = ggplot2::element_rect(fill = NA, colour = NA),
+      panel.background = ggplot2::element_rect(fill = NA, colour = NA)
+    )
+}
+
+.build_left_label_cell <- function(label, cex = 1) {
+  ggplot2::ggplot() +
+    ggplot2::annotate(
+      "text", x = 1, y = 0.5,
+      label = label,
+      hjust = 1, vjust = 0.5,
+      size = 3.5 * cex, colour = "grey10"
+    ) +
+    ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1) +
+    ggplot2::coord_cartesian(clip = "off") +
+    ggplot2::theme_void(base_size = 8) +
+    ggplot2::theme(
+      plot.margin      = ggplot2::margin(3, 3, 3, 3),
+      plot.background  = ggplot2::element_rect(fill = NA, colour = NA),
+      panel.background = ggplot2::element_rect(fill = NA, colour = NA)
+    )
+}
+
+.build_corner_cell <- function() {
+  ggplot2::ggplot() +
+    ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1) +
+    ggplot2::theme_void(base_size = 8) +
+    ggplot2::theme(
+      plot.margin      = ggplot2::margin(0, 0, 0, 0),
+      plot.background  = ggplot2::element_rect(fill = NA, colour = NA),
+      panel.background = ggplot2::element_rect(fill = NA, colour = NA)
+    )
+}
+
+# ---------------------------------------------------------------
 # Diagonal cell — the variable name, bold, neutral grey background.
+# Used only when labels = "diagonal" (legacy layout).
 # ---------------------------------------------------------------
 
 .build_diagonal_cell <- function(var_name,

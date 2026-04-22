@@ -4,6 +4,52 @@ test_that("janusplot returns a ggplot", {
   expect_s3_class(p, "ggplot")
 })
 
+test_that("labels = 'border' (default) produces a ggplot", {
+  d <- make_linear_data(n = 80L)
+  p <- janusplot(d, vars = c("x1", "x2", "x3"))
+  expect_s3_class(p, "ggplot")
+})
+
+test_that("labels = 'diagonal' preserves the legacy in-matrix layout", {
+  d <- make_linear_data(n = 80L)
+  p <- janusplot(d, vars = c("x1", "x2", "x3"), labels = "diagonal")
+  expect_s3_class(p, "ggplot")
+})
+
+test_that("labels = 'none' suppresses variable names", {
+  d <- make_linear_data(n = 80L)
+  p <- janusplot(d, vars = c("x1", "x2", "x3"), labels = "none")
+  expect_s3_class(p, "ggplot")
+})
+
+test_that("labels accepts label_srt = 90 and label_srt = 0", {
+  d <- make_linear_data(n = 80L)
+  expect_s3_class(
+    janusplot(d, vars = c("x1", "x2"), label_srt = 90),
+    "ggplot"
+  )
+  expect_s3_class(
+    janusplot(d, vars = c("x1", "x2"), label_srt = 0),
+    "ggplot"
+  )
+})
+
+test_that("labels rejects unknown value and non-numeric label_srt", {
+  d <- make_linear_data(n = 80L)
+  expect_error(
+    janusplot(d, vars = c("x1", "x2"), labels = "bogus"),
+    class = "rlang_error"
+  )
+  expect_error(
+    janusplot(d, vars = c("x1", "x2"), label_srt = "45"),
+    regexp = "numeric"
+  )
+  expect_error(
+    janusplot(d, vars = c("x1", "x2"), label_cex = -1),
+    regexp = "positive|> 0"
+  )
+})
+
 test_that("janusplot respects order = 'alphabetical'", {
   d <- make_linear_data(n = 100L)
   names(d) <- c("zulu", "bravo", "alpha", "mike")

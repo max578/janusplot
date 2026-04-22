@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# janusplot
+# janusplot <img src="man/figures/logo.png" align="right" height="139" alt="janusplot logo" />
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/max578/janusplot/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/max578/janusplot/actions/workflows/R-CMD-check.yaml)

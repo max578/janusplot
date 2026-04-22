@@ -110,6 +110,8 @@
 #' Canonical ground-truth shapes for the sensitivity study
 #'
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Return the names of every canonical ground-truth shape that
 #' [janusplot_shape_sensitivity()] can simulate from. Fourteen shapes
 #' spanning five archetypes (`monotone_linear`, `monotone_curved`,
@@ -130,6 +132,8 @@ janusplot_shape_sensitivity_shapes <- function() {
 #' Shape-recognition sensitivity study
 #'
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Run a full-factorial sensitivity sweep for the janusplot 24-category
 #' shape classifier. For each combination of ground-truth shape, sample
 #' size `n`, noise level `sigma`, and replicate, the sweep:
@@ -289,6 +293,8 @@ janusplot_shape_sensitivity <- function(
 #' Summarise a shape-sensitivity sweep
 #'
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Aggregate the raw output of [janusplot_shape_sensitivity()] into a
 #' per-cell mean-accuracy table at either the fine (24-category) or
 #' archetype (7-family) level.
@@ -431,6 +437,8 @@ janusplot_shape_sensitivity_summary <- function(
 #' Visualise a shape-sensitivity sweep
 #'
 #' @description
+#' `r lifecycle::badge("experimental")`
+#'
 #' Produce one of four diagnostic plots from the raw data frame returned
 #' by [janusplot_shape_sensitivity()]:
 #' \describe{

@@ -1,0 +1,31 @@
+# Pre-commit hooks for janusplot. Install once per clone:
+#
+#   pip install pre-commit
+#   pre-commit install
+#
+# Hooks run on `git commit`; drift is caught locally before CI.
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: 'tests/testthat/_snaps/'
+      - id: end-of-file-fixer
+        exclude: 'tests/testthat/_snaps/|\.Rd$'
+      - id: mixed-line-ending
+      - id: check-added-large-files
+        args: ['--maxkb=2000']
+      - id: check-yaml
+      - id: check-json
+
+  - repo: https://github.com/lorenzwalthert/precommit
+    rev: v0.4.3
+    hooks:
+      - id: style-files
+      - id: lintr
+        exclude: 'tests/testthat/_snaps/'
+      - id: readme-rmd-rendered
+      - id: parsable-R
+      - id: no-browser-statement
+      - id: no-debug-statement

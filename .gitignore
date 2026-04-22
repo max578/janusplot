@@ -6,7 +6,9 @@
 *.Rcheck
 *.tar.gz
 *.tgz
-docs/
+docs/*
+!docs/adr/
+!docs/adr/**
 inst/doc/
 revdep/
 .idea/
