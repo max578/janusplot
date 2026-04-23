@@ -24,12 +24,26 @@ Two novelties, paired with the asymmetry story:
 ## Install
 
 ``` r
-# development version from GitHub
+# development version from GitHub (fast; no vignettes)
 pak::pak("max578/janusplot")
 
-# or, with vignettes built locally (recommended):
-pak::pak("max578/janusplot", dependencies = TRUE)
+# or, with vignettes built locally (recommended — enables
+# browseVignettes("janusplot") and vignette("janusplot")):
+# install.packages("remotes")
+remotes::install_github(
+  "max578/janusplot",
+  build_vignettes = TRUE,
+  dependencies    = TRUE
+)
 ```
+
+Note: neither [`pak::pak()`](https://pak.r-lib.org/reference/pak.html)
+nor `devtools::install_github()` / `remotes::install_github()` build
+vignettes by default when installing from a source repository. The
+`build_vignettes = TRUE` flag above is required for
+[`browseVignettes()`](https://rdrr.io/r/utils/browseVignettes.html) to
+find them. The CRAN release ships prebuilt vignettes and needs no extra
+flag.
 
 ## Quick start
 

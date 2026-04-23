@@ -386,8 +386,8 @@ Other smooth-associations:
 ## Examples
 
 ``` r
-# Small numeric data frame — runs in under a second
-janusplot(mtcars[, c("mpg", "hp", "wt", "qsec")])
+# Minimal runnable example — 3 variables, 6 asymmetric pairwise GAM fits.
+janusplot(mtcars[, c("mpg", "hp", "wt")])
 
 
 # \donttest{
