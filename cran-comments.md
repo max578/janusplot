@@ -25,18 +25,9 @@ Each NOTE is itemised and justified below.
 
 ### NOTE 1 — CRAN incoming feasibility
 
-Sub-items reported by `R CMD check --as-cran`:
-
-* **"New submission"** — expected for a first submission; informational
-  only.
-* **"Found the following (possibly) invalid URLs: `https://max578.github.io/janusplot/`"** —
-  the pkgdown site is deployed by the `pkgdown.yaml` GitHub Actions
-  workflow on push to `main`. At the moment of this local check the
-  site had not yet finished deploying; the URL resolves within a few
-  minutes of the release push and has been verified to resolve before
-  this submission is sent. The URL is retained in `DESCRIPTION`,
-  `README.md`, `CITATION.cff`, and `man/janusplot-package.Rd` because
-  it is the canonical documentation site for the package.
+"New submission" — expected for a first submission; informational only.
+All URLs verified to resolve (pkgdown site live at
+`https://max578.github.io/janusplot/`).
 
 ### NOTE 2 — Future file timestamps
 
