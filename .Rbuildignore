@@ -26,3 +26,4 @@
 ^\.devcontainer$
 ^renv$
 ^renv\.lock$
+^CRAN-SUBMISSION$
