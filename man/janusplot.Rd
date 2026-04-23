@@ -14,6 +14,10 @@ janusplot(
   order = c("original", "hclust", "alphabetical"),
   show_data = TRUE,
   show_ci = TRUE,
+  display = c("fit", "d1", "d2"),
+  derivative_ci = c("none", "pointwise", "simultaneous"),
+  derivative_ci_nsim = 1000L,
+  n_grid = NULL,
   colour_by = c("pearson", "spearman", "kendall", "edf", "deviance_gap", "none"),
   fill_by = NULL,
   palette = NULL,
@@ -22,6 +26,7 @@ janusplot(
   show_shape_legend = TRUE,
   glyph_style = c("ascii", "unicode"),
   labels = c("border", "diagonal", "none"),
+  diagonal = c("auto", "blank", "name", "density"),
   label_srt = 45,
   label_cex = 1,
   signif_glyph = TRUE,
@@ -61,10 +66,81 @@ Basis dimension for \code{s()}. Default \code{-1L} (mgcv's automatic choice).}
 hierarchical clustering of Pearson correlations), or \code{"alphabetical"}.}
 
 \item{show_data}{Logical. If \code{TRUE} (default), overlay raw data
-points (low alpha) behind each spline.}
+points (low alpha) behind each spline. Only applies when
+\code{display = "fit"}; derivative panels never overlay raw data.}
 
 \item{show_ci}{Logical. If \code{TRUE} (default), overlay the 95\%
-confidence envelope from \code{predict(gam, se.fit = TRUE)}.}
+confidence envelope from \code{predict(gam, se.fit = TRUE)} on the
+fit panel (i.e. when \code{display = "fit"}). CI rendering on
+derivative panels is controlled separately by \code{derivative_ci}.}
+
+\item{display}{One of \code{"fit"} (default), \code{"d1"}, or \code{"d2"}.
+Selects which single quantity is rendered in every
+off-diagonal cell of the matrix.
+\itemize{
+\item \code{"fit"} — the fitted smooth \eqn{\hat f(x)}; default,
+behaviour identical to the pre-derivative release.
+\item \code{"d1"} — the first derivative \eqn{\hat f'(x)} of the
+fitted smooth. Zero crossings localise turning points of
+\eqn{\hat f}.
+\item \code{"d2"} — the second derivative \eqn{\hat f''(x)}. Zero
+crossings localise inflection points of \eqn{\hat f}.
+}
+
+A single matrix shows a single quantity by design: stacked
+multi-panel cells crowd the matrix at any realistic variable
+count. To compare fit against derivative, render two or three
+\code{janusplot()} calls side-by-side; each call keeps its own
+\code{with_data = TRUE} summary table tagged with the \code{display}
+column.
+
+Orders \eqn{k \ge 3} are not exposed — higher-order derivatives
+of penalised regression splines amplify noise and rarely carry
+usable signal at realistic sample sizes. See
+\code{vignette("janusplot")} for the theoretical justification and
+applied use-cases.}
+
+\item{derivative_ci}{One of \code{"none"} (default), \code{"pointwise"}, or
+\code{"simultaneous"}. Controls whether — and how — a 95\%
+confidence ribbon is drawn underneath the derivative curve when
+\code{display \%in\% c("d1", "d2")}. Ignored when \code{display = "fit"}.
+\itemize{
+\item \code{"none"} — no ribbon. The curve and the zero reference line
+are all you see. Default, because pointwise ribbons overshoot
+nominal coverage as a joint region and can invite
+over-reading of local features.
+\item \code{"pointwise"} — 95\% pointwise ribbon from
+\eqn{\sqrt{\mathrm{diag}(D V_p D^\top)}} (Wood 2017 §7.2.4).
+Valid marginally; not a simultaneous statement.
+\item \code{"simultaneous"} — 95\% simultaneous band via the Monte Carlo
+construction of Ruppert, Wand & Carroll (2003) popularised for
+GAMs by Simpson (2018, \emph{Frontiers Ecol. Evol.} 6:149): draw
+\eqn{B} samples \eqn{\tilde{\boldsymbol\beta} \sim
+    \mathcal{N}(\hat{\boldsymbol\beta}, V_p)}, compute
+\eqn{\max_x |D_i(\tilde{\boldsymbol\beta} -
+    \hat{\boldsymbol\beta})| / \mathrm{se}_i}, and use the
+\eqn{(1-\alpha)} quantile as a critical multiplier on the
+pointwise SE. Valid for feature localisation ("where is
+\eqn{\hat f'(x)} significantly non-zero").
+}}
+
+\item{derivative_ci_nsim}{Integer. Number of Monte Carlo samples
+used when \code{derivative_ci = "simultaneous"}. Default \code{1000L} —
+a compromise between coverage accuracy (Simpson 2018 uses
+10000) and CPU budget across every pair in a medium-sized
+matrix. Ignored for any other \code{derivative_ci}.}
+
+\item{n_grid}{Integer or \code{NULL}. Number of equally-spaced points
+used to evaluate each fitted smooth (and its derivatives).
+Default \code{NULL} resolves to \code{100} when \code{display = "fit"} and
+\code{200} otherwise, because finite-difference second derivatives
+visibly degrade below \eqn{\sim 150} points on moderate-\code{k}
+smooths. Supplying \code{n_grid} directly overrides both defaults.
+Larger grids shift the numerical shape-metric values
+(\eqn{M}, \eqn{C}, turning / inflection counts) slightly
+because they are computed on this same grid. Shapes and
+asymmetry are the primary reading; \code{M}, \code{C} and the counts are
+secondary diagnostics and the grid-induced drift is tolerable.}
 
 \item{colour_by}{One of \code{"pearson"} (default), \code{"spearman"},
 \code{"kendall"}, \code{"edf"}, \code{"deviance_gap"}, or \code{"none"}. Encodes the
@@ -127,6 +203,23 @@ pre-0.1 layout).
 \item \code{"none"} — labels suppressed entirely; diagonal cells blank.
 }}
 
+\item{diagonal}{One of \code{"auto"} (default), \code{"blank"}, \code{"name"},
+or \code{"density"}. Controls what is rendered in the diagonal
+cells of the matrix.
+\itemize{
+\item \code{"auto"} — preserves the historical behaviour: variable name
+when \code{labels = "diagonal"}, blank otherwise.
+\item \code{"blank"} — empty bordered panel (uniform grid reading).
+\item \code{"name"} — variable name centred in the cell, bold.
+\item \code{"density"} — kernel density of the variable filled in
+translucent grey, with a rug of raw values along the bottom
+edge. Mirrors the \code{GGally::ggpairs} convention; surfaces
+tail weight, bimodality, and support clipping that the
+pairwise smooths alone cannot reveal. Variable names should
+come from the border (\code{labels = "border"}, the default) when
+this mode is on.
+}}
+
 \item{label_srt}{Numeric. Rotation (degrees) of top labels when
 \code{labels = "border"}. Default \code{45}; set to \code{0} for horizontal or
 \code{90} for vertical. Ignored when \code{labels != "border"}.}
@@ -152,9 +245,9 @@ user-configured \code{future::plan()}. Default \code{FALSE}.}
 \item{with_data}{Logical. If \code{TRUE}, return a two-element list
 \code{list(plot, data)} where \code{data} is a flat per-cell summary
 (one row per off-diagonal cell) of everything the plot displays.
-If the \code{data.table} package is installed, \code{data} is returned as a
-\code{data.table}; otherwise as a \code{data.frame}. Default \code{FALSE} — in
-which case only the ggplot is returned.}
+The \code{data} element is always a plain \code{data.frame} (base R — no
+\code{data.table} dependency). Default \code{FALSE} — in which case only
+the ggplot is returned.}
 
 \item{text_scale_diag}{Positive numeric multiplier applied to the
 diagonal variable-name labels. Default \code{1}. Diagonal labels
@@ -179,14 +272,21 @@ caption font size. Default \code{1}.}
 }
 \value{
 If \code{with_data = FALSE} (default), a \link[ggplot2:ggplot]{ggplot2::ggplot} object
-(via \code{\link[patchwork:wrap_plots]{patchwork::wrap_plots()}}). If \code{with_data = TRUE}, a list
-with two elements: \code{plot} (the ggplot) and \code{data} (a tidy table
-with columns \code{var_x}, \code{var_y}, \code{position}, \code{n_used}, \code{edf},
-\code{pvalue}, \code{signif}, \code{dev_exp}, \code{asymmetry_index}, \code{cor_pearson},
-\code{cor_spearman}, \code{cor_kendall}, \code{tie_ratio},
-\code{monotonicity_index}, \code{convexity_index},
-\code{n_turning_points}, \code{n_inflections}, \code{flat_range_ratio},
-\code{shape_category}, \code{colour_value}, one row per off-diagonal cell).
+(via \code{\link[patchwork:wrap_plots]{patchwork::wrap_plots()}}) carrying a top-of-matrix title
+that names the displayed quantity (\code{"Direct fit"},
+\code{"First derivative f'"}, or \code{"Second derivative f''"}). If
+\code{with_data = TRUE}, a list with two elements: \code{plot} (the
+ggplot) and \code{data} (a tidy table with columns \code{var_x}, \code{var_y},
+\code{position}, \code{n_used}, \code{edf}, \code{pvalue}, \code{signif}, \code{dev_exp},
+\code{asymmetry_index}, \code{cor_pearson}, \code{cor_spearman},
+\code{cor_kendall}, \code{tie_ratio}, \code{monotonicity_index},
+\code{convexity_index}, \code{n_turning_points}, \code{n_inflections},
+\code{flat_range_ratio}, \code{shape_category}, \code{colour_value},
+\code{display}, one row per off-diagonal cell). The \code{display}
+column tags which quantity the call rendered, so separate
+calls for fit / d1 / d2 yield comparable, stackable tables.
+Derivative \emph{curves} themselves (grid of \eqn{x}, fitted
+\eqn{\hat f^{(k)}}, SE) live on \code{janusplot_data()} — see there.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
@@ -216,8 +316,24 @@ set.seed(2026L)
 n  <- 200L
 x1 <- stats::runif(n, 0, 10)
 x2 <- x1 + stats::rnorm(n, sd = 0.2 * x1)
-janusplot(data.frame(x1 = x1, x2 = x2, x3 = stats::rnorm(n)),
-          show_asymmetry = TRUE)
+janusplot(data.frame(x1 = x1, x2 = x2, x3 = stats::rnorm(n)))
+
+# A single matrix renders a single quantity. To compare the fit
+# against its derivatives, render three calls and place them
+# side-by-side; each call's title makes the quantity explicit.
+set.seed(2026L)
+xs <- stats::runif(300L, -3, 3)
+df <- data.frame(
+  x  = xs,
+  y1 = sin(xs)  + stats::rnorm(300L, sd = 0.3),
+  y2 = xs^2     + stats::rnorm(300L, sd = 0.6)
+)
+janusplot(df, display = "fit")
+janusplot(df, display = "d1")
+janusplot(df, display = "d2")
+
+# Simultaneous CI bands on a derivative panel, per Simpson (2018).
+janusplot(df, display = "d1", derivative_ci = "simultaneous")
 }
 }
 \seealso{

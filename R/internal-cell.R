@@ -101,10 +101,14 @@
 .palette_scale_diverging <- function(palette, label, show_guide = FALSE) {
   g <- if (show_guide) {
     ggplot2::guide_colourbar(
-      barheight      = grid::unit(0.6, "npc"),
+      # barheight omitted; deferred to theme legend.key.height so the
+      # bar flex-fills the available vertical space (corrplot-style).
       barwidth       = grid::unit(0.9, "lines"),
       title.position = "top",
-      title.hjust    = 0.5
+      title.hjust    = 0.5,
+      ticks.linewidth = 0.5,
+      frame.linewidth = 0.3,
+      frame.colour    = "grey50"
     )
   } else {
     "none"
@@ -132,10 +136,14 @@
   }
   g <- if (show_guide) {
     ggplot2::guide_colourbar(
-      barheight      = grid::unit(0.6, "npc"),
+      # barheight omitted; deferred to theme legend.key.height so the
+      # bar flex-fills the available vertical space (corrplot-style).
       barwidth       = grid::unit(0.9, "lines"),
       title.position = "top",
-      title.hjust    = 0.5
+      title.hjust    = 0.5,
+      ticks.linewidth = 0.5,
+      frame.linewidth = 0.3,
+      frame.colour    = "grey50"
     )
   } else {
     "none"
@@ -181,6 +189,11 @@
     ggplot2::theme_void() +
     ggplot2::theme(
       legend.position        = "left",
+      # Corrplot-style tracking: the bar flex-fills the legend box's
+      # vertical extent via the grid null unit, so the colour-bar height
+      # follows the matrix panel height regardless of figure size.
+      legend.key.height      = grid::unit(1, "null"),
+      legend.key.width       = grid::unit(0.9, "lines"),
       legend.title           = ggplot2::element_text(
         size = 10, face = "bold",
         margin = ggplot2::margin(b = 4)
@@ -217,7 +230,41 @@
                         signif_glyph, annotations, shape_cutoffs,
                         glyph_style, asym_val,
                         colour_limits, is_upper,
-                        text_sizes = .cell_text_sizes(3L)) {
+                        text_sizes = .cell_text_sizes(3L),
+                        display = "fit",
+                        derivative_ci = "none") {
+  # Single-quantity dispatch: every cell is one ggplot. "fit" calls
+  # the historical renderer (unchanged behaviour), "d1" / "d2" call
+  # the derivative renderer. No per-cell stacking; the matrix-level
+  # title names the displayed quantity and the summary-table
+  # `display` column tags programmatic output.
+  display <- as.character(display)
+  if (identical(display, "fit")) {
+    return(.build_fit_panel(
+      fit_obj = fit_obj, show_data = show_data, show_ci = show_ci,
+      colour_by = colour_by, palette = palette,
+      signif_glyph = signif_glyph, annotations = annotations,
+      shape_cutoffs = shape_cutoffs, glyph_style = glyph_style,
+      asym_val = asym_val, colour_limits = colour_limits,
+      is_upper = is_upper, text_sizes = text_sizes
+    ))
+  }
+  k <- switch(display, d1 = 1L, d2 = 2L,
+              cli::cli_abort("Unknown display {.val {display}}."))
+  .build_deriv_panel(
+    fit_obj = fit_obj, order = k,
+    derivative_ci = derivative_ci,
+    text_sizes = text_sizes, glyph_style = glyph_style
+  )
+}
+
+# Original cell body, factored out. Full fit + CI + scatter + all
+# corner annotations + colour fill — identical output to the pre-
+# derivative release when display = "fit".
+.build_fit_panel <- function(fit_obj, show_data, show_ci, colour_by, palette,
+                             signif_glyph, annotations, shape_cutoffs,
+                             glyph_style, asym_val,
+                             colour_limits, is_upper, text_sizes) {
   colour_val   <- .colour_value(fit_obj, colour_by)
   colour_label <- .colour_label(colour_by)
 
@@ -357,6 +404,94 @@
 }
 
 # ---------------------------------------------------------------
+# Derivative sub-panel. Renders f^{(k)}(x) on the full x-grid with
+# a 95% pointwise CI ribbon (LP-matrix SE) and a dashed zero-line
+# reference. Deliberately minimal: no scatter, no cell fill, no
+# corner annotations — all of those live on the fit panel. A small
+# f' / f'' label in the top-left corner identifies the order.
+# ---------------------------------------------------------------
+
+.deriv_order_label <- function(order, style = c("ascii", "unicode")) {
+  style <- rlang::arg_match(style)
+  order <- as.integer(order)
+  if (!is.finite(order) || order < 1L) return("")
+  if (style == "unicode") {
+    if (order == 1L) return("f\u2032")          # f'
+    if (order == 2L) return("f\u2033")          # f''
+    return(paste0("f", strrep("\u2032", order)))
+  }
+  # ASCII fallback: d1f/dx, d2f/dx2, ...
+  if (order == 1L) return("df/dx")
+  if (order == 2L) return("d2f/dx2")
+  sprintf("d%df/dx%d", order, order)
+}
+
+.build_deriv_panel <- function(fit_obj, order, derivative_ci = "none",
+                               text_sizes, glyph_style = "ascii") {
+  p <- ggplot2::ggplot() +
+    ggplot2::theme_void(base_size = 8) +
+    ggplot2::theme(
+      aspect.ratio     = 1,
+      plot.margin      = ggplot2::margin(2, 3, 2, 3),
+      plot.background  = ggplot2::element_rect(fill = NA, colour = NA),
+      panel.background = ggplot2::element_rect(fill = NA, colour = NA),
+      panel.border     = ggplot2::element_rect(
+        fill = NA, colour = "grey55", linewidth = 0.35
+      )
+    )
+
+  deriv_df <- fit_obj$deriv[[as.character(as.integer(order))]]
+  if (is.null(deriv_df) || nrow(deriv_df) == 0L) {
+    return(p + ggplot2::annotate(
+      "text", x = 0.5, y = 0.5,
+      label = sprintf("deriv %d unavailable", as.integer(order)),
+      size = text_sizes$empty, colour = "grey40"
+    ) + ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1))
+  }
+
+  # Reference line at zero — sign flips of the derivative correspond
+  # to turning points (k=1) or inflections (k=2), so the zero crossing
+  # is the feature of interest the panel exists to surface.
+  p <- p + ggplot2::geom_hline(
+    yintercept = 0, linetype = "dashed", colour = "grey50",
+    linewidth = 0.3
+  )
+
+  # Ribbon only when the caller has explicitly opted in. The
+  # pointwise / simultaneous selection was resolved at fit time and
+  # baked into deriv_df$lo / deriv_df$hi, so here we just honour the
+  # mode indicator.
+  if (!identical(derivative_ci, "none") &&
+      all(c("lo", "hi") %in% names(deriv_df)) &&
+      all(is.finite(deriv_df$lo)) && all(is.finite(deriv_df$hi))) {
+    p <- p + ggplot2::geom_ribbon(
+      data = deriv_df,
+      ggplot2::aes(x = .data$x, ymin = .data$lo, ymax = .data$hi),
+      fill = "#6a3d9a", alpha = 0.20, inherit.aes = FALSE
+    )
+  }
+  p <- p + ggplot2::geom_line(
+    data = deriv_df,
+    ggplot2::aes(x = .data$x, y = .data$fit),
+    colour = "#6a3d9a", linewidth = 0.6, inherit.aes = FALSE
+  )
+
+  # Top-left order label. ASCII by default; Unicode primes when the
+  # caller has opted in via glyph_style = "unicode".
+  lab <- .deriv_order_label(order, style = glyph_style)
+  if (nzchar(lab)) {
+    p <- p + ggplot2::annotate(
+      "text", x = -Inf, y = Inf,
+      hjust = -0.15, vjust = 1.4,
+      label = lab,
+      size = text_sizes$n_edf * 0.95,
+      colour = "grey20", fontface = "italic"
+    )
+  }
+  p
+}
+
+# ---------------------------------------------------------------
 # Blank diagonal cell — used when labels live on the border (or are
 # suppressed entirely). Same panel geometry as an off-diagonal cell
 # (no fill, thin grey border) so the matrix grid reads uniformly.
@@ -430,6 +565,57 @@
       plot.margin      = ggplot2::margin(0, 0, 0, 0),
       plot.background  = ggplot2::element_rect(fill = NA, colour = NA),
       panel.background = ggplot2::element_rect(fill = NA, colour = NA)
+    )
+}
+
+# ---------------------------------------------------------------
+# Diagonal cell — kernel density of the variable with a rug of raw
+# values along the bottom edge. Mirrors the GGally::ggpairs default
+# diagonal so readers can see tail weight, bimodality, support
+# clipping, and any concentration of mass that would otherwise be
+# invisible from the off-diagonal smooths alone.
+# ---------------------------------------------------------------
+
+.build_density_rug_cell <- function(var_name, x_values,
+                                    text_sizes = .cell_text_sizes(3L)) {
+  x <- x_values[is.finite(x_values)]
+  if (length(x) < 5L) return(.build_blank_diagonal_cell())
+  dens <- tryCatch(stats::density(x, na.rm = TRUE),
+                   error = function(e) NULL)
+  if (is.null(dens) || !length(dens$x)) {
+    return(.build_blank_diagonal_cell())
+  }
+  dens_df <- data.frame(x = dens$x, y = dens$y)
+  rug_df  <- data.frame(x = x)
+  ggplot2::ggplot() +
+    ggplot2::geom_area(
+      data    = dens_df,
+      mapping = ggplot2::aes(x = .data$x, y = .data$y),
+      fill    = "grey55", colour = NA, alpha = 0.35,
+      inherit.aes = FALSE
+    ) +
+    ggplot2::geom_line(
+      data    = dens_df,
+      mapping = ggplot2::aes(x = .data$x, y = .data$y),
+      colour  = "grey20", linewidth = 0.45,
+      inherit.aes = FALSE
+    ) +
+    ggplot2::geom_rug(
+      data    = rug_df,
+      mapping = ggplot2::aes(x = .data$x),
+      sides   = "b", colour = "grey25",
+      alpha   = 0.35, length = grid::unit(0.07, "npc"),
+      inherit.aes = FALSE
+    ) +
+    ggplot2::theme_void(base_size = 8) +
+    ggplot2::theme(
+      aspect.ratio     = 1,
+      plot.margin      = ggplot2::margin(3, 3, 3, 3),
+      plot.background  = ggplot2::element_rect(fill = NA, colour = NA),
+      panel.background = ggplot2::element_rect(fill = NA, colour = NA),
+      panel.border     = ggplot2::element_rect(
+        fill = NA, colour = "grey55", linewidth = 0.35
+      )
     )
 }
 

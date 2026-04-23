@@ -61,3 +61,9 @@ Milnor, J. (1963). \emph{Morse Theory}. Princeton University Press.
 Pya, N., & Wood, S. N. (2015). Shape constrained additive models.
 \emph{Statistics and Computing}, \strong{25}(3), 543–559.
 }
+\seealso{
+Other shape-metrics: 
+\code{\link{janusplot_shape_cutoffs}()},
+\code{\link{janusplot_shape_metrics}()}
+}
+\concept{shape-metrics}

@@ -250,6 +250,224 @@ Tune the thresholds applied to these indices via
 vignette for how faithfully the classifier recovers ground-truth
 shapes across sample-size and noise regimes.
 
+## Derivative views: theoretical justification and applied use
+
+Each matrix renders one quantity. `display = "fit"` (default) shows
+the fitted smooth; `display = "d1"` shows \eqn{\hat f'(x)};
+`display = "d2"` shows \eqn{\hat f''(x)}. A top-of-matrix title
+names the mode, so side-by-side calls compare unambiguously.
+Orders beyond two are not exposed — see *Noise amplification*
+below. Derivative CI rendering is **off by default**; opt in with
+`derivative_ci = "pointwise"` or `"simultaneous"`.
+
+```{r derivs-fit, fig.height = 4.5}
+set.seed(2026L)
+n  <- 300L
+xs <- runif(n, -pi, pi)
+df <- data.frame(
+  x  = xs,
+  y1 = xs + sin(3 * xs) + rnorm(n, sd = 0.15),
+  y2 = 0.5 * xs^2       + rnorm(n, sd = 0.8)
+)
+janusplot(df, display = "fit", show_shape_legend = FALSE)
+```
+
+```{r derivs-d1, fig.height = 4.5}
+janusplot(df, display = "d1", show_shape_legend = FALSE)
+```
+
+```{r derivs-d2, fig.height = 4.5}
+janusplot(df, display = "d2", show_shape_legend = FALSE)
+```
+
+Turn on simultaneous bands — a single call gets the Monte Carlo
+critical multiplier per Simpson (2018):
+
+```{r derivs-sim, fig.height = 4.5}
+janusplot(df, display = "d1",
+          derivative_ci = "simultaneous",
+          derivative_ci_nsim = 2000L,
+          show_shape_legend = FALSE)
+```
+
+### What derivatives reveal that the fit hides
+
+The fitted smooth $\hat f(x) = \mathbb{E}[y\mid x]$ is a level
+description. Its derivatives are different statistical objects with
+their own interpretations:
+
+- $\hat f'(x)$ — the **local rate of change** of $y$ in $x$. Zero
+  crossings localise the turning points of $\hat f$; the sign of
+  $\hat f'$ gives the direction of monotonicity; the magnitude gives
+  the sensitivity at the operating point $x$. In control engineering
+  this is literally the process gain $K(x) = \partial y / \partial u$
+  that gain-scheduled controllers are built around (Rugh & Shamma,
+  2000; Leith & Leithead, 2000). In causal analysis of a continuous
+  treatment it is the derivative of the dose--response curve
+  $\mu'(t) = \partial \mathbb{E}[Y(t)] / \partial t$, which Zhang &
+  Chen (2025) argue is often *the* treatment-effect object of
+  interest, not the curve itself.
+- $\hat f''(x)$ — the **local curvature**. Zero crossings localise
+  the inflection points of $\hat f$; a persistently positive
+  second derivative flags accelerating growth, persistently negative
+  flags saturation (diminishing returns). $\hat f''$ is the input to
+  the convexity index $C$ defined earlier in this vignette, so the
+  derivative panel exposes the *local* signal behind that scalar
+  summary.
+
+The asymmetric matrix layout sharpens this. `janusplot()` fits both
+$\hat f_{y\mid x}(x)$ and $\hat f_{x\mid y}(y)$, so derivative panels
+on the two triangles answer genuinely different questions: the upper
+triangle is "how steeply does $y$ respond to a nudge in $x$ at this
+operating point" (forward gain); the lower triangle is "how steeply
+must $x$ change to induce a unit change in $y$" (inverse
+sensitivity). For an asymmetric process these do not transpose into
+each other, and the directional asymmetry is a diagnostic the
+symmetric correlation matrix cannot expose (Janzing & Schölkopf,
+2010).
+
+### Estimation — the LP matrix
+
+Let $X_p = X_p(\mathbf{x}_g)$ denote the design (linear predictor)
+matrix of the fitted GAM evaluated on the plotting grid
+$\mathbf{x}_g$, obtained from
+`predict(gam_fit, newdata = ..., type = "lpmatrix")` (Wood, 2017,
+§7.2.4). With penalised posterior mean $\hat{\boldsymbol\beta} =
+\mathtt{coef(gam\_fit)}$ and posterior covariance $V_p =
+\mathtt{gam\_fit\$Vp}$, we construct a finite-difference operator
+$D^{(k)}$ on the *rows* of $X_p$ (central differences in the interior,
+second-order forward / backward stencils at the endpoints) and read
+off
+
+$$
+\hat f^{(k)}(x_i) = \bigl[D^{(k)} \hat{\boldsymbol\beta}\bigr]_i,
+\qquad
+\widehat{\mathrm{Var}}\bigl(\hat f^{(k)}(x_i)\bigr) = \bigl[D^{(k)} V_p
+\bigl(D^{(k)}\bigr)^{\!\top}\bigr]_{ii}.
+$$
+
+Pointwise $95\%$ intervals are $\hat f^{(k)}(x) \pm 1.96\,\sqrt{\cdot}$.
+This is the standard Wood (2017) construction, and is what
+`gratia::derivatives()` implements in its default mode (Simpson,
+2014; Simpson, 2018). Columns of $X_p$ corresponding to `adjust`
+terms held at typical values contribute identical rows across the
+grid, so their finite differences are zero and they drop out of both
+$\hat f^{(k)}$ and its variance — the derivative in the panel is
+therefore the derivative of the *partial smooth actually shown in
+the fit panel*, as expected.
+
+For simultaneous intervals over the full grid (a stricter question
+than pointwise, and what you want for formal feature localisation),
+`janusplot()` implements the Monte Carlo construction of Ruppert,
+Wand & Carroll (2003, §6.5), popularised for GAMs by Simpson (2018):
+draw $\tilde{\boldsymbol\beta}_b \sim
+\mathcal{N}(\hat{\boldsymbol\beta}, V_p)$ for $b = 1, \ldots, B$ and
+take the $(1-\alpha)$ quantile of $\max_i |D^{(k)}_i
+(\tilde{\boldsymbol\beta}_b - \hat{\boldsymbol\beta})| /
+\mathtt{se}_i$ across the plotting grid as a critical multiplier
+$c_\alpha$ on the pointwise SE, so the simultaneous band is
+$\hat f^{(k)}(x) \pm c_\alpha\,\mathtt{se}(x)$. Opt in via
+`derivative_ci = "simultaneous"` on either `janusplot()` or
+`janusplot_data()`; the default is `derivative_ci = "none"` so that
+no CI is drawn by default — derivative ribbons invite over-reading
+of local features and should be a deliberate choice, not a
+default. The implementation uses $B = 1000$ (see
+`derivative_ci_nsim`); Simpson (2018) uses $10\,000$, which is
+affordable if you need tighter quantile estimation.
+
+### Noise amplification and why we cap at $k = 2$
+
+Finite differencing of raw data amplifies noise; penalised splines
+do not eliminate that amplification, they trade it against bias via
+the REML-selected smoothing parameter. `mgcv`'s default thin-plate
+penalty is on $\int (f'')^2$, which directly regularises $\hat f'$
+and bounds (but does not penalise) $\hat f''$ only via the basis
+rank (Wood, 2017, §5.3; Eilers & Marx, 1996). In practice we find
+$\hat f^{(3)}$ is dominated by noise for $n < 10^4$ at moderate $k$,
+and so janusplot refuses $k \ge 3$ by design. If you have a
+domain-specific reason to need a higher-order derivative, specify a
+matching-order P-spline penalty explicitly (Eilers, Marx & Durbán,
+2015) and extract it yourself from `janusplot_data()`.
+
+### Applied use: gain estimation and dose--response
+
+Two strands in which the asymmetric derivative view is not a
+cosmetic add-on but the analytical primitive the practitioner
+actually wants.
+
+- **Process-gain scheduling.** In adaptive and gain-scheduled
+  control, the controller is indexed by the local process gain
+  $K(x) = \partial y / \partial u$ (Rugh & Shamma, 2000). For a
+  steady-state input-output dataset, $\hat f_{y\mid u}'(u)$ is a
+  direct data-driven estimate of $K(u)$, and its simultaneous CI
+  tells the engineer whether the local gain is distinguishable from
+  a reference gain over an operating envelope. The inverse panel
+  $\hat f_{u\mid y}'(y)$ is the feedforward-linearisation
+  sensitivity; a large divergence between the two panels flags that
+  a naive inverse controller will under-perform (Korda & Mezić,
+  2018). The matrix view makes a fleet of such pairs inspectable at
+  once.
+- **Derivative of the dose--response curve as the causal estimand.**
+  For a continuous treatment $T$ with unconfoundedness, the
+  dose--response $\mu(t) = \mathbb{E}[Y(t)]$ and its derivative
+  $\mu'(t)$ are both estimable, and recent work (Zhang & Chen, 2025)
+  argues $\mu'(t)$ is often the more directly interpretable
+  quantity — it answers "how much does the expected outcome change
+  per unit shift in treatment at this dose?" This is structurally
+  the same estimand as the process gain above; the
+  asymmetric-matrix derivative panel delivers both forward and
+  reverse-conditioned derivative curves in the same frame, which is
+  a direct diagnostic for Simpson's-paradox-style conditioning
+  reversals (visible, for example, in the penguins
+  `bill_depth_mm` $\times$ `body_mass_g` pair once `species` is
+  adjusted for).
+
+### References cited in this section
+
+Eilers, P. H. C., & Marx, B. D. (1996). Flexible smoothing with
+B-splines and penalties. *Statistical Science*, **11**(2), 89--121.
+<https://doi.org/10.1214/ss/1038425655>
+
+Eilers, P. H. C., Marx, B. D., & Durbán, M. (2015). Twenty years of
+P-splines. *SORT*, **39**(2), 149--186.
+
+Janzing, D., & Schölkopf, B. (2010). Causal inference using the
+algorithmic Markov condition. *IEEE Transactions on Information
+Theory*, **56**(10), 5168--5194.
+<https://doi.org/10.1109/TIT.2010.2060095>
+
+Korda, M., & Mezić, I. (2018). Linear predictors for nonlinear
+dynamical systems: Koopman operator meets model predictive control.
+*Automatica*, **93**, 149--160.
+<https://doi.org/10.1016/j.automatica.2018.03.046>
+
+Leith, D. J., & Leithead, W. E. (2000). Survey of gain-scheduling
+analysis and design. *International Journal of Control*, **73**(11),
+1001--1025. <https://doi.org/10.1080/002071700411304>
+
+Rugh, W. J., & Shamma, J. S. (2000). Research on gain scheduling.
+*Automatica*, **36**(10), 1401--1425.
+<https://doi.org/10.1016/S0005-1098(00)00058-3>
+
+Ruppert, D., Wand, M. P., & Carroll, R. J. (2003). *Semiparametric
+Regression*. Cambridge University Press.
+
+Simpson, G. L. (2014). Simultaneous confidence intervals for
+derivatives of smooth terms in a GAM. *From the Bottom of the Heap*
+(blog post).
+
+Simpson, G. L. (2018). Modelling palaeoecological time series using
+generalised additive models. *Frontiers in Ecology and Evolution*,
+**6**, 149. <https://doi.org/10.3389/fevo.2018.00149>
+
+Wood, S. N. (2017). *Generalized Additive Models: An Introduction
+with R* (2nd ed.). Chapman and Hall/CRC.
+<https://doi.org/10.1201/9781315370279>
+
+Zhang, Y., & Chen, Y.-C. (2025). Doubly robust inference on causal
+derivative effects for continuous treatments. arXiv preprint
+[2501.06969].
+
 ## Limitations
 
 - Pairwise view, not conditional — always complement with a proper
@@ -262,6 +480,23 @@ shapes across sample-size and noise regimes.
   `y` but sensitive to the predictor-density weighting — they
   describe the smooth on the observed support of `x`, not outside
   it.
+- `display` is scalar — a single `janusplot()` call renders a
+  single quantity (fit, d1, or d2). To compare fit against
+  derivative, issue two or three calls; each carries its own
+  matrix-level title and, when `with_data = TRUE`, its own
+  `display`-tagged summary table.
+- Derivative panels show **no confidence ribbon by default**
+  (`derivative_ci = "none"`). Opt in explicitly: `"pointwise"` for
+  marginally-valid pointwise 95% bands, `"simultaneous"` for
+  Simpson (2018) Monte Carlo bands valid for feature localisation.
+- Requesting `display %in% c("d1", "d2")` raises the default
+  prediction-grid resolution from 100 to 200 points, which slightly
+  shifts the numeric shape-metric values (`M`, `C`, turning and
+  inflection counts) reported alongside the fit. Shapes and
+  asymmetry — the primary reading of the matrix — are robust to
+  this drift; `M`, `C` and the counts are secondary diagnostics.
+  The precomputed `shape_sensitivity_demo` dataset was generated
+  under `n_grid = 100` and is preserved as-is for reproducibility.
 
 ## Citation
 

@@ -41,6 +41,7 @@
 #' @examples
 #' janusplot_shape_cutoffs()
 #' janusplot_shape_cutoffs(curv_mod = 0.6, flat = 0.02)
+#' @family shape-metrics
 #' @export
 janusplot_shape_cutoffs <- function(...) {
   defaults <- list(
@@ -279,6 +280,7 @@ janusplot_shape_cutoffs <- function(...) {
 #' head(tax[, c("category", "code", "archetype", "monotonic", "linear")])
 #' # Count how many categories live in each archetype
 #' table(tax$archetype)
+#' @family shape-metrics
 #' @export
 janusplot_shape_hierarchy <- function() {
   .shape_taxonomy()
@@ -332,7 +334,7 @@ janusplot_shape_hierarchy <- function() {
 # Glyph lookup (Unicode by default; "ascii" overrides for
 # font-coverage fallback).
 .shape_glyph <- function(category, style = c("unicode", "ascii")) {
-  style <- match.arg(style)
+  style <- rlang::arg_match(style)
   tax   <- .shape_taxonomy()
   idx   <- match(category, tax$category)
   col   <- if (style == "ascii") "ascii" else "glyph"
@@ -701,6 +703,7 @@ janusplot_shape_hierarchy <- function() {
 #' d  <- data.frame(x = x, y = y)
 #' fit <- mgcv::gam(y ~ s(x), data = d, method = "REML")
 #' janusplot_shape_metrics(fit, x_name = "x", newdata = d)
+#' @family shape-metrics
 #' @export
 janusplot_shape_metrics <- function(fit,
                                     x_name  = NULL,

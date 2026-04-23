@@ -7,7 +7,7 @@
   "codeRepository": "https://github.com/max578/janusplot",
   "issueTracker": "https://github.com/max578/janusplot/issues",
   "license": "https://spdx.org/licenses/GPL-3.0-or-later",
-  "version": "0.0.0.9000",
+  "version": "0.1.0",
   "programmingLanguage": {
     "@type": "ComputerLanguage",
     "name": "R",

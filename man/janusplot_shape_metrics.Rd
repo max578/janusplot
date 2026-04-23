@@ -91,4 +91,9 @@ janusplot_shape_metrics(fit, x_name = "x", newdata = d)
 }
 \seealso{
 \code{\link[=janusplot_shape_cutoffs]{janusplot_shape_cutoffs()}}, \code{\link[=janusplot]{janusplot()}}, \code{\link[=janusplot_data]{janusplot_data()}}.
+
+Other shape-metrics: 
+\code{\link{janusplot_shape_cutoffs}()},
+\code{\link{janusplot_shape_hierarchy}()}
 }
+\concept{shape-metrics}

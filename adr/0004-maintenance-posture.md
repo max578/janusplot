@@ -32,5 +32,4 @@ users plan adoption.
 - Contributions are welcome but not relied on for release cadence.
 - Abandonment protocol is codified in `SUPPORT.md`.
 - A rOpenSci or AAGI-AUS transition at a later date is explicitly on
-  the table; see `CLAUDE.md` §3 for the project's distribution
-  history.
+  the table; see `NEWS.md` for the package's distribution history.

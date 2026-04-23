@@ -37,12 +37,11 @@ Two novelties, paired with the asymmetry story:
 ## Install
 
 ``` r
-# stable (none yet — package is pre-1.0)
-# development
+# development version from GitHub
 pak::pak("max578/janusplot")
 
 # or, with vignettes built locally (recommended):
-remotes::install_github("max578/janusplot", build_vignettes = TRUE)
+pak::pak("max578/janusplot", dependencies = TRUE)
 ```
 
 ## Quick start

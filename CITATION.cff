@@ -2,7 +2,8 @@ cff-version: 1.2.0
 message: "If you use janusplot in research, please cite both the package and the accompanying paper."
 title: "janusplot: Asymmetric Smoothed-Association Matrices via GAM Fits"
 type: software
-version: 0.0.0.9000
+version: 0.1.0
+date-released: 2026-04-23
 authors:
   - given-names: Max
     family-names: Moldovan

@@ -23,4 +23,10 @@ janusplot_shape_sensitivity_shapes()
 }
 \seealso{
 \code{\link[=janusplot_shape_sensitivity]{janusplot_shape_sensitivity()}}, \code{\link[=janusplot_shape_hierarchy]{janusplot_shape_hierarchy()}}.
+
+Other shape-sensitivity: 
+\code{\link{janusplot_shape_sensitivity}()},
+\code{\link{janusplot_shape_sensitivity_plot}()},
+\code{\link{janusplot_shape_sensitivity_summary}()}
 }
+\concept{shape-sensitivity}

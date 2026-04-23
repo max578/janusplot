@@ -124,6 +124,7 @@
 #'
 #' @examples
 #' janusplot_shape_sensitivity_shapes()
+#' @family shape-sensitivity
 #' @export
 janusplot_shape_sensitivity_shapes <- function() {
   names(.shape_sensitivity_generators())
@@ -205,6 +206,7 @@ janusplot_shape_sensitivity_shapes <- function() {
 #' )
 #' head(res)
 #' janusplot_shape_sensitivity_summary(res, level = "archetype")
+#' @family shape-sensitivity
 #' @export
 janusplot_shape_sensitivity <- function(
     shapes     = NULL,
@@ -308,6 +310,7 @@ janusplot_shape_sensitivity <- function(
 #' data("shape_sensitivity_demo", package = "janusplot")
 #' head(janusplot_shape_sensitivity_summary(shape_sensitivity_demo,
 #'                                          level = "archetype"))
+#' @family shape-sensitivity
 #' @export
 janusplot_shape_sensitivity_summary <- function(
     results, level = c("fine", "archetype")
@@ -464,6 +467,7 @@ janusplot_shape_sensitivity_summary <- function(
 #' data("shape_sensitivity_demo", package = "janusplot")
 #' janusplot_shape_sensitivity_plot(shape_sensitivity_demo,
 #'                                  "recovery_curves")
+#' @family shape-sensitivity
 #' @export
 janusplot_shape_sensitivity_plot <- function(
     results,

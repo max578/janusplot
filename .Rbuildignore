@@ -8,6 +8,7 @@
 ^docs$
 ^pkgdown$
 ^audit_.*\.md$
+^codecov\.yml$
 ^cran-comments\.md$
 ^README\.html$
 ^CITATION\.cff$

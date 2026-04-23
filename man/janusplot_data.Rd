@@ -14,6 +14,10 @@ janusplot_data(
   na_action = c("pairwise", "complete"),
   parallel = FALSE,
   keep_fits = FALSE,
+  derivatives = integer(),
+  derivative_ci = c("pointwise", "none", "simultaneous"),
+  derivative_ci_nsim = 1000L,
+  n_grid = NULL,
   shape_cutoffs = janusplot_shape_cutoffs(),
   ...
 )
@@ -51,6 +55,54 @@ user-configured \code{future::plan()}. Default \code{FALSE}.}
 objects in the return (large memory footprint for \code{k} above ~15).
 Default \code{FALSE} — retains summary metrics and prediction grids only.}
 
+\item{derivatives}{Integer vector of derivative orders to compute
+on every pair (subset of \code{1:2}). Default \code{integer()} — no
+derivatives. Unlike \code{janusplot()}, the data companion can
+return multiple orders from a single call for programmatic
+analysis; pass \code{c(1L, 2L)} to surface both.}
+
+\item{derivative_ci}{One of \code{"none"} (default), \code{"pointwise"}, or
+\code{"simultaneous"}. Controls whether — and how — a 95\%
+confidence ribbon is drawn underneath the derivative curve when
+\code{display \%in\% c("d1", "d2")}. Ignored when \code{display = "fit"}.
+\itemize{
+\item \code{"none"} — no ribbon. The curve and the zero reference line
+are all you see. Default, because pointwise ribbons overshoot
+nominal coverage as a joint region and can invite
+over-reading of local features.
+\item \code{"pointwise"} — 95\% pointwise ribbon from
+\eqn{\sqrt{\mathrm{diag}(D V_p D^\top)}} (Wood 2017 §7.2.4).
+Valid marginally; not a simultaneous statement.
+\item \code{"simultaneous"} — 95\% simultaneous band via the Monte Carlo
+construction of Ruppert, Wand & Carroll (2003) popularised for
+GAMs by Simpson (2018, \emph{Frontiers Ecol. Evol.} 6:149): draw
+\eqn{B} samples \eqn{\tilde{\boldsymbol\beta} \sim
+    \mathcal{N}(\hat{\boldsymbol\beta}, V_p)}, compute
+\eqn{\max_x |D_i(\tilde{\boldsymbol\beta} -
+    \hat{\boldsymbol\beta})| / \mathrm{se}_i}, and use the
+\eqn{(1-\alpha)} quantile as a critical multiplier on the
+pointwise SE. Valid for feature localisation ("where is
+\eqn{\hat f'(x)} significantly non-zero").
+}}
+
+\item{derivative_ci_nsim}{Integer. Number of Monte Carlo samples
+used when \code{derivative_ci = "simultaneous"}. Default \code{1000L} —
+a compromise between coverage accuracy (Simpson 2018 uses
+10000) and CPU budget across every pair in a medium-sized
+matrix. Ignored for any other \code{derivative_ci}.}
+
+\item{n_grid}{Integer or \code{NULL}. Number of equally-spaced points
+used to evaluate each fitted smooth (and its derivatives).
+Default \code{NULL} resolves to \code{100} when \code{display = "fit"} and
+\code{200} otherwise, because finite-difference second derivatives
+visibly degrade below \eqn{\sim 150} points on moderate-\code{k}
+smooths. Supplying \code{n_grid} directly overrides both defaults.
+Larger grids shift the numerical shape-metric values
+(\eqn{M}, \eqn{C}, turning / inflection counts) slightly
+because they are computed on this same grid. Shapes and
+asymmetry are the primary reading; \code{M}, \code{C} and the counts are
+secondary diagnostics and the grid-induced drift is tolerable.}
+
 \item{shape_cutoffs}{Named list of classification thresholds used to
 map the continuous shape indices (\code{monotonicity_index},
 \code{convexity_index}) into discrete
@@ -74,6 +126,17 @@ Spearman / Kendall correlations (\code{cor_pearson}, \code{cor_spearman},
 \code{monotonicity_index_xy}, \code{convexity_index_xy},
 \code{n_turning_yx}, \code{n_inflect_yx}, \code{n_turning_xy},
 \code{n_inflect_xy}, \code{shape_yx}, \code{shape_xy}).
+When \code{derivatives} is non-empty, each pair additionally
+carries \code{deriv_yx} and \code{deriv_xy}, each a named list keyed by
+order (\code{"1"}, \code{"2"}) whose entries are data frames with
+columns \code{x}, \code{fit}, \code{se}, \code{lo}, \code{hi}, \code{ci_type} matching the
+schema of \code{pred_yx} / \code{pred_xy}. The \code{ci_type} column records
+whether the \code{lo} / \code{hi} columns are \code{"pointwise"} (default),
+\code{"simultaneous"} (Ruppert--Wand--Carroll / Simpson 2018
+critical-multiplier bands), or \code{"none"}. When
+\code{derivative_ci = "simultaneous"}, each derivative frame also
+carries a \code{"crit_multiplier"} attribute giving the MC-derived
+critical multiplier used.
 See \code{\link[=janusplot_shape_metrics]{janusplot_shape_metrics()}} for the definition of the
 monotonicity and convexity indices.}
 \item{\code{call}}{Match call.}

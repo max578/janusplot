@@ -26,7 +26,7 @@
           "{.arg parallel} is {.val TRUE} but {.pkg future.apply} is",
           "not installed \u2014 falling back to sequential dispatch."
         ),
-        i = "Install with {.code install.packages(\"future.apply\")}."
+        i = "Install with {.code pak::pak(\"future.apply\")}."
       ),
       .frequency    = freq,
       .frequency_id = "janusplot_no_future_apply"
@@ -190,6 +190,185 @@
 }
 
 # ---------------------------------------------------------------
+# Analytic pointwise derivatives of a univariate mgcv::gam smooth via
+# the LP (linear-predictor) matrix. Let X_p be the LP matrix evaluated
+# on the plotting grid, with beta = coef(fit) and V_p = fit$Vp the
+# Bayesian posterior covariance of the coefficients. If D is a matrix
+# whose rows finite-difference the rows of X_p at order k, then
+#   f^{(k)}_hat = D %*% beta,   Var(f^{(k)}_hat) = D %*% V_p %*% t(D),
+# and the pointwise pairwise SE is sqrt(diag(.)). See Wood (2017)
+# Generalized Additive Models, 2nd ed., 7.2.4; Simpson (2018)
+# Frontiers in Ecology and Evolution for the simultaneous-CI extension.
+#
+# When the model also includes `adjust` terms held at typical values,
+# the corresponding columns of X_p are identical across grid rows,
+# their finite differences are zero, and they contribute nothing to
+# either estimate or variance. So the derivative is with respect to
+# x_i of the (partial) fit shown in the cell — i.e. exactly what the
+# user sees in the fit panel.
+#
+# Returns a named list keyed by order ("1", "2", ...) of data frames
+# with the same schema as fit_obj$pred so the cell renderer can
+# consume fit and derivative panels uniformly.
+# ---------------------------------------------------------------
+
+.derivatives_lpmatrix <- function(fit, newdata, x_grid, orders) {
+  if (!length(orders)) return(list())
+  if (is.null(fit) || !inherits(fit, "gam")) return(list())
+  if (!is.numeric(x_grid) || length(x_grid) < 3L) return(list())
+  h <- mean(diff(x_grid))
+  if (!is.finite(h) || h <= 0) return(list())
+  Xp <- tryCatch(
+    stats::predict(fit, newdata = newdata, type = "lpmatrix"),
+    error = function(e) NULL
+  )
+  if (is.null(Xp) || !is.matrix(Xp) || nrow(Xp) != length(x_grid)) {
+    return(list())
+  }
+  Vp   <- fit$Vp
+  beta <- stats::coef(fit)
+  if (is.null(Vp) || is.null(beta) ||
+      ncol(Xp) != length(beta) || any(dim(Vp) != length(beta))) {
+    return(list())
+  }
+  out <- list()
+  for (k in orders) {
+    k_int <- as.integer(k)
+    if (!is.finite(k_int) || k_int < 1L) next
+    D <- .diff_stencil(Xp, h = h, order = k_int)
+    if (is.null(D)) next
+    d_hat <- as.numeric(D %*% beta)
+    # diag(D %*% Vp %*% t(D)) without materialising the full product:
+    se_sq <- rowSums((D %*% Vp) * D)
+    se_sq[!is.finite(se_sq) | se_sq < 0] <- 0
+    se    <- sqrt(se_sq)
+    out[[as.character(k_int)]] <- data.frame(
+      x   = x_grid,
+      fit = d_hat,
+      se  = se,
+      lo  = d_hat - 1.96 * se,
+      hi  = d_hat + 1.96 * se
+    )
+  }
+  out
+}
+
+# Simultaneous confidence bands for the derivative curve via the
+# Ruppert, Wand & Carroll (2003) / Simpson (2018) Monte Carlo
+# construction: draw beta* ~ N(beta_hat, V_p), compute the
+# normalised max-deviation statistic max_x |D_i (beta* - beta_hat)|
+# / se_i across the plotting grid, and use the (1 - alpha) quantile
+# as a critical multiplier on the pointwise SE. Returns only the
+# replacement `lo` and `hi` columns (plus the critical multiplier
+# for diagnostic record) — the point estimate and pointwise SE are
+# unchanged and are reused from `.derivatives_lpmatrix()`.
+
+.derivatives_simultaneous_bands <- function(fit, newdata, x_grid, orders,
+                                            n_sim = 1000L, alpha = 0.05) {
+  if (!length(orders)) return(list())
+  if (is.null(fit) || !inherits(fit, "gam")) return(list())
+  if (!is.numeric(x_grid) || length(x_grid) < 3L) return(list())
+  h <- mean(diff(x_grid))
+  if (!is.finite(h) || h <= 0) return(list())
+  Xp <- tryCatch(
+    stats::predict(fit, newdata = newdata, type = "lpmatrix"),
+    error = function(e) NULL
+  )
+  if (is.null(Xp) || !is.matrix(Xp) || nrow(Xp) != length(x_grid)) {
+    return(list())
+  }
+  Vp   <- fit$Vp
+  beta <- stats::coef(fit)
+  p    <- length(beta)
+  if (is.null(Vp) || is.null(beta) ||
+      ncol(Xp) != p || any(dim(Vp) != p)) return(list())
+
+  # Cholesky of V_p with small diagonal jitter fallback for the
+  # occasional near-singular case at high basis dimension.
+  L <- tryCatch(
+    chol(Vp),
+    error = function(e) {
+      tryCatch(
+        chol(Vp + diag(sqrt(.Machine$double.eps), p)),
+        error = function(e2) NULL
+      )
+    }
+  )
+  if (is.null(L)) return(list())
+
+  # dB[b, ] = beta*_b - beta_hat, drawn as Z %*% L with Z standard
+  # normal (n_sim x p). Keeps memory O(n_sim * p), fast for
+  # n_sim = 1000 and basis ranks in the low tens.
+  Z  <- matrix(stats::rnorm(n_sim * p), nrow = n_sim)
+  dB <- Z %*% L
+
+  out <- list()
+  for (k in orders) {
+    k_int <- as.integer(k)
+    D <- .diff_stencil(Xp, h = h, order = k_int)
+    if (is.null(D)) next
+    d_hat <- as.numeric(D %*% beta)
+    se_sq <- rowSums((D %*% Vp) * D)
+    se_sq[!is.finite(se_sq) | se_sq < 0] <- 0
+    se_pw <- sqrt(se_sq)
+    # Deviation matrix: (n_grid x p) %*% (p x n_sim) = (n_grid x n_sim).
+    dev_mat <- D %*% t(dB)
+    ok <- se_pw > 0 & is.finite(se_pw)
+    if (!any(ok)) next
+    dev_std <- matrix(0, nrow = nrow(dev_mat), ncol = ncol(dev_mat))
+    dev_std[ok, ] <- dev_mat[ok, ] / se_pw[ok]
+    max_abs_dev <- apply(abs(dev_std), 2L, max, na.rm = TRUE)
+    crit <- as.numeric(stats::quantile(
+      max_abs_dev, probs = 1 - alpha, na.rm = TRUE, names = FALSE
+    ))
+    if (!is.finite(crit)) next
+    out[[as.character(k_int)]] <- list(
+      lo = d_hat - crit * se_pw,
+      hi = d_hat + crit * se_pw,
+      crit_multiplier = crit
+    )
+  }
+  out
+}
+
+# Finite-difference stencil on the rows of an LP matrix. Central
+# differences in the interior; second-order-accurate forward/backward
+# stencils at the two endpoints so the derivative is defined on the
+# full plotting grid. Orders beyond 2 iterate the first-order stencil;
+# accuracy degrades rapidly and we advise against k >= 3 in the docs.
+.diff_stencil <- function(X, h, order) {
+  n <- nrow(X)
+  if (is.null(n) || n < 3L) return(NULL)
+  if (order == 1L) {
+    D <- matrix(0, nrow = n, ncol = ncol(X))
+    # forward at the left endpoint (second-order): (-3*X[1] + 4*X[2] - X[3]) / (2h)
+    D[1L, ]  <- (-3 * X[1L, ] + 4 * X[2L, ] - X[3L, ]) / (2 * h)
+    # backward at the right endpoint (second-order)
+    D[n, ]   <- (3 * X[n, ]  - 4 * X[n - 1L, ] + X[n - 2L, ]) / (2 * h)
+    idx      <- 2:(n - 1L)
+    D[idx, ] <- (X[idx + 1L, ] - X[idx - 1L, ]) / (2 * h)
+    return(D)
+  }
+  if (order == 2L) {
+    if (n < 4L) return(NULL)
+    D <- matrix(0, nrow = n, ncol = ncol(X))
+    # Four-point second-order forward/backward stencils at endpoints;
+    # three-point central in the interior.
+    D[1L, ] <- (2 * X[1L, ] - 5 * X[2L, ] + 4 * X[3L, ] - X[4L, ]) / h^2
+    D[n, ]  <- (2 * X[n, ]  - 5 * X[n - 1L, ] +
+                4 * X[n - 2L, ] - X[n - 3L, ]) / h^2
+    idx      <- 2:(n - 1L)
+    D[idx, ] <- (X[idx + 1L, ] - 2 * X[idx, ] + X[idx - 1L, ]) / h^2
+    return(D)
+  }
+  # Order >= 3: iterate. Not exposed in janusplot() by default; present
+  # for diagnostic completeness.
+  D <- .diff_stencil(X, h, 1L)
+  for (i in 2:order) D <- .diff_stencil(D, h, 1L)
+  D
+}
+
+# ---------------------------------------------------------------
 # Pairwise correlations on the complete-case (x, y) subset.
 # Computed once per fit and cached on the fit object so downstream
 # rendering + data-table construction is free. Also records the
@@ -234,7 +413,10 @@
 # ---------------------------------------------------------------
 
 .fit_pair <- function(x_name, y_name, data_full, adjust, method, k, bs,
-                     na_action, n_grid = 100L, ...) {
+                     na_action, n_grid = 100L,
+                     derivatives = integer(),
+                     derivative_ci = "pointwise",
+                     derivative_ci_nsim = 1000L, ...) {
   k_val <- .resolve_k(k, x_name)
   if (na_action == "pairwise") {
     dat <- .complete_pair(data_full, x_name, y_name, adjust)
@@ -289,11 +471,41 @@
     )
   }
 
+  deriv_list <- if (length(derivatives)) {
+    .derivatives_lpmatrix(fit, nd, x_grid, derivatives)
+  } else {
+    list()
+  }
+  # If the caller asked for simultaneous bands, replace the
+  # pointwise lo/hi in the derivative data frames with the
+  # simultaneous ones. Stamp a `ci_type` column on every derivative
+  # frame so the renderer and downstream callers can tell them apart.
+  if (length(deriv_list)) {
+    for (k_nm in names(deriv_list)) {
+      deriv_list[[k_nm]]$ci_type <- derivative_ci
+    }
+    if (identical(derivative_ci, "simultaneous")) {
+      sim <- .derivatives_simultaneous_bands(
+        fit, nd, x_grid, derivatives,
+        n_sim = derivative_ci_nsim
+      )
+      for (k_nm in names(sim)) {
+        if (!is.null(deriv_list[[k_nm]])) {
+          deriv_list[[k_nm]]$lo <- sim[[k_nm]]$lo
+          deriv_list[[k_nm]]$hi <- sim[[k_nm]]$hi
+          attr(deriv_list[[k_nm]], "crit_multiplier") <-
+            sim[[k_nm]]$crit_multiplier
+        }
+      }
+    }
+  }
+
   out <- list(
     x_name   = x_name,
     y_name   = y_name,
     fit      = fit,
     pred     = pred_df,
+    deriv    = deriv_list,
     raw      = dat[, c(x_name, y_name), drop = FALSE],
     edf      = edf,
     pvalue   = pval,
@@ -311,6 +523,7 @@
     x_name = x_name, y_name = y_name, fit = NULL,
     pred = data.frame(x = numeric(), fit = numeric(),
                       se = numeric(), lo = numeric(), hi = numeric()),
+    deriv = list(),
     raw = data.frame(),
     edf = NA_real_, pvalue = NA_real_, dev_exp = NA_real_,
     n_used = n_used, error = NA_character_,
@@ -325,7 +538,11 @@
 # ---------------------------------------------------------------
 
 .fit_all_pairs <- function(data, vars, adjust, method, k, bs,
-                           na_action, parallel, ...) {
+                           na_action, parallel,
+                           n_grid = 100L,
+                           derivatives = integer(),
+                           derivative_ci = "pointwise",
+                           derivative_ci_nsim = 1000L, ...) {
   .check_parallel_plan(parallel)
   if (na_action == "complete") {
     data <- data[stats::complete.cases(
@@ -341,7 +558,10 @@
       x_name = vars[i], y_name = vars[j],
       data_full = data, adjust = adjust,
       method = method, k = k, bs = bs,
-      na_action = na_action, ...
+      na_action = na_action,
+      n_grid = n_grid, derivatives = derivatives,
+      derivative_ci = derivative_ci,
+      derivative_ci_nsim = derivative_ci_nsim, ...
     )
   }
 

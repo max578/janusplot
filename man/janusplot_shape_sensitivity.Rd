@@ -99,4 +99,10 @@ janusplot_shape_sensitivity_summary(res, level = "archetype")
 \code{\link[=janusplot_shape_sensitivity_summary]{janusplot_shape_sensitivity_summary()}},
 \code{\link[=janusplot_shape_sensitivity_plot]{janusplot_shape_sensitivity_plot()}},
 \code{\link[=janusplot_shape_sensitivity_shapes]{janusplot_shape_sensitivity_shapes()}}, \link{shape_sensitivity_demo}.
+
+Other shape-sensitivity: 
+\code{\link{janusplot_shape_sensitivity_plot}()},
+\code{\link{janusplot_shape_sensitivity_shapes}()},
+\code{\link{janusplot_shape_sensitivity_summary}()}
 }
+\concept{shape-sensitivity}

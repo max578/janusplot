@@ -41,3 +41,10 @@ data("shape_sensitivity_demo", package = "janusplot")
 janusplot_shape_sensitivity_plot(shape_sensitivity_demo,
                                  "recovery_curves")
 }
+\seealso{
+Other shape-sensitivity: 
+\code{\link{janusplot_shape_sensitivity}()},
+\code{\link{janusplot_shape_sensitivity_shapes}()},
+\code{\link{janusplot_shape_sensitivity_summary}()}
+}
+\concept{shape-sensitivity}

@@ -36,3 +36,9 @@ override individual thresholds or pass a fully custom list to
 janusplot_shape_cutoffs()
 janusplot_shape_cutoffs(curv_mod = 0.6, flat = 0.02)
 }
+\seealso{
+Other shape-metrics: 
+\code{\link{janusplot_shape_hierarchy}()},
+\code{\link{janusplot_shape_metrics}()}
+}
+\concept{shape-metrics}

@@ -32,9 +32,72 @@
 #' @param order One of `"original"` (default), `"hclust"` (reorder by
 #'   hierarchical clustering of Pearson correlations), or `"alphabetical"`.
 #' @param show_data Logical. If `TRUE` (default), overlay raw data
-#'   points (low alpha) behind each spline.
+#'   points (low alpha) behind each spline. Only applies when
+#'   `display = "fit"`; derivative panels never overlay raw data.
 #' @param show_ci Logical. If `TRUE` (default), overlay the 95%
-#'   confidence envelope from `predict(gam, se.fit = TRUE)`.
+#'   confidence envelope from `predict(gam, se.fit = TRUE)` on the
+#'   fit panel (i.e. when `display = "fit"`). CI rendering on
+#'   derivative panels is controlled separately by `derivative_ci`.
+#' @param display One of `"fit"` (default), `"d1"`, or `"d2"`.
+#'   Selects which single quantity is rendered in every
+#'   off-diagonal cell of the matrix.
+#'   * `"fit"` — the fitted smooth \eqn{\hat f(x)}; default,
+#'     behaviour identical to the pre-derivative release.
+#'   * `"d1"` — the first derivative \eqn{\hat f'(x)} of the
+#'     fitted smooth. Zero crossings localise turning points of
+#'     \eqn{\hat f}.
+#'   * `"d2"` — the second derivative \eqn{\hat f''(x)}. Zero
+#'     crossings localise inflection points of \eqn{\hat f}.
+#'
+#'   A single matrix shows a single quantity by design: stacked
+#'   multi-panel cells crowd the matrix at any realistic variable
+#'   count. To compare fit against derivative, render two or three
+#'   `janusplot()` calls side-by-side; each call keeps its own
+#'   `with_data = TRUE` summary table tagged with the `display`
+#'   column.
+#'
+#'   Orders \eqn{k \ge 3} are not exposed — higher-order derivatives
+#'   of penalised regression splines amplify noise and rarely carry
+#'   usable signal at realistic sample sizes. See
+#'   `vignette("janusplot")` for the theoretical justification and
+#'   applied use-cases.
+#' @param derivative_ci One of `"none"` (default), `"pointwise"`, or
+#'   `"simultaneous"`. Controls whether — and how — a 95%
+#'   confidence ribbon is drawn underneath the derivative curve when
+#'   `display %in% c("d1", "d2")`. Ignored when `display = "fit"`.
+#'   * `"none"` — no ribbon. The curve and the zero reference line
+#'     are all you see. Default, because pointwise ribbons overshoot
+#'     nominal coverage as a joint region and can invite
+#'     over-reading of local features.
+#'   * `"pointwise"` — 95% pointwise ribbon from
+#'     \eqn{\sqrt{\mathrm{diag}(D V_p D^\top)}} (Wood 2017 §7.2.4).
+#'     Valid marginally; not a simultaneous statement.
+#'   * `"simultaneous"` — 95% simultaneous band via the Monte Carlo
+#'     construction of Ruppert, Wand & Carroll (2003) popularised for
+#'     GAMs by Simpson (2018, *Frontiers Ecol. Evol.* 6:149): draw
+#'     \eqn{B} samples \eqn{\tilde{\boldsymbol\beta} \sim
+#'     \mathcal{N}(\hat{\boldsymbol\beta}, V_p)}, compute
+#'     \eqn{\max_x |D_i(\tilde{\boldsymbol\beta} -
+#'     \hat{\boldsymbol\beta})| / \mathrm{se}_i}, and use the
+#'     \eqn{(1-\alpha)} quantile as a critical multiplier on the
+#'     pointwise SE. Valid for feature localisation ("where is
+#'     \eqn{\hat f'(x)} significantly non-zero").
+#' @param derivative_ci_nsim Integer. Number of Monte Carlo samples
+#'   used when `derivative_ci = "simultaneous"`. Default `1000L` —
+#'   a compromise between coverage accuracy (Simpson 2018 uses
+#'   10000) and CPU budget across every pair in a medium-sized
+#'   matrix. Ignored for any other `derivative_ci`.
+#' @param n_grid Integer or `NULL`. Number of equally-spaced points
+#'   used to evaluate each fitted smooth (and its derivatives).
+#'   Default `NULL` resolves to `100` when `display = "fit"` and
+#'   `200` otherwise, because finite-difference second derivatives
+#'   visibly degrade below \eqn{\sim 150} points on moderate-`k`
+#'   smooths. Supplying `n_grid` directly overrides both defaults.
+#'   Larger grids shift the numerical shape-metric values
+#'   (\eqn{M}, \eqn{C}, turning / inflection counts) slightly
+#'   because they are computed on this same grid. Shapes and
+#'   asymmetry are the primary reading; `M`, `C` and the counts are
+#'   secondary diagnostics and the grid-induced drift is tolerable.
 #' @param colour_by One of `"pearson"` (default), `"spearman"`,
 #'   `"kendall"`, `"edf"`, `"deviance_gap"`, or `"none"`. Encodes the
 #'   per-cell fill colour by the chosen scalar. Correlation choices use
@@ -84,6 +147,20 @@
 #'   * `"diagonal"` — names centred on the diagonal cells (the
 #'     pre-0.1 layout).
 #'   * `"none"` — labels suppressed entirely; diagonal cells blank.
+#' @param diagonal One of `"auto"` (default), `"blank"`, `"name"`,
+#'   or `"density"`. Controls what is rendered in the diagonal
+#'   cells of the matrix.
+#'   * `"auto"` — preserves the historical behaviour: variable name
+#'     when `labels = "diagonal"`, blank otherwise.
+#'   * `"blank"` — empty bordered panel (uniform grid reading).
+#'   * `"name"` — variable name centred in the cell, bold.
+#'   * `"density"` — kernel density of the variable filled in
+#'     translucent grey, with a rug of raw values along the bottom
+#'     edge. Mirrors the `GGally::ggpairs` convention; surfaces
+#'     tail weight, bimodality, and support clipping that the
+#'     pairwise smooths alone cannot reveal. Variable names should
+#'     come from the border (`labels = "border"`, the default) when
+#'     this mode is on.
 #' @param label_srt Numeric. Rotation (degrees) of top labels when
 #'   `labels = "border"`. Default `45`; set to `0` for horizontal or
 #'   `90` for vertical. Ignored when `labels != "border"`.
@@ -103,9 +180,9 @@
 #' @param with_data Logical. If `TRUE`, return a two-element list
 #'   `list(plot, data)` where `data` is a flat per-cell summary
 #'   (one row per off-diagonal cell) of everything the plot displays.
-#'   If the `data.table` package is installed, `data` is returned as a
-#'   `data.table`; otherwise as a `data.frame`. Default `FALSE` — in
-#'   which case only the ggplot is returned.
+#'   The `data` element is always a plain `data.frame` (base R — no
+#'   `data.table` dependency). Default `FALSE` — in which case only
+#'   the ggplot is returned.
 #' @param text_scale_diag Positive numeric multiplier applied to the
 #'   diagonal variable-name labels. Default `1`. Diagonal labels
 #'   additionally auto-shrink for long variable names
@@ -124,14 +201,21 @@
 #' @param ... Additional arguments passed to [mgcv::gam()].
 #'
 #' @returns If `with_data = FALSE` (default), a [ggplot2::ggplot] object
-#'   (via [patchwork::wrap_plots()]). If `with_data = TRUE`, a list
-#'   with two elements: `plot` (the ggplot) and `data` (a tidy table
-#'   with columns `var_x`, `var_y`, `position`, `n_used`, `edf`,
-#'   `pvalue`, `signif`, `dev_exp`, `asymmetry_index`, `cor_pearson`,
-#'   `cor_spearman`, `cor_kendall`, `tie_ratio`,
-#'   `monotonicity_index`, `convexity_index`,
-#'   `n_turning_points`, `n_inflections`, `flat_range_ratio`,
-#'   `shape_category`, `colour_value`, one row per off-diagonal cell).
+#'   (via [patchwork::wrap_plots()]) carrying a top-of-matrix title
+#'   that names the displayed quantity (`"Direct fit"`,
+#'   `"First derivative f'"`, or `"Second derivative f''"`). If
+#'   `with_data = TRUE`, a list with two elements: `plot` (the
+#'   ggplot) and `data` (a tidy table with columns `var_x`, `var_y`,
+#'   `position`, `n_used`, `edf`, `pvalue`, `signif`, `dev_exp`,
+#'   `asymmetry_index`, `cor_pearson`, `cor_spearman`,
+#'   `cor_kendall`, `tie_ratio`, `monotonicity_index`,
+#'   `convexity_index`, `n_turning_points`, `n_inflections`,
+#'   `flat_range_ratio`, `shape_category`, `colour_value`,
+#'   `display`, one row per off-diagonal cell). The `display`
+#'   column tags which quantity the call rendered, so separate
+#'   calls for fit / d1 / d2 yield comparable, stackable tables.
+#'   Derivative *curves* themselves (grid of \eqn{x}, fitted
+#'   \eqn{\hat f^{(k)}}, SE) live on `janusplot_data()` — see there.
 #'
 #' @family smooth-associations
 #' @seealso [janusplot_data()] for the raw per-cell fits + metrics.
@@ -147,8 +231,24 @@
 #' n  <- 200L
 #' x1 <- stats::runif(n, 0, 10)
 #' x2 <- x1 + stats::rnorm(n, sd = 0.2 * x1)
-#' janusplot(data.frame(x1 = x1, x2 = x2, x3 = stats::rnorm(n)),
-#'           show_asymmetry = TRUE)
+#' janusplot(data.frame(x1 = x1, x2 = x2, x3 = stats::rnorm(n)))
+#'
+#' # A single matrix renders a single quantity. To compare the fit
+#' # against its derivatives, render three calls and place them
+#' # side-by-side; each call's title makes the quantity explicit.
+#' set.seed(2026L)
+#' xs <- stats::runif(300L, -3, 3)
+#' df <- data.frame(
+#'   x  = xs,
+#'   y1 = sin(xs)  + stats::rnorm(300L, sd = 0.3),
+#'   y2 = xs^2     + stats::rnorm(300L, sd = 0.6)
+#' )
+#' janusplot(df, display = "fit")
+#' janusplot(df, display = "d1")
+#' janusplot(df, display = "d2")
+#'
+#' # Simultaneous CI bands on a derivative panel, per Simpson (2018).
+#' janusplot(df, display = "d1", derivative_ci = "simultaneous")
 #' }
 #' @export
 janusplot <- function(
@@ -161,6 +261,10 @@ janusplot <- function(
     order = c("original", "hclust", "alphabetical"),
     show_data = TRUE,
     show_ci = TRUE,
+    display = c("fit", "d1", "d2"),
+    derivative_ci = c("none", "pointwise", "simultaneous"),
+    derivative_ci_nsim = 1000L,
+    n_grid = NULL,
     colour_by = c("pearson", "spearman", "kendall",
                   "edf", "deviance_gap", "none"),
     fill_by = NULL,
@@ -170,6 +274,7 @@ janusplot <- function(
     show_shape_legend = TRUE,
     glyph_style = c("ascii", "unicode"),
     labels = c("border", "diagonal", "none"),
+    diagonal = c("auto", "blank", "name", "density"),
     label_srt = 45,
     label_cex = 1,
     signif_glyph = TRUE,
@@ -182,10 +287,30 @@ janusplot <- function(
     show_glossary       = TRUE,
     glossary_scale      = 1,
     ...) {
-  order       <- rlang::arg_match(order)
-  na_action   <- rlang::arg_match(na_action)
-  glyph_style <- rlang::arg_match(glyph_style)
-  labels      <- rlang::arg_match(labels)
+  order         <- rlang::arg_match(order)
+  na_action     <- rlang::arg_match(na_action)
+  glyph_style   <- rlang::arg_match(glyph_style)
+  labels        <- rlang::arg_match(labels)
+  diagonal      <- rlang::arg_match(diagonal)
+  display       <- rlang::arg_match(display)
+  derivative_ci <- rlang::arg_match(derivative_ci)
+  # `diagonal = "auto"` resolves to the historical behaviour: name
+  # in the diagonal cell when labels == "diagonal", blank otherwise.
+  diagonal_eff <- if (diagonal == "auto") {
+    if (labels == "diagonal") "name" else "blank"
+  } else {
+    diagonal
+  }
+
+  if (!is.numeric(derivative_ci_nsim) ||
+      length(derivative_ci_nsim) != 1L ||
+      !is.finite(derivative_ci_nsim) ||
+      derivative_ci_nsim < 100) {
+    cli::cli_abort(
+      "{.arg derivative_ci_nsim} must be a single integer >= 100."
+    )
+  }
+  derivative_ci_nsim <- as.integer(derivative_ci_nsim)
 
   if (!is.numeric(label_srt) || length(label_srt) != 1L ||
       is.na(label_srt)) {
@@ -220,6 +345,39 @@ janusplot <- function(
       "Unknown {.arg annotations} value{?s}: {.val {bad}}.",
       i = "Allowed: {.val {valid_annot}}."
     ))
+  }
+
+  # Resolve a single integer derivative order from scalar display.
+  # "fit" → no derivatives computed; "d1" / "d2" → the matching order.
+  derivative_orders <- switch(display,
+    fit = integer(),
+    d1  = 1L,
+    d2  = 2L
+  )
+
+  # Validate and resolve n_grid. NULL means "100 if no derivatives,
+  # 200 otherwise"; a user value overrides both defaults. Flag very
+  # large grids — fit time scales as O(n_grid) and derivative SE as
+  # O(n_grid) via the D %*% Vp %*% t(D) product.
+  if (!is.null(n_grid)) {
+    if (!is.numeric(n_grid) || length(n_grid) != 1L ||
+        !is.finite(n_grid) || n_grid < 10) {
+      cli::cli_abort(
+        "{.arg n_grid} must be a single finite number >= 10 or NULL."
+      )
+    }
+    n_grid <- as.integer(n_grid)
+    if (n_grid > 500L) {
+      cli::cli_inform(c(
+        "!" = paste0(
+          "{.arg n_grid} = {n_grid} is unusually large \u2014 ",
+          "each pair pays an O(n_grid) predict cost."
+        ),
+        i = "Grids above ~300 rarely improve readability."
+      ))
+    }
+  } else {
+    n_grid <- if (length(derivative_orders)) 200L else 100L
   }
 
   # Dual-alias: show_asymmetry -> annotations (soft deprecation).
@@ -260,7 +418,10 @@ janusplot <- function(
   fits <- .fit_all_pairs(
     data = data, vars = vars, adjust = adjust,
     method = method, k = k, bs = bs,
-    na_action = na_action, parallel = parallel, ...
+    na_action = na_action, parallel = parallel,
+    n_grid = n_grid, derivatives = derivative_orders,
+    derivative_ci = derivative_ci,
+    derivative_ci_nsim = derivative_ci_nsim, ...
   )
 
   # Colour-scale limits pooled across off-diagonal cells. Correlation
@@ -303,15 +464,20 @@ janusplot <- function(
       asym_val = asym_tbl[[asym_key]] %||% NA_real_,
       colour_limits = colour_limits,
       is_upper = is_upper,
-      text_sizes = text_sizes
+      text_sizes = text_sizes,
+      display = display,
+      derivative_ci = derivative_ci
     )
   }
 
-  diag_cells <- if (labels == "diagonal") {
-    lapply(vars, .build_diagonal_cell, text_sizes = text_sizes)
-  } else {
-    replicate(length(vars), .build_blank_diagonal_cell(), simplify = FALSE)
-  }
+  diag_cells <- lapply(vars, function(v) {
+    switch(diagonal_eff,
+      blank   = .build_blank_diagonal_cell(),
+      name    = .build_diagonal_cell(v, text_sizes = text_sizes),
+      density = .build_density_rug_cell(v, data[[v]],
+                                        text_sizes = text_sizes)
+    )
+  })
 
   # Shape legend is a standing reference: it now renders the full
   # taxonomy regardless of which categories are present in the
@@ -328,12 +494,17 @@ janusplot <- function(
     palette = palette, shape_legend_plot = shape_legend_plot,
     labels = labels, label_srt = label_srt, label_cex = label_cex
   )
-  plot_out <- if (isTRUE(show_glossary)) {
-    .add_glossary(composite, signif_glyph, annotations, colour_by,
-                  scale = glossary_scale)
-  } else {
-    composite
-  }
+  plot_out <- .finalize_plot(
+    composite,
+    title   = .display_title(display, glyph_style),
+    caption = if (isTRUE(show_glossary)) {
+      .build_glossary_text(signif_glyph, annotations, colour_by, display,
+                           derivative_ci)
+    } else {
+      NULL
+    },
+    glossary_scale = glossary_scale
+  )
 
   if (!isTRUE(with_data)) {
     return(plot_out)
@@ -342,7 +513,7 @@ janusplot <- function(
   list(
     plot = plot_out,
     data = .build_summary_table(fits, vars, colour_by, asym_tbl,
-                                shape_cutoffs)
+                                shape_cutoffs, display = display)
   )
 }
 
@@ -351,7 +522,7 @@ janusplot <- function(
 # ---------------------------------------------------------------
 
 .build_summary_table <- function(fits, vars, colour_by, asym_tbl,
-                                 shape_cutoffs) {
+                                 shape_cutoffs, display = "fit") {
   rows <- lapply(names(fits), function(key) {
     f <- fits[[key]]
     ij <- as.integer(strsplit(key, "_", fixed = TRUE)[[1L]])
@@ -387,37 +558,60 @@ janusplot <- function(
       shape_monotonic    = .shape_lookup(shape_cat, "monotonic"),
       shape_linear       = .shape_lookup(shape_cat, "linear"),
       colour_value       = .colour_value(f, colour_by),
+      display            = display,
       stringsAsFactors   = FALSE
     )
   })
   out <- do.call(rbind, rows)
   rownames(out) <- NULL
-  if (rlang::is_installed("data.table")) {
-    return(data.table::as.data.table(out))
-  }
   out
 }
 
 # ---------------------------------------------------------------
-# Glossary caption — only lists keys actually shown on the plot.
+# Display-mode title: the label at the top of the assembled matrix
+# naming what is rendered in every cell. Unicode primes by default,
+# ASCII fallback when glyph_style = "ascii".
 # ---------------------------------------------------------------
 
-.add_glossary <- function(composite, signif_glyph, annotations,
-                          colour_by, scale = 1) {
+.display_title <- function(display, glyph_style = c("ascii", "unicode")) {
+  glyph_style <- rlang::arg_match(glyph_style)
+  if (glyph_style == "unicode") {
+    switch(display,
+      fit = "Direct fit",
+      d1  = "First derivative  f\u2032(x)",
+      d2  = "Second derivative  f\u2033(x)",
+      display
+    )
+  } else {
+    switch(display,
+      fit = "Direct fit",
+      d1  = "First derivative  df/dx",
+      d2  = "Second derivative  d^2 f / dx^2",
+      display
+    )
+  }
+}
+
+# ---------------------------------------------------------------
+# Glossary caption body — only lists keys actually shown on the
+# plot. Extended to mention the derivative CI mode when a
+# derivative is displayed.
+# ---------------------------------------------------------------
+
+.build_glossary_text <- function(signif_glyph, annotations, colour_by,
+                                 display = "fit", derivative_ci = "none") {
   parts <- character()
-  if ("A" %in% annotations) {
+  if (display == "fit" && "A" %in% annotations) {
     parts <- c(parts,
       "A = asymmetry index |EDF_yx - EDF_xy| / (EDF_yx + EDF_xy), in [0, 1]")
   }
-  if ("edf" %in% annotations) {
+  if (display == "fit" && "edf" %in% annotations) {
     parts <- c(parts,
-      "EDF = effective degrees of freedom of the smooth"
-    )
+      "EDF = effective degrees of freedom of the smooth")
   }
-  if ("shape" %in% annotations) {
+  if (display == "fit" && "shape" %in% annotations) {
     parts <- c(parts,
-      "Shape glyph = objective shape category (see shape-types legend below)"
-    )
+      "Shape glyph = objective shape category (see shape-types legend below)")
   }
   colour_msg <- switch(colour_by,
     spearman     = "Cell colour encodes Spearman rank correlation (corr)",
@@ -428,17 +622,40 @@ janusplot <- function(
     none         = NULL
   )
   if (!is.null(colour_msg)) parts <- c(parts, colour_msg)
-  if (signif_glyph) {
+  if (display == "fit" && signif_glyph) {
     parts <- c(parts,
       "Signif. of smooth F-test: *** p<.001, ** p<.01, * p<.05, \u00b7 p<.1")
   }
-  caption <- paste(parts, collapse = "\n")
+  if (display %in% c("d1", "d2")) {
+    parts <- c(parts, sprintf(
+      "Derivative panel: curve from D %%*%% coef(gam), dashed line at zero; CI mode = %s",
+      derivative_ci
+    ))
+  }
+  paste(parts, collapse = "\n")
+}
+
+# ---------------------------------------------------------------
+# Finalise composite plot — add title + optional caption in a
+# single plot_annotation call so patchwork lays them out cleanly.
+# ---------------------------------------------------------------
+
+.finalize_plot <- function(composite, title, caption = NULL,
+                           glossary_scale = 1) {
   composite +
     patchwork::plot_annotation(
+      title   = title,
       caption = caption,
       theme = ggplot2::theme(
+        plot.title   = ggplot2::element_text(
+          size       = 13,
+          face       = "bold",
+          hjust      = 0,
+          colour     = "grey10",
+          margin     = ggplot2::margin(t = 2, b = 6)
+        ),
         plot.caption = ggplot2::element_text(
-          size       = 9 * scale,
+          size       = 9 * glossary_scale,
           hjust      = 0,
           colour     = "grey25",
           lineheight = 1.1,
@@ -480,6 +697,11 @@ janusplot <- function(
 #' @param keep_fits Logical. If `TRUE`, retain full [mgcv::gam()] model
 #'   objects in the return (large memory footprint for `k` above ~15).
 #'   Default `FALSE` — retains summary metrics and prediction grids only.
+#' @param derivatives Integer vector of derivative orders to compute
+#'   on every pair (subset of `1:2`). Default `integer()` — no
+#'   derivatives. Unlike `janusplot()`, the data companion can
+#'   return multiple orders from a single call for programmatic
+#'   analysis; pass `c(1L, 2L)` to surface both.
 #' @param shape_cutoffs Named list of classification thresholds used to
 #'   map the continuous shape indices (`monotonicity_index`,
 #'   `convexity_index`) into discrete
@@ -500,6 +722,17 @@ janusplot <- function(
 #'     `monotonicity_index_xy`, `convexity_index_xy`,
 #'     `n_turning_yx`, `n_inflect_yx`, `n_turning_xy`,
 #'     `n_inflect_xy`, `shape_yx`, `shape_xy`).
+#'     When `derivatives` is non-empty, each pair additionally
+#'     carries `deriv_yx` and `deriv_xy`, each a named list keyed by
+#'     order (`"1"`, `"2"`) whose entries are data frames with
+#'     columns `x`, `fit`, `se`, `lo`, `hi`, `ci_type` matching the
+#'     schema of `pred_yx` / `pred_xy`. The `ci_type` column records
+#'     whether the `lo` / `hi` columns are `"pointwise"` (default),
+#'     `"simultaneous"` (Ruppert--Wand--Carroll / Simpson 2018
+#'     critical-multiplier bands), or `"none"`. When
+#'     `derivative_ci = "simultaneous"`, each derivative frame also
+#'     carries a `"crit_multiplier"` attribute giving the MC-derived
+#'     critical multiplier used.
 #'     See [janusplot_shape_metrics()] for the definition of the
 #'     monotonicity and convexity indices.}
 #'   \item{`call`}{Match call.}
@@ -526,16 +759,63 @@ janusplot_data <- function(
     na_action = c("pairwise", "complete"),
     parallel = FALSE,
     keep_fits = FALSE,
+    derivatives = integer(),
+    derivative_ci = c("pointwise", "none", "simultaneous"),
+    derivative_ci_nsim = 1000L,
+    n_grid = NULL,
     shape_cutoffs = janusplot_shape_cutoffs(),
     ...) {
-  na_action <- rlang::arg_match(na_action)
+  na_action     <- rlang::arg_match(na_action)
+  derivative_ci <- rlang::arg_match(derivative_ci)
   .validate_inputs(data, vars, adjust, na_action)
   vars <- .resolve_vars(data, vars)
+
+  if (length(derivatives)) {
+    if (!is.numeric(derivatives) || anyNA(derivatives)) {
+      cli::cli_abort(
+        "{.arg derivatives} must be an integer vector of orders in 1:2."
+      )
+    }
+    derivatives <- as.integer(derivatives)
+    if (any(derivatives < 1L | derivatives > 2L)) {
+      cli::cli_abort(
+        "{.arg derivatives} entries must be in 1:2 \u2014 higher orders are not supported."
+      )
+    }
+    if (anyDuplicated(derivatives)) {
+      cli::cli_abort("{.arg derivatives} must not contain duplicates.")
+    }
+  }
+
+  if (!is.numeric(derivative_ci_nsim) ||
+      length(derivative_ci_nsim) != 1L ||
+      !is.finite(derivative_ci_nsim) ||
+      derivative_ci_nsim < 100) {
+    cli::cli_abort(
+      "{.arg derivative_ci_nsim} must be a single integer >= 100."
+    )
+  }
+  derivative_ci_nsim <- as.integer(derivative_ci_nsim)
+
+  if (!is.null(n_grid)) {
+    if (!is.numeric(n_grid) || length(n_grid) != 1L ||
+        !is.finite(n_grid) || n_grid < 10) {
+      cli::cli_abort(
+        "{.arg n_grid} must be a single finite number >= 10 or NULL."
+      )
+    }
+    n_grid <- as.integer(n_grid)
+  } else {
+    n_grid <- if (length(derivatives)) 200L else 100L
+  }
 
   fits <- .fit_all_pairs(
     data = data, vars = vars, adjust = adjust,
     method = method, k = k, bs = bs,
-    na_action = na_action, parallel = parallel, ...
+    na_action = na_action, parallel = parallel,
+    n_grid = n_grid, derivatives = derivatives,
+    derivative_ci = derivative_ci,
+    derivative_ci_nsim = derivative_ci_nsim, ...
   )
 
   k_n <- length(vars)
@@ -593,7 +873,9 @@ janusplot_data <- function(
         shape_monotonic_yx = .shape_lookup(shape_yx, "monotonic"),
         shape_monotonic_xy = .shape_lookup(shape_xy, "monotonic"),
         shape_linear_yx    = .shape_lookup(shape_yx, "linear"),
-        shape_linear_xy    = .shape_lookup(shape_xy, "linear")
+        shape_linear_xy    = .shape_lookup(shape_xy, "linear"),
+        deriv_yx           = f_yx$deriv,
+        deriv_xy           = f_xy$deriv
       )
     }
   }
