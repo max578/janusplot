@@ -150,6 +150,11 @@ A data frame with one row per fit. Columns:
 [`janusplot_shape_sensitivity_shapes()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_shapes.md),
 [shape_sensitivity_demo](https://max578.github.io/janusplot/reference/shape_sensitivity_demo.md).
 
+Other shape-sensitivity:
+[`janusplot_shape_sensitivity_plot()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_plot.md),
+[`janusplot_shape_sensitivity_shapes()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_shapes.md),
+[`janusplot_shape_sensitivity_summary()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_summary.md)
+
 ## Examples
 
 ``` r

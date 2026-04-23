@@ -30,6 +30,10 @@ janusplot(
   order = c("original", "hclust", "alphabetical"),
   show_data = TRUE,
   show_ci = TRUE,
+  display = c("fit", "d1", "d2"),
+  derivative_ci = c("none", "pointwise", "simultaneous"),
+  derivative_ci_nsim = 1000L,
+  n_grid = NULL,
   colour_by = c("pearson", "spearman", "kendall", "edf", "deviance_gap", "none"),
   fill_by = NULL,
   palette = NULL,
@@ -38,6 +42,7 @@ janusplot(
   show_shape_legend = TRUE,
   glyph_style = c("ascii", "unicode"),
   labels = c("border", "diagonal", "none"),
+  diagonal = c("auto", "blank", "name", "density"),
   label_srt = 45,
   label_cex = 1,
   signif_glyph = TRUE,
@@ -96,12 +101,88 @@ janusplot(
 - show_data:
 
   Logical. If `TRUE` (default), overlay raw data points (low alpha)
-  behind each spline.
+  behind each spline. Only applies when `display = "fit"`; derivative
+  panels never overlay raw data.
 
 - show_ci:
 
   Logical. If `TRUE` (default), overlay the 95% confidence envelope from
-  `predict(gam, se.fit = TRUE)`.
+  `predict(gam, se.fit = TRUE)` on the fit panel (i.e. when
+  `display = "fit"`). CI rendering on derivative panels is controlled
+  separately by `derivative_ci`.
+
+- display:
+
+  One of `"fit"` (default), `"d1"`, or `"d2"`. Selects which single
+  quantity is rendered in every off-diagonal cell of the matrix.
+
+  - `"fit"` — the fitted smooth \\\hat f(x)\\; default, behaviour
+    identical to the pre-derivative release.
+
+  - `"d1"` — the first derivative \\\hat f'(x)\\ of the fitted smooth.
+    Zero crossings localise turning points of \\\hat f\\.
+
+  - `"d2"` — the second derivative \\\hat f''(x)\\. Zero crossings
+    localise inflection points of \\\hat f\\.
+
+  A single matrix shows a single quantity by design: stacked multi-panel
+  cells crowd the matrix at any realistic variable count. To compare fit
+  against derivative, render two or three `janusplot()` calls
+  side-by-side; each call keeps its own `with_data = TRUE` summary table
+  tagged with the `display` column.
+
+  Orders \\k \ge 3\\ are not exposed — higher-order derivatives of
+  penalised regression splines amplify noise and rarely carry usable
+  signal at realistic sample sizes. See
+  [`vignette("janusplot")`](https://max578.github.io/janusplot/articles/janusplot.md)
+  for the theoretical justification and applied use-cases.
+
+- derivative_ci:
+
+  One of `"none"` (default), `"pointwise"`, or `"simultaneous"`.
+  Controls whether — and how — a 95% confidence ribbon is drawn
+  underneath the derivative curve when `display %in% c("d1", "d2")`.
+  Ignored when `display = "fit"`.
+
+  - `"none"` — no ribbon. The curve and the zero reference line are all
+    you see. Default, because pointwise ribbons overshoot nominal
+    coverage as a joint region and can invite over-reading of local
+    features.
+
+  - `"pointwise"` — 95% pointwise ribbon from \\\sqrt{\mathrm{diag}(D
+    V_p D^\top)}\\ (Wood 2017 §7.2.4). Valid marginally; not a
+    simultaneous statement.
+
+  - `"simultaneous"` — 95% simultaneous band via the Monte Carlo
+    construction of Ruppert, Wand & Carroll (2003) popularised for GAMs
+    by Simpson (2018, *Frontiers Ecol. Evol.* 6:149): draw \\B\\ samples
+    \\\tilde{\boldsymbol\beta} \sim \mathcal{N}(\hat{\boldsymbol\beta},
+    V_p)\\, compute \\\max_x \|D_i(\tilde{\boldsymbol\beta} -
+    \hat{\boldsymbol\beta})\| / \mathrm{se}\_i\\, and use the
+    \\(1-\alpha)\\ quantile as a critical multiplier on the pointwise
+    SE. Valid for feature localisation ("where is \\\hat f'(x)\\
+    significantly non-zero").
+
+- derivative_ci_nsim:
+
+  Integer. Number of Monte Carlo samples used when
+  `derivative_ci = "simultaneous"`. Default `1000L` — a compromise
+  between coverage accuracy (Simpson 2018 uses 10000) and CPU budget
+  across every pair in a medium-sized matrix. Ignored for any other
+  `derivative_ci`.
+
+- n_grid:
+
+  Integer or `NULL`. Number of equally-spaced points used to evaluate
+  each fitted smooth (and its derivatives). Default `NULL` resolves to
+  `100` when `display = "fit"` and `200` otherwise, because
+  finite-difference second derivatives visibly degrade below \\\sim
+  150\\ points on moderate-`k` smooths. Supplying `n_grid` directly
+  overrides both defaults. Larger grids shift the numerical shape-metric
+  values (\\M\\, \\C\\, turning / inflection counts) slightly because
+  they are computed on this same grid. Shapes and asymmetry are the
+  primary reading; `M`, `C` and the counts are secondary diagnostics and
+  the grid-induced drift is tolerable.
 
 - colour_by:
 
@@ -179,6 +260,25 @@ janusplot(
 
   - `"none"` — labels suppressed entirely; diagonal cells blank.
 
+- diagonal:
+
+  One of `"auto"` (default), `"blank"`, `"name"`, or `"density"`.
+  Controls what is rendered in the diagonal cells of the matrix.
+
+  - `"auto"` — preserves the historical behaviour: variable name when
+    `labels = "diagonal"`, blank otherwise.
+
+  - `"blank"` — empty bordered panel (uniform grid reading).
+
+  - `"name"` — variable name centred in the cell, bold.
+
+  - `"density"` — kernel density of the variable filled in translucent
+    grey, with a rug of raw values along the bottom edge. Mirrors the
+    `GGally::ggpairs` convention; surfaces tail weight, bimodality, and
+    support clipping that the pairwise smooths alone cannot reveal.
+    Variable names should come from the border (`labels = "border"`, the
+    default) when this mode is on.
+
 - label_srt:
 
   Numeric. Rotation (degrees) of top labels when `labels = "border"`.
@@ -219,10 +319,9 @@ janusplot(
 
   Logical. If `TRUE`, return a two-element list `list(plot, data)` where
   `data` is a flat per-cell summary (one row per off-diagonal cell) of
-  everything the plot displays. If the `data.table` package is
-  installed, `data` is returned as a `data.table`; otherwise as a
-  `data.frame`. Default `FALSE` — in which case only the ggplot is
-  returned.
+  everything the plot displays. The `data` element is always a plain
+  `data.frame` (base R — no `data.table` dependency). Default `FALSE` —
+  in which case only the ggplot is returned.
 
 - text_scale_diag:
 
@@ -260,14 +359,21 @@ janusplot(
 If `with_data = FALSE` (default), a
 [ggplot2::ggplot](https://ggplot2.tidyverse.org/reference/ggplot.html)
 object (via
-[`patchwork::wrap_plots()`](https://patchwork.data-imaginist.com/reference/wrap_plots.html)).
+[`patchwork::wrap_plots()`](https://patchwork.data-imaginist.com/reference/wrap_plots.html))
+carrying a top-of-matrix title that names the displayed quantity
+(`"Direct fit"`, `"First derivative f'"`, or `"Second derivative f''"`).
 If `with_data = TRUE`, a list with two elements: `plot` (the ggplot) and
 `data` (a tidy table with columns `var_x`, `var_y`, `position`,
 `n_used`, `edf`, `pvalue`, `signif`, `dev_exp`, `asymmetry_index`,
 `cor_pearson`, `cor_spearman`, `cor_kendall`, `tie_ratio`,
 `monotonicity_index`, `convexity_index`, `n_turning_points`,
 `n_inflections`, `flat_range_ratio`, `shape_category`, `colour_value`,
-one row per off-diagonal cell).
+`display`, one row per off-diagonal cell). The `display` column tags
+which quantity the call rendered, so separate calls for fit / d1 / d2
+yield comparable, stackable tables. Derivative *curves* themselves (grid
+of \\x\\, fitted \\\hat f^{(k)}\\, SE) live on
+[`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md)
+— see there.
 
 ## See also
 
@@ -291,11 +397,28 @@ set.seed(2026L)
 n  <- 200L
 x1 <- stats::runif(n, 0, 10)
 x2 <- x1 + stats::rnorm(n, sd = 0.2 * x1)
-janusplot(data.frame(x1 = x1, x2 = x2, x3 = stats::rnorm(n)),
-          show_asymmetry = TRUE)
-#> Warning: The `show_asymmetry` argument of `janusplot()` is deprecated as of janusplot
-#> 0.0.0.9000.
-#> ℹ Please use the `annotations` argument instead.
+janusplot(data.frame(x1 = x1, x2 = x2, x3 = stats::rnorm(n)))
+
+
+# A single matrix renders a single quantity. To compare the fit
+# against its derivatives, render three calls and place them
+# side-by-side; each call's title makes the quantity explicit.
+set.seed(2026L)
+xs <- stats::runif(300L, -3, 3)
+df <- data.frame(
+  x  = xs,
+  y1 = sin(xs)  + stats::rnorm(300L, sd = 0.3),
+  y2 = xs^2     + stats::rnorm(300L, sd = 0.6)
+)
+janusplot(df, display = "fit")
+
+janusplot(df, display = "d1")
+
+janusplot(df, display = "d2")
+
+
+# Simultaneous CI bands on a derivative panel, per Simpson (2018).
+janusplot(df, display = "d1", derivative_ci = "simultaneous")
 
 # }
 ```

@@ -115,6 +115,10 @@ A named list with components:
 [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md),
 [`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md).
 
+Other shape-metrics:
+[`janusplot_shape_cutoffs()`](https://max578.github.io/janusplot/reference/janusplot_shape_cutoffs.md),
+[`janusplot_shape_hierarchy()`](https://max578.github.io/janusplot/reference/janusplot_shape_hierarchy.md)
+
 ## Examples
 
 ``` r

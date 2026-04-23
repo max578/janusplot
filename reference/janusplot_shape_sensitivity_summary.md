@@ -28,6 +28,13 @@ janusplot_shape_sensitivity_summary(results, level = c("fine", "archetype"))
 
 A data frame with columns `truth`, `n`, `sigma`, `accuracy`.
 
+## See also
+
+Other shape-sensitivity:
+[`janusplot_shape_sensitivity()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity.md),
+[`janusplot_shape_sensitivity_plot()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_plot.md),
+[`janusplot_shape_sensitivity_shapes()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_shapes.md)
+
 ## Examples
 
 ``` r

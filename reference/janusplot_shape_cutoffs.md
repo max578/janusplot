@@ -58,6 +58,12 @@ A named list with numeric thresholds:
 
   `range(fit) / sd(y)` below this is called `flat` (default `0.05`).
 
+## See also
+
+Other shape-metrics:
+[`janusplot_shape_hierarchy()`](https://max578.github.io/janusplot/reference/janusplot_shape_hierarchy.md),
+[`janusplot_shape_metrics()`](https://max578.github.io/janusplot/reference/janusplot_shape_metrics.md)
+
 ## Examples
 
 ``` r

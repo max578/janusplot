@@ -6,6 +6,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Asymmetric Smoothed-Association Matrices • janusplot</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="icon" sizes="any" href="../favicon.ico">
+<link rel="manifest" href="../site.webmanifest">
 <script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
@@ -20,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">janusplot</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -318,6 +323,281 @@ vignette for how faithfully the classifier recovers ground-truth shapes
 across sample-size and noise regimes.</p>
 </div>
 <div class="section level2">
+<h2 id="derivative-views-theoretical-justification-and-applied-use">Derivative views: theoretical justification and applied use<a class="anchor" aria-label="anchor" href="#derivative-views-theoretical-justification-and-applied-use"></a>
+</h2>
+<p>Each matrix renders one quantity. <code>display = "fit"</code>
+(default) shows the fitted smooth; <code>display = "d1"</code> shows ;
+<code>display = "d2"</code> shows . A top-of-matrix title names the
+mode, so side-by-side calls compare unambiguously. Orders beyond two are
+not exposed — see <em>Noise amplification</em> below. Derivative CI
+rendering is <strong>off by default</strong>; opt in with
+<code>derivative_ci = "pointwise"</code> or
+<code>"simultaneous"</code>.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2026L</span><span class="op">)</span></span>
+<span><span class="va">n</span>  <span class="op">&lt;-</span> <span class="fl">300L</span></span>
+<span><span class="va">xs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span>, <span class="op">-</span><span class="va">pi</span>, <span class="va">pi</span><span class="op">)</span></span>
+<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  x  <span class="op">=</span> <span class="va">xs</span>,</span>
+<span>  y1 <span class="op">=</span> <span class="va">xs</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="fl">3</span> <span class="op">*</span> <span class="va">xs</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span>, sd <span class="op">=</span> <span class="fl">0.15</span><span class="op">)</span>,</span>
+<span>  y2 <span class="op">=</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="va">xs</span><span class="op">^</span><span class="fl">2</span>       <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span>, sd <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/janusplot.html">janusplot</a></span><span class="op">(</span><span class="va">df</span>, display <span class="op">=</span> <span class="st">"fit"</span>, show_shape_legend <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p><img src="janusplot_files/figure-html/derivs-fit-1.png" class="r-plt" alt="Asymmetric smoothed-association matrix produced by janusplot(); diagonal cells hold variable labels, off-diagonal cells show the fitted mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and per-cell annotations for n, EDF, and smooth significance glyph." width="770"></p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/janusplot.html">janusplot</a></span><span class="op">(</span><span class="va">df</span>, display <span class="op">=</span> <span class="st">"d1"</span>, show_shape_legend <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p><img src="janusplot_files/figure-html/derivs-d1-1.png" class="r-plt" alt="Asymmetric smoothed-association matrix produced by janusplot(); diagonal cells hold variable labels, off-diagonal cells show the fitted mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and per-cell annotations for n, EDF, and smooth significance glyph." width="770"></p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/janusplot.html">janusplot</a></span><span class="op">(</span><span class="va">df</span>, display <span class="op">=</span> <span class="st">"d2"</span>, show_shape_legend <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p><img src="janusplot_files/figure-html/derivs-d2-1.png" class="r-plt" alt="Asymmetric smoothed-association matrix produced by janusplot(); diagonal cells hold variable labels, off-diagonal cells show the fitted mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and per-cell annotations for n, EDF, and smooth significance glyph." width="770"></p>
+<p>Turn on simultaneous bands — a single call gets the Monte Carlo
+critical multiplier per Simpson (2018):</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/janusplot.html">janusplot</a></span><span class="op">(</span><span class="va">df</span>, display <span class="op">=</span> <span class="st">"d1"</span>,</span>
+<span>          derivative_ci <span class="op">=</span> <span class="st">"simultaneous"</span>,</span>
+<span>          derivative_ci_nsim <span class="op">=</span> <span class="fl">2000L</span>,</span>
+<span>          show_shape_legend <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p><img src="janusplot_files/figure-html/derivs-sim-1.png" class="r-plt" alt="Asymmetric smoothed-association matrix produced by janusplot(); diagonal cells hold variable labels, off-diagonal cells show the fitted mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and per-cell annotations for n, EDF, and smooth significance glyph." width="770"></p>
+<div class="section level3">
+<h3 id="what-derivatives-reveal-that-the-fit-hides">What derivatives reveal that the fit hides<a class="anchor" aria-label="anchor" href="#what-derivatives-reveal-that-the-fit-hides"></a>
+</h3>
+<p>The fitted smooth
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>𝔼</mi><mrow><mo stretchy="true" form="prefix">[</mo><mi>y</mi><mo>∣</mo><mi>x</mi><mo stretchy="true" form="postfix">]</mo></mrow></mrow><annotation encoding="application/x-tex">\hat f(x) = \mathbb{E}[y\mid x]</annotation></semantics></math>
+is a level description. Its derivatives are different statistical
+objects with their own interpretations:</p>
+<ul>
+<li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>f</mi><mo accent="true">̂</mo></mover><mi>′</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\hat f'(x)</annotation></semantics></math>
+— the <strong>local rate of change</strong> of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
+in
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>.
+Zero crossings localise the turning points of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>f</mi><mo accent="true">̂</mo></mover><annotation encoding="application/x-tex">\hat f</annotation></semantics></math>;
+the sign of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>f</mi><mo accent="true">̂</mo></mover><mi>′</mi></mrow><annotation encoding="application/x-tex">\hat f'</annotation></semantics></math>
+gives the direction of monotonicity; the magnitude gives the sensitivity
+at the operating point
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>.
+In control engineering this is literally the process gain
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>∂</mi><mi>y</mi><mi>/</mi><mi>∂</mi><mi>u</mi></mrow><annotation encoding="application/x-tex">K(x) = \partial y / \partial u</annotation></semantics></math>
+that gain-scheduled controllers are built around (Rugh &amp; Shamma,
+2000; Leith &amp; Leithead, 2000). In causal analysis of a continuous
+treatment it is the derivative of the dose–response curve
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi><mi>′</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>∂</mi><mi>𝔼</mi><mrow><mo stretchy="true" form="prefix">[</mo><mi>Y</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">]</mo></mrow><mi>/</mi><mi>∂</mi><mi>t</mi></mrow><annotation encoding="application/x-tex">\mu'(t) = \partial \mathbb{E}[Y(t)] / \partial t</annotation></semantics></math>,
+which Zhang &amp; Chen (2025) argue is often <em>the</em>
+treatment-effect object of interest, not the curve itself.</li>
+<li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>f</mi><mo accent="true">̂</mo></mover><mi>″</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\hat f''(x)</annotation></semantics></math>
+— the <strong>local curvature</strong>. Zero crossings localise the
+inflection points of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>f</mi><mo accent="true">̂</mo></mover><annotation encoding="application/x-tex">\hat f</annotation></semantics></math>;
+a persistently positive second derivative flags accelerating growth,
+persistently negative flags saturation (diminishing returns).
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>f</mi><mo accent="true">̂</mo></mover><mi>″</mi></mrow><annotation encoding="application/x-tex">\hat f''</annotation></semantics></math>
+is the input to the convexity index
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>C</mi><annotation encoding="application/x-tex">C</annotation></semantics></math>
+defined earlier in this vignette, so the derivative panel exposes the
+<em>local</em> signal behind that scalar summary.</li>
+</ul>
+<p>The asymmetric matrix layout sharpens this. <code><a href="../reference/janusplot.html">janusplot()</a></code>
+fits both
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mi>y</mi><mo>∣</mo><mi>x</mi></mrow></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\hat f_{y\mid x}(x)</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mi>x</mi><mo>∣</mo><mi>y</mi></mrow></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>y</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\hat f_{x\mid y}(y)</annotation></semantics></math>,
+so derivative panels on the two triangles answer genuinely different
+questions: the upper triangle is “how steeply does
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
+respond to a nudge in
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
+at this operating point” (forward gain); the lower triangle is “how
+steeply must
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
+change to induce a unit change in
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>”
+(inverse sensitivity). For an asymmetric process these do not transpose
+into each other, and the directional asymmetry is a diagnostic the
+symmetric correlation matrix cannot expose (Janzing &amp; Schölkopf,
+2010).</p>
+</div>
+<div class="section level3">
+<h3 id="estimation-the-lp-matrix">Estimation — the LP matrix<a class="anchor" aria-label="anchor" href="#estimation-the-lp-matrix"></a>
+</h3>
+<p>Let
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>X</mi><mi>p</mi></msub><mo>=</mo><msub><mi>X</mi><mi>p</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>𝐱</mi><mi>g</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">X_p = X_p(\mathbf{x}_g)</annotation></semantics></math>
+denote the design (linear predictor) matrix of the fitted GAM evaluated
+on the plotting grid
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>𝐱</mi><mi>g</mi></msub><annotation encoding="application/x-tex">\mathbf{x}_g</annotation></semantics></math>,
+obtained from
+<code>predict(gam_fit, newdata = ..., type = "lpmatrix")</code> (Wood,
+2017, §7.2.4). With penalised posterior mean
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>𝛃</mi><mo accent="true">̂</mo></mover><mo>=</mo><mrow><mi>𝚌</mi><mi>𝚘</mi><mi>𝚎</mi><mi>𝚏</mi><mrow><mo stretchy="true" form="prefix" mathvariant="monospace">(</mo><mi>𝚐</mi><mi>𝚊</mi><mi>𝚖</mi><mi mathvariant="monospace">_</mi><mi>𝚏</mi><mi>𝚒</mi><mi>𝚝</mi><mo stretchy="true" form="postfix" mathvariant="monospace">)</mo></mrow></mrow></mrow><annotation encoding="application/x-tex">\hat{\boldsymbol\beta} =
+\mathtt{coef(gam\_fit)}</annotation></semantics></math> and posterior
+covariance
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>V</mi><mi>p</mi></msub><mo>=</mo><mrow><mi>𝚐</mi><mi>𝚊</mi><mi>𝚖</mi><mi mathvariant="monospace">_</mi><mi>𝚏</mi><mi>𝚒</mi><mi>𝚝</mi><mi mathvariant="monospace">$</mi><mi>𝚅</mi><mi>𝚙</mi></mrow></mrow><annotation encoding="application/x-tex">V_p =
+\mathtt{gam\_fit\$Vp}</annotation></semantics></math>, we construct a
+finite-difference operator
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>D</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><annotation encoding="application/x-tex">D^{(k)}</annotation></semantics></math>
+on the <em>rows</em> of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>X</mi><mi>p</mi></msub><annotation encoding="application/x-tex">X_p</annotation></semantics></math>
+(central differences in the interior, second-order forward / backward
+stencils at the endpoints) and read off</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>x</mi><mi>i</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mo minsize="1.2" maxsize="1.2" stretchy="false" form="prefix">[</mo><msup><mi>D</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mover><mi>𝛃</mi><mo accent="true">̂</mo></mover><msub><mo minsize="1.2" maxsize="1.2" stretchy="false" form="postfix">]</mo><mi>i</mi></msub><mo>,</mo><mspace width="2.0em"></mspace><mover><mrow><mi mathvariant="normal">V</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">r</mi></mrow><mo accent="true">̂</mo></mover><mo minsize="1.2" maxsize="1.2" stretchy="false" form="prefix">(</mo><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>x</mi><mi>i</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo minsize="1.2" maxsize="1.2" stretchy="false" form="postfix">)</mo><mo>=</mo><mo minsize="1.2" maxsize="1.2" stretchy="false" form="prefix">[</mo><msup><mi>D</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><msub><mi>V</mi><mi>p</mi></msub><mo minsize="1.2" maxsize="1.2" stretchy="false" form="prefix">(</mo><msup><mi>D</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><msup><mo minsize="1.2" maxsize="1.2" stretchy="false" form="postfix">)</mo><mrow><mspace width="-0.167em"></mspace><mi>⊤</mi></mrow></msup><msub><mo minsize="1.2" maxsize="1.2" stretchy="false" form="postfix">]</mo><mrow><mi>i</mi><mi>i</mi></mrow></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+\hat f^{(k)}(x_i) = \bigl[D^{(k)} \hat{\boldsymbol\beta}\bigr]_i,
+\qquad
+\widehat{\mathrm{Var}}\bigl(\hat f^{(k)}(x_i)\bigr) = \bigl[D^{(k)} V_p
+\bigl(D^{(k)}\bigr)^{\!\top}\bigr]_{ii}.
+</annotation></semantics></math></p>
+<p>Pointwise
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>95</mn><mi>%</mi></mrow><annotation encoding="application/x-tex">95\%</annotation></semantics></math>
+intervals are
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>±</mo><mn>1.96</mn><mspace width="0.167em"></mspace><msqrt><mo>⋅</mo></msqrt></mrow><annotation encoding="application/x-tex">\hat f^{(k)}(x) \pm 1.96\,\sqrt{\cdot}</annotation></semantics></math>.
+This is the standard Wood (2017) construction, and is what
+<code>gratia::derivatives()</code> implements in its default mode
+(Simpson, 2014; Simpson, 2018). Columns of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>X</mi><mi>p</mi></msub><annotation encoding="application/x-tex">X_p</annotation></semantics></math>
+corresponding to <code>adjust</code> terms held at typical values
+contribute identical rows across the grid, so their finite differences
+are zero and they drop out of both
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><annotation encoding="application/x-tex">\hat f^{(k)}</annotation></semantics></math>
+and its variance — the derivative in the panel is therefore the
+derivative of the <em>partial smooth actually shown in the fit
+panel</em>, as expected.</p>
+<p>For simultaneous intervals over the full grid (a stricter question
+than pointwise, and what you want for formal feature localisation),
+<code><a href="../reference/janusplot.html">janusplot()</a></code> implements the Monte Carlo construction of
+Ruppert, Wand &amp; Carroll (2003, §6.5), popularised for GAMs by
+Simpson (2018): draw
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>𝛃</mi><mo accent="true">̃</mo></mover><mi>b</mi></msub><mo>∼</mo><mi>𝒩</mi><mrow><mo stretchy="true" form="prefix">(</mo><mover><mi>𝛃</mi><mo accent="true">̂</mo></mover><mo>,</mo><msub><mi>V</mi><mi>p</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\tilde{\boldsymbol\beta}_b \sim
+\mathcal{N}(\hat{\boldsymbol\beta}, V_p)</annotation></semantics></math>
+for
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>b</mi><mo>=</mo><mn>1</mn><mo>,</mo><mi>…</mi><mo>,</mo><mi>B</mi></mrow><annotation encoding="application/x-tex">b = 1, \ldots, B</annotation></semantics></math>
+and take the
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><mi>α</mi><mo stretchy="true" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(1-\alpha)</annotation></semantics></math>
+quantile of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mo>max</mo><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">|</mo><msubsup><mi>D</mi><mi>i</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msubsup><mrow><mo stretchy="true" form="prefix">(</mo><msub><mover><mi>𝛃</mi><mo accent="true">̃</mo></mover><mi>b</mi></msub><mo>−</mo><mover><mi>𝛃</mi><mo accent="true">̂</mo></mover><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">|</mo></mrow><mi>/</mi><msub><mrow><mi>𝚜</mi><mi>𝚎</mi></mrow><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\max_i |D^{(k)}_i
+(\tilde{\boldsymbol\beta}_b - \hat{\boldsymbol\beta})| /
+\mathtt{se}_i</annotation></semantics></math> across the plotting grid
+as a critical multiplier
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>c</mi><mi>α</mi></msub><annotation encoding="application/x-tex">c_\alpha</annotation></semantics></math>
+on the pointwise SE, so the simultaneous band is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>±</mo><msub><mi>c</mi><mi>α</mi></msub><mspace width="0.167em"></mspace><mrow><mi>𝚜</mi><mi>𝚎</mi></mrow><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\hat f^{(k)}(x) \pm c_\alpha\,\mathtt{se}(x)</annotation></semantics></math>.
+Opt in via <code>derivative_ci = "simultaneous"</code> on either
+<code><a href="../reference/janusplot.html">janusplot()</a></code> or <code><a href="../reference/janusplot_data.html">janusplot_data()</a></code>; the default
+is <code>derivative_ci = "none"</code> so that no CI is drawn by default
+— derivative ribbons invite over-reading of local features and should be
+a deliberate choice, not a default. The implementation uses
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>B</mi><mo>=</mo><mn>1000</mn></mrow><annotation encoding="application/x-tex">B = 1000</annotation></semantics></math>
+(see <code>derivative_ci_nsim</code>); Simpson (2018) uses
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>10</mn><mspace width="0.167em"></mspace><mn>000</mn></mrow><annotation encoding="application/x-tex">10\,000</annotation></semantics></math>,
+which is affordable if you need tighter quantile estimation.</p>
+</div>
+<div class="section level3">
+<h3 id="noise-amplification-and-why-we-cap-at-k-2">Noise amplification and why we cap at
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>k</mi><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">k = 2</annotation></semantics></math><a class="anchor" aria-label="anchor" href="#noise-amplification-and-why-we-cap-at-k-2"></a>
+</h3>
+<p>Finite differencing of raw data amplifies noise; penalised splines do
+not eliminate that amplification, they trade it against bias via the
+REML-selected smoothing parameter. <code>mgcv</code>’s default
+thin-plate penalty is on
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>∫</mo><msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>f</mi><mi>″</mi><mo stretchy="true" form="postfix">)</mo></mrow><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">\int (f'')^2</annotation></semantics></math>,
+which directly regularises
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>f</mi><mo accent="true">̂</mo></mover><mi>′</mi></mrow><annotation encoding="application/x-tex">\hat f'</annotation></semantics></math>
+and bounds (but does not penalise)
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>f</mi><mo accent="true">̂</mo></mover><mi>″</mi></mrow><annotation encoding="application/x-tex">\hat f''</annotation></semantics></math>
+only via the basis rank (Wood, 2017, §5.3; Eilers &amp; Marx, 1996). In
+practice we find
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="true" form="prefix">(</mo><mn>3</mn><mo stretchy="true" form="postfix">)</mo></mrow></msup><annotation encoding="application/x-tex">\hat f^{(3)}</annotation></semantics></math>
+is dominated by noise for
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>&lt;</mo><msup><mn>10</mn><mn>4</mn></msup></mrow><annotation encoding="application/x-tex">n &lt; 10^4</annotation></semantics></math>
+at moderate
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>,
+and so janusplot refuses
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>k</mi><mo>≥</mo><mn>3</mn></mrow><annotation encoding="application/x-tex">k \ge 3</annotation></semantics></math>
+by design. If you have a domain-specific reason to need a higher-order
+derivative, specify a matching-order P-spline penalty explicitly
+(Eilers, Marx &amp; Durbán, 2015) and extract it yourself from
+<code><a href="../reference/janusplot_data.html">janusplot_data()</a></code>.</p>
+</div>
+<div class="section level3">
+<h3 id="applied-use-gain-estimation-and-doseresponse">Applied use: gain estimation and dose–response<a class="anchor" aria-label="anchor" href="#applied-use-gain-estimation-and-doseresponse"></a>
+</h3>
+<p>Two strands in which the asymmetric derivative view is not a cosmetic
+add-on but the analytical primitive the practitioner actually wants.</p>
+<ul>
+<li>
+<strong>Process-gain scheduling.</strong> In adaptive and
+gain-scheduled control, the controller is indexed by the local process
+gain
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>∂</mi><mi>y</mi><mi>/</mi><mi>∂</mi><mi>u</mi></mrow><annotation encoding="application/x-tex">K(x) = \partial y / \partial u</annotation></semantics></math>
+(Rugh &amp; Shamma, 2000). For a steady-state input-output dataset,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mi>y</mi><mo>∣</mo><mi>u</mi></mrow></msub><mi>′</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>u</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\hat f_{y\mid u}'(u)</annotation></semantics></math>
+is a direct data-driven estimate of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>u</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">K(u)</annotation></semantics></math>,
+and its simultaneous CI tells the engineer whether the local gain is
+distinguishable from a reference gain over an operating envelope. The
+inverse panel
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mi>u</mi><mo>∣</mo><mi>y</mi></mrow></msub><mi>′</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>y</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\hat f_{u\mid y}'(y)</annotation></semantics></math>
+is the feedforward-linearisation sensitivity; a large divergence between
+the two panels flags that a naive inverse controller will under-perform
+(Korda &amp; Mezić, 2018). The matrix view makes a fleet of such pairs
+inspectable at once.</li>
+<li>
+<strong>Derivative of the dose–response curve as the causal
+estimand.</strong> For a continuous treatment
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>T</mi><annotation encoding="application/x-tex">T</annotation></semantics></math>
+with unconfoundedness, the dose–response
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>𝔼</mi><mrow><mo stretchy="true" form="prefix">[</mo><mi>Y</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">]</mo></mrow></mrow><annotation encoding="application/x-tex">\mu(t) = \mathbb{E}[Y(t)]</annotation></semantics></math>
+and its derivative
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi><mi>′</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\mu'(t)</annotation></semantics></math>
+are both estimable, and recent work (Zhang &amp; Chen, 2025) argues
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi><mi>′</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\mu'(t)</annotation></semantics></math>
+is often the more directly interpretable quantity — it answers “how much
+does the expected outcome change per unit shift in treatment at this
+dose?” This is structurally the same estimand as the process gain above;
+the asymmetric-matrix derivative panel delivers both forward and
+reverse-conditioned derivative curves in the same frame, which is a
+direct diagnostic for Simpson’s-paradox-style conditioning reversals
+(visible, for example, in the penguins <code>bill_depth_mm</code>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math><code>body_mass_g</code> pair once <code>species</code> is adjusted
+for).</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="references-cited-in-this-section">References cited in this section<a class="anchor" aria-label="anchor" href="#references-cited-in-this-section"></a>
+</h3>
+<p>Eilers, P. H. C., &amp; Marx, B. D. (1996). Flexible smoothing with
+B-splines and penalties. <em>Statistical Science</em>,
+<strong>11</strong>(2), 89–121. <a href="https://doi.org/10.1214/ss/1038425655" class="external-link uri">https://doi.org/10.1214/ss/1038425655</a></p>
+<p>Eilers, P. H. C., Marx, B. D., &amp; Durbán, M. (2015). Twenty years
+of P-splines. <em>SORT</em>, <strong>39</strong>(2), 149–186.</p>
+<p>Janzing, D., &amp; Schölkopf, B. (2010). Causal inference using the
+algorithmic Markov condition. <em>IEEE Transactions on Information
+Theory</em>, <strong>56</strong>(10), 5168–5194. <a href="https://doi.org/10.1109/TIT.2010.2060095" class="external-link uri">https://doi.org/10.1109/TIT.2010.2060095</a></p>
+<p>Korda, M., &amp; Mezić, I. (2018). Linear predictors for nonlinear
+dynamical systems: Koopman operator meets model predictive control.
+<em>Automatica</em>, <strong>93</strong>, 149–160. <a href="https://doi.org/10.1016/j.automatica.2018.03.046" class="external-link uri">https://doi.org/10.1016/j.automatica.2018.03.046</a></p>
+<p>Leith, D. J., &amp; Leithead, W. E. (2000). Survey of gain-scheduling
+analysis and design. <em>International Journal of Control</em>,
+<strong>73</strong>(11), 1001–1025. <a href="https://doi.org/10.1080/002071700411304" class="external-link uri">https://doi.org/10.1080/002071700411304</a></p>
+<p>Rugh, W. J., &amp; Shamma, J. S. (2000). Research on gain scheduling.
+<em>Automatica</em>, <strong>36</strong>(10), 1401–1425. <a href="https://doi.org/10.1016/S0005-1098(00)00058-3" class="external-link uri">https://doi.org/10.1016/S0005-1098(00)00058-3</a></p>
+<p>Ruppert, D., Wand, M. P., &amp; Carroll, R. J. (2003).
+<em>Semiparametric Regression</em>. Cambridge University Press.</p>
+<p>Simpson, G. L. (2014). Simultaneous confidence intervals for
+derivatives of smooth terms in a GAM. <em>From the Bottom of the
+Heap</em> (blog post).</p>
+<p>Simpson, G. L. (2018). Modelling palaeoecological time series using
+generalised additive models. <em>Frontiers in Ecology and
+Evolution</em>, <strong>6</strong>, 149. <a href="https://doi.org/10.3389/fevo.2018.00149" class="external-link uri">https://doi.org/10.3389/fevo.2018.00149</a></p>
+<p>Wood, S. N. (2017). <em>Generalized Additive Models: An Introduction
+with R</em> (2nd ed.). Chapman and Hall/CRC. <a href="https://doi.org/10.1201/9781315370279" class="external-link uri">https://doi.org/10.1201/9781315370279</a></p>
+<p>Zhang, Y., &amp; Chen, Y.-C. (2025). Doubly robust inference on
+causal derivative effects for continuous treatments. arXiv preprint
+[2501.06969].</p>
+</div>
+</div>
+<div class="section level2">
 <h2 id="limitations">Limitations<a class="anchor" aria-label="anchor" href="#limitations"></a>
 </h2>
 <ul>
@@ -332,17 +612,38 @@ strong assumptions.</li>
 scale-invariant in <code>y</code> but sensitive to the predictor-density
 weighting — they describe the smooth on the observed support of
 <code>x</code>, not outside it.</li>
+<li>
+<code>display</code> is scalar — a single <code><a href="../reference/janusplot.html">janusplot()</a></code>
+call renders a single quantity (fit, d1, or d2). To compare fit against
+derivative, issue two or three calls; each carries its own matrix-level
+title and, when <code>with_data = TRUE</code>, its own
+<code>display</code>-tagged summary table.</li>
+<li>Derivative panels show <strong>no confidence ribbon by
+default</strong> (<code>derivative_ci = "none"</code>). Opt in
+explicitly: <code>"pointwise"</code> for marginally-valid pointwise 95%
+bands, <code>"simultaneous"</code> for Simpson (2018) Monte Carlo bands
+valid for feature localisation.</li>
+<li>Requesting <code>display %in% c("d1", "d2")</code> raises the
+default prediction-grid resolution from 100 to 200 points, which
+slightly shifts the numeric shape-metric values (<code>M</code>,
+<code>C</code>, turning and inflection counts) reported alongside the
+fit. Shapes and asymmetry — the primary reading of the matrix — are
+robust to this drift; <code>M</code>, <code>C</code> and the counts are
+secondary diagnostics. The precomputed
+<code>shape_sensitivity_demo</code> dataset was generated under
+<code>n_grid = 100</code> and is preserved as-is for
+reproducibility.</li>
 </ul>
 </div>
 <div class="section level2">
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
 </h2>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"janusplot"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; To cite janusplot in publications use:</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Moldovan M (2026). _janusplot: Asymmetric Smoothed-Association</span></span>
-<span><span class="co">#&gt;   Matrices via GAM Fits_. R package version 0.0.0.9000,</span></span>
+<span><span class="co">#&gt;   Matrices via GAM Fits_. R package version 0.0.0.9001,</span></span>
 <span><span class="co">#&gt;   &lt;https://github.com/max578/janusplot&gt;.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Moldovan M (2026). "Beyond Pearson: Visualising Asymmetric Non-linear</span></span>

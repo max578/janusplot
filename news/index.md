@@ -1,6 +1,204 @@
 # Changelog
 
-## janusplot (development version)
+## janusplot 0.1.0
+
+### First CRAN release (2026-04-23)
+
+Initial public release of `janusplot`. The package renders a pairwise,
+asymmetric smoothed-association matrix of continuous variables, with
+each cell showing the fitted spline from an `mgcv` generalised additive
+model. Upper-triangle cells plot `gam(x_j ~ s(x_i))`; lower-triangle
+cells plot `gam(x_i ~ s(x_j))`. The intentional asymmetry surfaces
+heteroscedasticity, leverage, and directional non-linearity that a
+single scalar correlation hides.
+
+Public surface includes:
+
+- [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
+  — the matrix-plot entry point, with per-cell fit / CI / raw-data
+  controls, hclust-ordered variables, random-effects adjustment via
+  `s(g, bs = "re")`, and opt-in parallel fits via `future.apply`.
+- [`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md)
+  — sibling returning the fitted-model metadata (EDF, F-test p,
+  asymmetry index, shape classification) without rendering.
+- [`janusplot_shape_metrics()`](https://max578.github.io/janusplot/reference/janusplot_shape_metrics.md) +
+  [`janusplot_shape_cutoffs()`](https://max578.github.io/janusplot/reference/janusplot_shape_cutoffs.md) +
+  [`janusplot_shape_hierarchy()`](https://max578.github.io/janusplot/reference/janusplot_shape_hierarchy.md)
+  — the 24-category shape taxonomy.
+- [`janusplot_shape_sensitivity()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity.md) +
+  helpers — recovery-rate simulation over 12 ground-truth shapes × 7
+  sample sizes × 500 replicates, with the precomputed
+  `shape_sensitivity_demo` dataset for quick inspection.
+
+The remainder of this file documents pre-release development history,
+retained for provenance.
+
+------------------------------------------------------------------------
+
+## janusplot 0.0.0.9001 (development)
+
+#### AAGI-preset audit fixes (2026-04-22)
+
+User-visible changes:
+
+- **`data.table` dependency removed.**
+  `janusplot(..., with_data = TRUE)$data` and any other tabular returns
+  are now always a plain `data.frame` — no runtime or documented
+  fallback to
+  [`data.table::as.data.table()`](https://rdrr.io/pkg/data.table/man/as.data.table.html).
+  The package charter bans `data.table` as a dependency (plotting
+  function, overhead unearned). `data.table` is no longer listed in
+  `Suggests:`.
+- **Documentation example cleanup.** The
+  [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
+  example no longer passes `show_asymmetry = TRUE` (which has been
+  deprecated since `0.0.0.9000` and emitted a soft deprecation warning
+  on every example render). The default `annotations = c("edf", "A")`
+  already surfaces the asymmetry index, so the example is materially
+  unchanged.
+
+Internal / house-style fixes:
+
+- **[`match.arg()`](https://rdrr.io/r/base/match.arg.html) →
+  [`rlang::arg_match()`](https://rlang.r-lib.org/reference/arg_match.html)**
+  in the two remaining sites (`.shape_glyph()` in `R/shape-metrics.R`
+  and `.display_title()` in `R/janusplot.R`). Brings every
+  enumerated-argument gate to the same `rlang` discipline CONTRIBUTING
+  already documents. Function signatures updated so the enum set lives
+  on the formal default (as
+  [`rlang::arg_match()`](https://rlang.r-lib.org/reference/arg_match.html)
+  requires).
+- **`@family` tags added to 7 exports** —
+  [`janusplot_shape_cutoffs()`](https://max578.github.io/janusplot/reference/janusplot_shape_cutoffs.md),
+  [`janusplot_shape_hierarchy()`](https://max578.github.io/janusplot/reference/janusplot_shape_hierarchy.md),
+  [`janusplot_shape_metrics()`](https://max578.github.io/janusplot/reference/janusplot_shape_metrics.md),
+  [`janusplot_shape_sensitivity()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity.md),
+  [`janusplot_shape_sensitivity_shapes()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_shapes.md),
+  [`janusplot_shape_sensitivity_summary()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_summary.md),
+  [`janusplot_shape_sensitivity_plot()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_plot.md).
+  The `_pkgdown.yml` reference index now organises these two families
+  (`shape-metrics` and `shape-sensitivity`) alongside the existing
+  `smooth-associations` family, replacing an alphabetical dump.
+- **`inst/WORDLIST` extended** with the 24 Phase-F shape-category names
+  (`linear_up`, `linear_down`, `convex_up`, `convex_down`, `concave_up`,
+  `concave_down`, `s_shape`, `u_shape`, `inverted_u`, `skewed_peak`,
+  `broad_peak`, `rippled_peak`, `rippled_monotone`, `rippled_wave`,
+  `warped_wave`, `complex_wave`, `bimodal_ripple`, `bi_wave`,
+  `bi_wave_ripple`, …). Keeps `devtools::spell_check()` clean.
+- **`inst/CITATION` Article bibentry** now carries `email=` and
+  `comment = c(ORCID = ...)` for consistency with the Manual bibentry,
+  `CITATION.cff`, and `codemeta.json`.
+- **Version pins harmonised** across `DESCRIPTION`, `CITATION.cff`, and
+  `inst/CITATION` at `0.0.0.9001`.
+
+Deferred to a later maintenance sweep (not blocking 0.0.0.9001):
+
+- `renv.lock` snapshot (`/rpkg env` nice-to-have).
+- `covr::package_coverage() > 0.85` CI-side floor assertion.
+- `adr/` relocation to `docs/adr/` per `/rpkg governance` convention.
+
+#### Legend height tracks matrix height (2026-04-22)
+
+- **Colour-bar flex-fills vertical extent.** Removed the fixed
+  `barheight = grid::unit(0.6, "npc")` override inside the
+  [`guide_colourbar()`](https://ggplot2.tidyverse.org/reference/guide_colourbar.html)
+  for both diverging and sequential scales, and set
+  `legend.key.height = grid::unit(1, "null")` in the legend plot’s
+  theme. The bar now tracks the matrix panel height robustly across
+  figure sizes (corrplot-like behaviour), closing the visible
+  proportional-scaling mismatch that appeared between narrow and wide
+  renders. Added a thin `frame.colour = "grey50"` around the bar for
+  visual weight.
+
+#### Lifecycle badge SVGs shipped (2026-04-22)
+
+- **`man/figures/lifecycle-*.svg` added.** Running
+  `usethis::use_lifecycle()` copied `lifecycle-experimental`,
+  `lifecycle-stable`, `lifecycle-superseded`, and `lifecycle-deprecated`
+  into `man/figures/`. The HTML help pages for every
+  [`lifecycle::badge()`](https://lifecycle.r-lib.org/reference/badge.html)-tagged
+  function now render the badge instead of the broken-image placeholder
+  (`?` in a box) that appeared when the SVG file was absent.
+
+#### Derivative views — single-display mode + Simpson 2018 MC CIs (2026-04-22)
+
+- **New `display` parameter on
+  [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md).**
+  Scalar — one of `"fit"` (default, unchanged behaviour for legacy
+  callers), `"d1"`, or `"d2"`. Controls which single quantity is
+  rendered in every off-diagonal cell of the matrix. A matrix-level
+  title (`"Direct fit"`, `"First derivative f'(x)"`, or
+  `"Second derivative f''(x)"`) names the displayed quantity. To compare
+  fit vs derivative, issue two or three
+  [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
+  calls and place them side-by-side; each call keeps its own
+  `with_data = TRUE` summary table, which now carries a `display` column
+  tagging the rendered mode.
+- **LP-matrix derivative estimation.** Derivatives computed analytically
+  from `mgcv`’s linear-predictor matrix via `D %*% coef(fit)` with
+  variance `D %*% Vp %*% t(D)`. The method of Wood (2017, §7.2.4), as
+  popularised for GAMs by Simpson (2018, *Frontiers in Ecology and
+  Evolution*). No new dependency (`gratia` is not required).
+- **New `derivative_ci` parameter on
+  [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
+  and
+  [`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md).**
+  One of `"none"` (default), `"pointwise"`, or `"simultaneous"`. Default
+  is `"none"` — no CI ribbon is drawn on derivative panels unless the
+  caller opts in, because pointwise derivative ribbons over-read local
+  features. `"pointwise"` draws `fit ± 1.96 * se` from the LP-matrix SE.
+  `"simultaneous"` draws Monte Carlo critical-multiplier bands per
+  Simpson (2018): draw
+  ${\widetilde{\mathbf{β}}}_{b} \sim N\left( \widehat{\mathbf{β}},V_{p} \right)$
+  and use the $(1 - \alpha)$ quantile of the normalised max-deviation
+  statistic as the critical multiplier on the pointwise SE.
+- **New `derivative_ci_nsim` parameter.** Integer number of Monte Carlo
+  samples used when `derivative_ci = "simultaneous"`. Default `1000L`
+  (Simpson 2018 uses 10000; 1000 is a throughput-quantile accuracy
+  compromise affordable for medium matrices).
+- **New `n_grid` parameter on
+  [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
+  and
+  [`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md).**
+  Prediction-grid resolution. `NULL` (default) resolves to 100 when
+  `display = "fit"` and 200 otherwise. Callers may override. Larger
+  grids shift the shape-metric values (`M`, `C`, turning / inflection
+  counts) slightly because they are computed on this same grid — a
+  deliberate side-effect, flagged in
+  [`?janusplot`](https://max578.github.io/janusplot/reference/janusplot.md)
+  and in the Limitations section of the vignette. Shapes and asymmetry
+  are the primary matrix reading; M/C/counts are secondary diagnostics.
+- **New `derivatives` parameter on
+  [`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md).**
+  Integer vector of orders in `1:2` (multi-order is allowed — unlike
+  [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)’s
+  scalar `display`, the data companion returns arbitrary requested
+  orders in a single call). Every per-pair list in the return carries
+  `deriv_yx` and `deriv_xy` named lists keyed by order, each a data
+  frame with columns `x`, `fit`, `se`, `lo`, `hi`, `ci_type`. When
+  `derivative_ci = "simultaneous"` each derivative frame also carries a
+  `"crit_multiplier"` attribute.
+- **New vignette section “Derivative views: theoretical justification
+  and applied use”** — three worked examples (fit / d1 / d2) plus a
+  simultaneous-CI demo; covers the LP-matrix variance propagation, noise
+  amplification and the rationale for the order-2 hard cap, and two
+  applied framings (gain-scheduled control; derivative-of-dose-response
+  as the causal estimand of Zhang & Chen 2025). BibTeX for the section
+  lives in `references/janusplot-derivatives.bib` for re-use in the R
+  Journal paper.
+- **Validation.** `display` enforces the scalar choice via
+  [`rlang::arg_match()`](https://rlang.r-lib.org/reference/arg_match.html);
+  `n_grid < 10` is an error and `n_grid > 500` raises an informational
+  note. Orders ≥ 3 are refused by design — higher-order derivatives of
+  penalised regression splines amplify noise beyond usable signal at
+  realistic sample sizes (Eilers, Marx & Durbán 2015).
+- **Breaking change from the interim development release.** An earlier
+  in-development pattern allowed `display` as a vector
+  (`display = c("fit", "d1")`) that stacked panels inside every cell.
+  That pattern is removed; the scalar API is the only one supported.
+  Callers that reached the stacked-panel intermediate must switch to one
+  [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
+  call per quantity.
 
 #### Label placement — border vs. diagonal (2026-04-22)
 
