@@ -39,9 +39,8 @@ remotes::install_github(
 ```
 
 Note: neither [`pak::pak()`](https://pak.r-lib.org/reference/pak.html)
-nor `devtools::install_github()` /
-[`remotes::install_github()`](https://remotes.r-lib.org/reference/install_github.html)
-build vignettes by default when installing from a source repository. The
+nor `devtools::install_github()` / `remotes::install_github()` build
+vignettes by default when installing from a source repository. The
 `build_vignettes = TRUE` flag above is required for
 [`browseVignettes()`](https://rdrr.io/r/utils/browseVignettes.html) to
 find them. The CRAN release ships prebuilt vignettes and needs no extra

@@ -9,7 +9,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/max578/janusplot/blob/v0.1.0/inst/CITATION)
+[`inst/CITATION`](https://github.com/max578/janusplot/blob/main/inst/CITATION)
 
 Moldovan M (2026). *janusplot: Asymmetric Smoothed-Association Matrices
 via GAM Fits*. R package version 0.0.0.9001,
