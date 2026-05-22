@@ -189,18 +189,33 @@ test_that("invalid axes value errors via arg_match", {
 # save_as file output
 # ---------------------------------------------------------------
 
-test_that("save_as writes PNG / PDF / SVG with device from extension", {
+test_that("save_as writes PNG / PDF with device from extension", {
   skip_if_no_mgcv()
   testthat::skip_if_not_installed("ggplot2")
   dat <- make_linear_data(60L, seed = 1L)
   tmpdir <- withr::local_tempdir()
-  for (ext in c("png", "pdf", "svg")) {
+  # PNG + PDF use base R grDevices — always available. SVG needs
+  # svglite (ggplot2 dispatches to svglite::svglite for .svg), so
+  # it gets its own conditional-skip test below.
+  for (ext in c("png", "pdf")) {
     path <- file.path(tmpdir, paste0("matrix.", ext))
     p <- janusplot(dat, vars = c("x1", "x2", "x3"), save_as = path)
     expect_true(file.exists(path))
     expect_true(file.size(path) > 100)
     expect_s3_class(p, "ggplot")
   }
+})
+
+test_that("save_as writes SVG when svglite is available", {
+  skip_if_no_mgcv()
+  testthat::skip_if_not_installed("svglite")
+  dat <- make_linear_data(60L, seed = 1L)
+  tmpdir <- withr::local_tempdir()
+  path <- file.path(tmpdir, "matrix.svg")
+  p <- janusplot(dat, vars = c("x1", "x2", "x3"), save_as = path)
+  expect_true(file.exists(path))
+  expect_true(file.size(path) > 100)
+  expect_s3_class(p, "ggplot")
 })
 
 test_that("save_as rejects unknown extensions loudly", {
