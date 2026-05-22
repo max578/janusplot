@@ -40,6 +40,23 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="janusplot-development-version">janusplot (development version)<a class="anchor" aria-label="anchor" href="#janusplot-development-version"></a></h2>
+<div class="section level4">
+<h4 id="v011-feature--per-cell-k-checking-strategy-a-always-on--strategy-b-opt-in-development-version">v0.1.1 Feature 1 — Per-cell k-checking (Strategy A always-on + Strategy B opt-in)<a class="anchor" aria-label="anchor" href="#v011-feature--per-cell-k-checking-strategy-a-always-on--strategy-b-opt-in-development-version"></a></h4>
+<ul><li>
+<strong>Diagnostic always on.</strong> Every cell’s fit now carries five new diagnostic fields derived from <code><a href="https://rdrr.io/pkg/mgcv/man/k.check.html" class="external-link">mgcv::k.check()</a></code>: <code>k_prime</code>, <code>k_index</code>, <code>k_p</code>, <code>k_flag</code> (Wood’s trifecta: <code>edf/k' &gt; 0.9 &amp; k-index &lt; 1 &amp; p &lt; 0.05</code>), and <code>k_check_status</code> (<code>"ok"</code>, <code>"flagged"</code>, <code>"unreliable"</code>). Cells with <code>n_unique(x) &lt; 10</code> are marked <code>"unreliable"</code> rather than flagged — <code>k.check()</code>’s simulation p-value is meaningless at very low unique-x.</li>
+<li>
+<strong>Opt-in auto-refit.</strong> New <code>auto_refit_k = FALSE</code> (default) and <code>k_max_iter = 2L</code> arguments on <code><a href="../reference/janusplot.html">janusplot()</a></code> and <code><a href="../reference/janusplot_data.html">janusplot_data()</a></code>. With <code>auto_refit_k = TRUE</code>, every flagged cell is refit with a doubling-k loop until either the flag clears, the per-cell unique-x cap is reached, or <code>k_max_iter</code> iterations have passed. Refit trajectory persisted on each cell: <code>k_initial</code>, <code>k_final</code>, <code>k_iterations</code>, <code>k_at_cap</code>.</li>
+<li>
+<strong>Configurable thresholds.</strong> New <code>k_check_thresholds = list(edf_ratio = 0.9, k_index = 1.0, p = 0.05)</code> argument. Defaults track <code><a href="https://rdrr.io/pkg/mgcv/man/gam.check.html" class="external-link">mgcv::gam.check()</a></code> and Wood (2017) §5.9.</li>
+<li>
+<strong>Console summary.</strong> A 3-line <code><a href="https://cli.r-lib.org/reference/cli_abort.html" class="external-link">cli::cli_inform()</a></code> summary fires at the end of <code><a href="../reference/janusplot.html">janusplot()</a></code> / <code><a href="../reference/janusplot_data.html">janusplot_data()</a></code> whenever at least one cell is flagged: total flagged, chance-expected count under α = 0.05, and a recovery hint pointing at either <code>auto_refit_k = TRUE</code> or <code>k_max_iter</code>. Quiet on clean datasets.</li>
+<li>
+<strong>Cell annotation.</strong> New <code>"k_warn"</code> entry in the <code>annotations</code> vocabulary on <code><a href="../reference/janusplot.html">janusplot()</a></code>. When included, flagged cells render a red <code>!</code> (ASCII) or <code>⚠</code> (Unicode) in the top-left corner. Off by default — opt in with <code>annotations = c("edf", "A", "k_warn")</code>.</li>
+<li>
+<strong>Summary-table extension.</strong> <code>janusplot(..., with_data = TRUE)$data</code> gains 9 new columns: <code>k_prime</code>, <code>k_index</code>, <code>k_p</code>, <code>k_flag</code>, <code>k_check_status</code>, <code>k_initial</code>, <code>k_final</code>, <code>k_iterations</code>, <code>k_at_cap</code>.</li>
+<li>
+<strong>RNG isolation.</strong> <code><a href="https://rdrr.io/pkg/mgcv/man/k.check.html" class="external-link">mgcv::k.check()</a></code> runs its own simulation (default <code>n.rep = 400</code>) for the basis-deficiency p-value. The diagnostic’s RNG draw is now isolated via an internal seed-preservation helper, so it does not shift downstream Monte Carlo consumers — <code>derivative_ci = "simultaneous"</code> bands and <code>future.seed = TRUE</code> reproducibility are unaffected.</li>
+</ul></div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="janusplot-010">janusplot 0.1.0<a class="anchor" aria-label="anchor" href="#janusplot-010"></a></h2><p class="text-muted">CRAN release: 2026-04-28</p>

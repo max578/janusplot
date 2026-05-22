@@ -27,6 +27,9 @@ janusplot_data(
   derivative_ci_nsim = 1000L,
   n_grid = NULL,
   shape_cutoffs = janusplot_shape_cutoffs(),
+  k_check_thresholds = NULL,
+  auto_refit_k = FALSE,
+  k_max_iter = 2L,
   ...
 )
 ```
@@ -149,6 +152,37 @@ janusplot_data(
   shape indices (`monotonicity_index`, `convexity_index`) into discrete
   `shape_category` labels. Defaults from
   [`janusplot_shape_cutoffs()`](https://max578.github.io/janusplot/reference/janusplot_shape_cutoffs.md).
+
+- k_check_thresholds:
+
+  Named list giving the three flag-criterion thresholds used by
+  [`mgcv::k.check()`](https://rdrr.io/pkg/mgcv/man/k.check.html)-style
+  basis-dimension diagnostics. Required entries: `edf_ratio` (Wood's
+  \\\widehat{\mathrm{edf}}/k'\\ ratio above which the smooth is too
+  close to its basis cap), `k_index` (residual-difference variance ratio
+  below which the basis appears underspecified), and `p` (the simulation
+  p-value below which the basis-deficiency signal is significant).
+  Defaults — `edf_ratio = 0.9`, `k_index = 1.0`, `p = 0.05` — track
+  [`mgcv::gam.check()`](https://rdrr.io/pkg/mgcv/man/gam.check.html) and
+  Wood (2017) §5.9.
+
+- auto_refit_k:
+
+  Logical. If `TRUE`, every cell whose Wood trifecta flags an underfit
+  is refit with a doubling-k loop until either the flag clears, the
+  per-cell unique-x cap is reached, or `k_max_iter` iterations have
+  passed. Default `FALSE` — the diagnostic (`k_check_status`, `k_flag`,
+  `k_prime`, `k_index`, `k_p`) is always computed and surfaced
+  regardless of this flag, but the refit is opt-in because it can
+  multiply wall time on pathological data.
+
+- k_max_iter:
+
+  Integer. Maximum number of doublings allowed per cell when
+  `auto_refit_k = TRUE`. Default `2L` (so a cell that starts at the
+  `mgcv` default `k = 10` will visit at most `k = 20` and then `k = 40`,
+  capped by the per-cell unique-x limit). Ignored when
+  `auto_refit_k = FALSE`.
 
 - ...:
 

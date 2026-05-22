@@ -240,7 +240,10 @@ rows complete across every variable (matching listwise deletion).</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">Boston</span>, package <span class="op">=</span> <span class="st">"MASS"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/janusplot.html">janusplot</a></span><span class="op">(</span><span class="va">Boston</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"medv"</span>, <span class="st">"lstat"</span>, <span class="st">"rm"</span>, <span class="st">"age"</span>,</span>
 <span>                     <span class="st">"indus"</span>, <span class="st">"nox"</span>, <span class="st">"dis"</span><span class="op">)</span><span class="op">]</span>,</span>
-<span>          order <span class="op">=</span> <span class="st">"hclust"</span><span class="op">)</span></span></code></pre></div>
+<span>          order <span class="op">=</span> <span class="st">"hclust"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> 3 of 42 cells flagged for possible k underfit.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> 2.1 expected by chance at alpha = 0.05 across 42 tests.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Inspect `result$pairs[[i]]$k_check_*` or set `auto_refit_k = TRUE`.</span></span></code></pre></div>
 <p><img src="janusplot_files/figure-html/hclust-1.png" class="r-plt" alt="Asymmetric smoothed-association matrix produced by janusplot(); diagonal cells hold variable labels, off-diagonal cells show the fitted mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and per-cell annotations for n, EDF, and smooth significance glyph." width="770"></p>
 </div>
 <div class="section level2">

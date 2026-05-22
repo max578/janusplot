@@ -220,6 +220,9 @@ data(Boston, package = "MASS")
 janusplot(Boston[, c("medv", "lstat", "rm", "age",
                      "indus", "nox", "dis")],
           order = "hclust")
+#> ℹ 3 of 42 cells flagged for possible k underfit.
+#> ℹ 2.1 expected by chance at alpha = 0.05 across 42 tests.
+#> ℹ Inspect `result$pairs[[i]]$k_check_*` or set `auto_refit_k = TRUE`.
 ```
 
 ![Asymmetric smoothed-association matrix produced by janusplot();
