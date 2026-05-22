@@ -115,6 +115,12 @@ single scalar correlation hides.</p>
 <span>  k_check_thresholds <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  auto_refit_k <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  k_max_iter <span class="op">=</span> <span class="fl">2L</span>,</span>
+<span>  compact <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"always"</span>, <span class="st">"never"</span><span class="op">)</span>,</span>
+<span>  compact_threshold <span class="op">=</span> <span class="fl">12L</span>,</span>
+<span>  compact_levels <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  focus_by <span class="op">=</span> <span class="cn">NA_character_</span>,</span>
+<span>  focus_threshold <span class="op">=</span> <span class="st">"q90"</span>,</span>
+<span>  focus_dim_alpha <span class="op">=</span> <span class="fl">0.25</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -429,6 +435,59 @@ per cell when <code>auto_refit_k = TRUE</code>. Default <code>2L</code> (so a ce
 that starts at the <code>mgcv</code> default <code>k = 10</code> will visit at most
 <code>k = 20</code> and then <code>k = 40</code>, capped by the per-cell unique-x
 limit). Ignored when <code>auto_refit_k = FALSE</code>.</p></dd>
+
+
+<dt id="arg-compact">compact<a class="anchor" aria-label="anchor" href="#arg-compact"></a></dt>
+<dd><p>One of <code>"auto"</code> (default), <code>"always"</code>, or <code>"never"</code>.
+Controls scale-aware content suppression per cell:</p><ul><li><p><code>"auto"</code> — tier 0 at <code>n_var &lt; compact_threshold</code> (the v0.1.0
+behaviour); progressively suppresses scatter, then CI, then
+annotations, then the spline itself as <code>n_var</code> crosses the
+<code>compact_levels</code> ladder. The matrix remains readable as
+<code>k</code> grows toward 25–30 by trading detail for legibility.</p></li>
+<li><p><code>"always"</code> — force at least tier 1 regardless of <code>n_var</code>.
+Useful for very dense fixed-size renders.</p></li>
+<li><p><code>"never"</code> — force tier 0 regardless of <code>n_var</code>. Useful for
+reproducing v0.1.0 figures on large matrices.</p></li>
+</ul></dd>
+
+
+<dt id="arg-compact-threshold">compact_threshold<a class="anchor" aria-label="anchor" href="#arg-compact-threshold"></a></dt>
+<dd><p>Integer. The <code>n_var</code> value at which
+tier 1 (drop scatter) auto-activates under <code>compact = "auto"</code>.
+Default <code>12L</code>, anchored on the 150 × 150 px-per-cell pixel
+budget at typical 6"×6" 300 DPI R Journal figures.</p></dd>
+
+
+<dt id="arg-compact-levels">compact_levels<a class="anchor" aria-label="anchor" href="#arg-compact-levels"></a></dt>
+<dd><p>Optional named list with entries <code>t1</code>, <code>t2</code>,
+<code>t3</code> overriding the auto-tier ladder. Defaults derive from
+<code>compact_threshold</code>: <code>t1 = compact_threshold</code>,
+<code>t2 = compact_threshold + 6</code>, <code>t3 = compact_threshold + 13</code>.
+<code>NULL</code> (default) uses these derived defaults.</p></dd>
+
+
+<dt id="arg-focus-by">focus_by<a class="anchor" aria-label="anchor" href="#arg-focus-by"></a></dt>
+<dd><p>One of <code>NA</code> (default — no filter), <code>"asymmetry"</code>,
+<code>"edf"</code>, <code>"k_flag"</code>, or <code>"non_linearity"</code> (defined as <code>edf - 1</code>).
+When set, cells whose chosen metric falls below <code>focus_threshold</code>
+are rendered in <code>grey85</code> at alpha <code>focus_dim_alpha</code>; the matrix
+shape is preserved so attention drains visually to high-metric
+cells. This is a <strong>visual filter, not a statistical one</strong> —
+the underlying fits are unchanged and the <code>with_data</code> table
+carries every cell.</p></dd>
+
+
+<dt id="arg-focus-threshold">focus_threshold<a class="anchor" aria-label="anchor" href="#arg-focus-threshold"></a></dt>
+<dd><p>Either a quantile-string like <code>"q90"</code>
+(default) or a numeric cutoff. The quantile is taken over the
+non-<code>NA</code> distribution of <code>focus_by</code> across all off-diagonal
+cells in the matrix. Ignored when <code>focus_by = NA</code>.</p></dd>
+
+
+<dt id="arg-focus-dim-alpha">focus_dim_alpha<a class="anchor" aria-label="anchor" href="#arg-focus-dim-alpha"></a></dt>
+<dd><p>Numeric in <code>[0, 1]</code>. Alpha applied to the
+<code>grey85</code> wash on unfocused cells. Default <code>0.25</code>. Ignored when
+<code>focus_by = NA</code>.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

@@ -41,6 +41,26 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="janusplot-development-version">janusplot (development version)<a class="anchor" aria-label="anchor" href="#janusplot-development-version"></a></h2>
 <div class="section level4">
+<h4 id="v011-feature--scale-aware-compact-rendering-development-version">v0.1.1 Feature 2 — Scale-aware compact rendering<a class="anchor" aria-label="anchor" href="#v011-feature--scale-aware-compact-rendering-development-version"></a></h4>
+<ul><li>
+<strong>Progressive content tiers.</strong> New <code>compact</code> argument with values <code>"auto"</code> (default), <code>"always"</code>, and <code>"never"</code>. Under <code>"auto"</code>, each matrix renders at a tier resolved from the pixel-budget ladder:
+<ul><li>Tier 0 (<code>n_var &lt; 12</code>) — v0.1.0 behaviour: spline + CI + scatter
+<ul><li>every annotation.</li>
+</ul></li>
+<li>Tier 1 (<code>12 &lt;= n_var &lt; 18</code>) — drop raw scatter; keep spline, CI, colour fill, and at most one annotation (<code>k_warn</code> if it was requested).</li>
+<li>Tier 2 (<code>18 &lt;= n_var &lt; 25</code>) — spline + colour fill only.</li>
+<li>Tier 3 (<code>n_var &gt;= 25</code>) — colour mini-tile + shape-class glyph at the cell centre; no spline.</li>
+</ul></li>
+<li>
+<strong>Configurable ladder.</strong> <code>compact_threshold = 12L</code> sets where Tier 1 begins; the full ladder shifts with it (<code>t2 = t1 + 6</code>, <code>t3 = t1 + 13</code>). Power users can override the ladder directly via <code>compact_levels = list(t1 = ..., t2 = ..., t3 = ...)</code>.</li>
+<li>
+<strong>Backward-compat escape.</strong> <code>compact = "never"</code> forces Tier 0 on any matrix, reproducing v0.1.0 output regardless of <code>n_var</code>. <code>compact = "always"</code> forces at least Tier 1 even at small <code>n_var</code> (useful for very dense fixed-size renders).</li>
+<li>
+<strong>Focus filter (companion).</strong> New <code>focus_by</code> argument accepts <code>NA</code> (default — no filter), <code>"asymmetry"</code>, <code>"edf"</code>, <code>"non_linearity"</code> (defined as <code>edf - 1</code>), or <code>"k_flag"</code>. Cells whose chosen metric falls below <code>focus_threshold</code> (default <code>"q90"</code>, a quantile string, or a numeric cutoff) are rendered in <code>grey85</code> at alpha <code>focus_dim_alpha</code> (default <code>0.25</code>). The matrix shape is preserved; attention drains visually to high-metric cells. This is a <strong>visual filter, not a statistical one</strong> — the underlying fits and the <code>with_data</code> table are unchanged.</li>
+<li>
+<strong>Rendering-only knob.</strong> Compact tier and focus mask are pure presentation layers. Fits, EDFs, asymmetry indices, shape classifications, k-check diagnostics, and the <code>with_data</code> summary table are byte-identical across <code>compact</code> settings — a regression-tested invariant.</li>
+</ul></div>
+<div class="section level4">
 <h4 id="v011-feature--per-cell-k-checking-strategy-a-always-on--strategy-b-opt-in-development-version">v0.1.1 Feature 1 — Per-cell k-checking (Strategy A always-on + Strategy B opt-in)<a class="anchor" aria-label="anchor" href="#v011-feature--per-cell-k-checking-strategy-a-always-on--strategy-b-opt-in-development-version"></a></h4>
 <ul><li>
 <strong>Diagnostic always on.</strong> Every cell’s fit now carries five new diagnostic fields derived from <code><a href="https://rdrr.io/pkg/mgcv/man/k.check.html" class="external-link">mgcv::k.check()</a></code>: <code>k_prime</code>, <code>k_index</code>, <code>k_p</code>, <code>k_flag</code> (Wood’s trifecta: <code>edf/k' &gt; 0.9 &amp; k-index &lt; 1 &amp; p &lt; 0.05</code>), and <code>k_check_status</code> (<code>"ok"</code>, <code>"flagged"</code>, <code>"unreliable"</code>). Cells with <code>n_unique(x) &lt; 10</code> are marked <code>"unreliable"</code> rather than flagged — <code>k.check()</code>’s simulation p-value is meaningless at very low unique-x.</li>

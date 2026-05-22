@@ -57,6 +57,12 @@ janusplot(
   k_check_thresholds = NULL,
   auto_refit_k = FALSE,
   k_max_iter = 2L,
+  compact = c("auto", "always", "never"),
+  compact_threshold = 12L,
+  compact_levels = NULL,
+  focus_by = NA_character_,
+  focus_threshold = "q90",
+  focus_dim_alpha = 0.25,
   ...
 )
 ```
@@ -382,6 +388,60 @@ janusplot(
   `mgcv` default `k = 10` will visit at most `k = 20` and then `k = 40`,
   capped by the per-cell unique-x limit). Ignored when
   `auto_refit_k = FALSE`.
+
+- compact:
+
+  One of `"auto"` (default), `"always"`, or `"never"`. Controls
+  scale-aware content suppression per cell:
+
+  - `"auto"` — tier 0 at `n_var < compact_threshold` (the v0.1.0
+    behaviour); progressively suppresses scatter, then CI, then
+    annotations, then the spline itself as `n_var` crosses the
+    `compact_levels` ladder. The matrix remains readable as `k` grows
+    toward 25–30 by trading detail for legibility.
+
+  - `"always"` — force at least tier 1 regardless of `n_var`. Useful for
+    very dense fixed-size renders.
+
+  - `"never"` — force tier 0 regardless of `n_var`. Useful for
+    reproducing v0.1.0 figures on large matrices.
+
+- compact_threshold:
+
+  Integer. The `n_var` value at which tier 1 (drop scatter)
+  auto-activates under `compact = "auto"`. Default `12L`, anchored on
+  the 150 × 150 px-per-cell pixel budget at typical 6"×6" 300 DPI R
+  Journal figures.
+
+- compact_levels:
+
+  Optional named list with entries `t1`, `t2`, `t3` overriding the
+  auto-tier ladder. Defaults derive from `compact_threshold`:
+  `t1 = compact_threshold`, `t2 = compact_threshold + 6`,
+  `t3 = compact_threshold + 13`. `NULL` (default) uses these derived
+  defaults.
+
+- focus_by:
+
+  One of `NA` (default — no filter), `"asymmetry"`, `"edf"`, `"k_flag"`,
+  or `"non_linearity"` (defined as `edf - 1`). When set, cells whose
+  chosen metric falls below `focus_threshold` are rendered in `grey85`
+  at alpha `focus_dim_alpha`; the matrix shape is preserved so attention
+  drains visually to high-metric cells. This is a **visual filter, not a
+  statistical one** — the underlying fits are unchanged and the
+  `with_data` table carries every cell.
+
+- focus_threshold:
+
+  Either a quantile-string like `"q90"` (default) or a numeric cutoff.
+  The quantile is taken over the non-`NA` distribution of `focus_by`
+  across all off-diagonal cells in the matrix. Ignored when
+  `focus_by = NA`.
+
+- focus_dim_alpha:
+
+  Numeric in `[0, 1]`. Alpha applied to the `grey85` wash on unfocused
+  cells. Default `0.25`. Ignored when `focus_by = NA`.
 
 - ...:
 

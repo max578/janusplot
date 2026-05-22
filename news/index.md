@@ -2,6 +2,42 @@
 
 ## janusplot (development version)
 
+#### v0.1.1 Feature 2 — Scale-aware compact rendering
+
+- **Progressive content tiers.** New `compact` argument with values
+  `"auto"` (default), `"always"`, and `"never"`. Under `"auto"`, each
+  matrix renders at a tier resolved from the pixel-budget ladder:
+  - Tier 0 (`n_var < 12`) — v0.1.0 behaviour: spline + CI + scatter
+    - every annotation.
+  - Tier 1 (`12 <= n_var < 18`) — drop raw scatter; keep spline, CI,
+    colour fill, and at most one annotation (`k_warn` if it was
+    requested).
+  - Tier 2 (`18 <= n_var < 25`) — spline + colour fill only.
+  - Tier 3 (`n_var >= 25`) — colour mini-tile + shape-class glyph at the
+    cell centre; no spline.
+- **Configurable ladder.** `compact_threshold = 12L` sets where Tier 1
+  begins; the full ladder shifts with it (`t2 = t1 + 6`,
+  `t3 = t1 + 13`). Power users can override the ladder directly via
+  `compact_levels = list(t1 = ..., t2 = ..., t3 = ...)`.
+- **Backward-compat escape.** `compact = "never"` forces Tier 0 on any
+  matrix, reproducing v0.1.0 output regardless of `n_var`.
+  `compact = "always"` forces at least Tier 1 even at small `n_var`
+  (useful for very dense fixed-size renders).
+- **Focus filter (companion).** New `focus_by` argument accepts `NA`
+  (default — no filter), `"asymmetry"`, `"edf"`, `"non_linearity"`
+  (defined as `edf - 1`), or `"k_flag"`. Cells whose chosen metric falls
+  below `focus_threshold` (default `"q90"`, a quantile string, or a
+  numeric cutoff) are rendered in `grey85` at alpha `focus_dim_alpha`
+  (default `0.25`). The matrix shape is preserved; attention drains
+  visually to high-metric cells. This is a **visual filter, not a
+  statistical one** — the underlying fits and the `with_data` table are
+  unchanged.
+- **Rendering-only knob.** Compact tier and focus mask are pure
+  presentation layers. Fits, EDFs, asymmetry indices, shape
+  classifications, k-check diagnostics, and the `with_data` summary
+  table are byte-identical across `compact` settings — a
+  regression-tested invariant.
+
 #### v0.1.1 Feature 1 — Per-cell k-checking (Strategy A always-on + Strategy B opt-in)
 
 - **Diagnostic always on.** Every cell’s fit now carries five new
