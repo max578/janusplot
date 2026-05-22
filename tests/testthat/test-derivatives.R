@@ -307,11 +307,15 @@ test_that(".display_title emits the three mode labels", {
 test_that("janusplot display = 'd1' snapshot", {
   skip_if_not_installed("vdiffr")
   d <- make_nonlinear_data(n = 150L, seed = 2L)
+  # Pin engine = "gam" so this snapshot tracks the v0.1.0 fitting
+  # backend; v0.1.1's bam/fREML default would shift the curves by
+  # ~1-3% in EDF (cf. test-vdiffr.R rationale).
   p <- janusplot(d, vars = c("x1", "x2"),
                  display = "d1",
                  colour_by = "none",
                  show_shape_legend = FALSE,
-                 show_glossary = FALSE)
+                 show_glossary = FALSE,
+                 engine = "gam")
   vdiffr::expect_doppelganger("matrix-2var-d1-plain", p)
 })
 
@@ -325,7 +329,8 @@ test_that("janusplot display = 'd1' simultaneous-CI snapshot", {
                    derivative_ci_nsim = 500L,
                    colour_by = "none",
                    show_shape_legend = FALSE,
-                   show_glossary = FALSE)
+                   show_glossary = FALSE,
+                   engine = "gam")
   })
   vdiffr::expect_doppelganger("matrix-2var-d1-simultaneous", p)
 })

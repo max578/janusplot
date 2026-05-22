@@ -8,7 +8,7 @@ janusplot_data(
   data,
   vars = NULL,
   adjust = NULL,
-  method = "REML",
+  method = NULL,
   k = -1L,
   bs = "tp",
   na_action = c("pairwise", "complete"),
@@ -22,6 +22,9 @@ janusplot_data(
   k_check_thresholds = NULL,
   auto_refit_k = FALSE,
   k_max_iter = 2L,
+  engine = c("bam", "gam"),
+  discrete = FALSE,
+  nthreads = 1L,
   ...
 )
 }
@@ -39,7 +42,11 @@ and/or random effects to include in every pairwise GAM. For example,
 Default \code{NULL} fits unadjusted pairwise smooths.}
 
 \item{method}{Smoothing-parameter estimation method passed to
-\code{\link[mgcv:gam]{mgcv::gam()}}. Default \code{"REML"} per mgcv recommendation.}
+the chosen fitting backend. Default \code{NULL} resolves
+per-engine: \code{"fREML"} for \code{engine = "bam"} (mgcv's
+recommended at scale), \code{"REML"} for \code{engine = "gam"}
+(the v0.1.0 behaviour). Pass any valid mgcv method string
+to override.}
 
 \item{k}{Integer, or named list mapping variable names to integers.
 Basis dimension for \code{s()}. Default \code{-1L} (mgcv's automatic choice).}
@@ -135,6 +142,36 @@ per cell when \code{auto_refit_k = TRUE}. Default \code{2L} (so a cell
 that starts at the \code{mgcv} default \code{k = 10} will visit at most
 \code{k = 20} and then \code{k = 40}, capped by the per-cell unique-x
 limit). Ignored when \code{auto_refit_k = FALSE}.}
+
+\item{engine}{One of \code{"bam"} (default, \strong{new in v0.1.1}) or
+\code{"gam"}. Selects mgcv's fitting backend:
+\itemize{
+\item \code{"bam"} — \code{\link[mgcv:bam]{mgcv::bam()}}. Block-Lanczos solve + fREML
+estimation + lower memory. ~3-10x speedup at janusplot's
+scale (k = 15-25 vars, 600+ pairwise fits per call). The
+\strong{default}, and the one non-byte-identical change in
+v0.1.1: fREML differs from REML by ~1-3\% in EDF on
+identical data, so the asymmetry index may shift by
+similar amounts vs v0.1.0 output. Recoverable verbatim
+via \code{engine = "gam"}.
+\item \code{"gam"} — \code{\link[mgcv:gam]{mgcv::gam()}}. The v0.1.0 backend. Use for
+backward-compat reproduction, very small n (< 200) where
+bam's setup overhead exceeds its solve gain, or
+methodologically sensitive contexts that require REML
+rather than fREML.
+}}
+
+\item{discrete}{Logical. \code{bam}-only opt-in to mgcv's
+covariate-discretisation optimisation. Further ~2-5x
+speedup at the cost of small (sub-pixel at typical
+janusplot resolution) prediction-shift. Default \code{FALSE}.
+Ignored when \code{engine = "gam"}.}
+
+\item{nthreads}{Integer. \code{bam}-only intra-fit threading.
+Default \code{1L} to avoid oversubscription when combined with
+\code{parallel = TRUE} (\code{future.apply} fans out pair fits
+across cores; nthreads > 1 within each pair would
+double-book CPUs). Raise above 1 only when \code{parallel = FALSE}. Ignored when \code{engine = "gam"}.}
 
 \item{...}{Additional arguments passed to \code{\link[mgcv:gam]{mgcv::gam()}}.}
 }

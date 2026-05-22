@@ -412,6 +412,46 @@
 # Fit a single pairwise GAM and summarise
 # ---------------------------------------------------------------
 
+# ---------------------------------------------------------------
+# Fitting-engine dispatch (Feature 4). `bam` is mgcv's "big additive
+# model" — same formula language as `gam`, but uses fREML (fast REML)
+# by default, block-Lanczos / discrete-method optimisations for the
+# basis-coefficient solve, lower memory, and a built-in `nthreads`
+# argument. bam objects inherit from gam (`class(b)` ==
+# c("bam", "gam", "glm", "lm")) so every downstream code path
+# (predict, summary, k.check, derivative LP-matrix arithmetic)
+# works without modification — engine is plumbing, not redesign.
+#
+# Default method-per-engine: `fREML` for bam (mgcv's recommended at
+# scale), `REML` for gam (v0.1.0 behaviour). A user-supplied `method`
+# overrides both.
+# ---------------------------------------------------------------
+
+.engine_default_method <- function(engine) {
+  if (identical(engine, "bam")) "fREML" else "REML"
+}
+
+.fit_one_gam <- function(fml, dat, engine, method, discrete, nthreads, ...) {
+  method <- if (is.null(method) || identical(method, "auto") ||
+                identical(method, "default")) {
+    .engine_default_method(engine)
+  } else {
+    method
+  }
+  if (identical(engine, "bam")) {
+    mgcv::bam(
+      formula  = fml,
+      data     = dat,
+      method   = method,
+      discrete = isTRUE(discrete),
+      nthreads = as.integer(nthreads %||% 1L),
+      ...
+    )
+  } else {
+    mgcv::gam(formula = fml, data = dat, method = method, ...)
+  }
+}
+
 .fit_pair <- function(x_name, y_name, data_full, adjust, method, k, bs,
                      na_action, n_grid = 100L,
                      derivatives = integer(),
@@ -419,7 +459,10 @@
                      derivative_ci_nsim = 1000L,
                      k_check_thresholds = .default_k_thresholds(),
                      auto_refit_k = FALSE,
-                     k_max_iter = 2L, ...) {
+                     k_max_iter = 2L,
+                     engine = "bam",
+                     discrete = FALSE,
+                     nthreads = 1L, ...) {
   k_val <- .resolve_k(k, x_name)
   if (na_action == "pairwise") {
     dat <- .complete_pair(data_full, x_name, y_name, adjust)
@@ -434,8 +477,16 @@
 
   # Initial fit at user-requested k (mgcv resolves k=-1 internally).
   fml <- .build_formula(y_name, x_name, k_val, bs, adjust)
+  resolved_method <- if (is.null(method) || identical(method, "auto") ||
+                         identical(method, "default")) {
+    .engine_default_method(engine)
+  } else {
+    method
+  }
   fit <- tryCatch(
-    mgcv::gam(fml, data = dat, method = method, ...),
+    .fit_one_gam(fml, dat,
+                 engine = engine, method = resolved_method,
+                 discrete = discrete, nthreads = nthreads, ...),
     error = function(e) e
   )
   if (inherits(fit, "error")) {
@@ -471,7 +522,9 @@
       k_new <- min(2 * k_cur, k_cap)
       fml_new <- .build_formula(y_name, x_name, k_new, bs, adjust)
       new_fit <- tryCatch(
-        mgcv::gam(fml_new, data = dat, method = method, ...),
+        .fit_one_gam(fml_new, dat,
+                     engine = engine, method = resolved_method,
+                     discrete = discrete, nthreads = nthreads, ...),
         error = function(e) e
       )
       if (inherits(new_fit, "error")) break
@@ -563,6 +616,8 @@
     dev_exp  = dev_exp,
     n_used   = n_used,
     error    = NA_character_,
+    engine   = engine,
+    method   = resolved_method,
     k_check  = list(
       k_prime         = k_diag$k_prime,
       k_index         = k_diag$k_index,
@@ -589,6 +644,7 @@
     raw = data.frame(),
     edf = NA_real_, pvalue = NA_real_, dev_exp = NA_real_,
     n_used = n_used, error = NA_character_,
+    engine = NA_character_, method = NA_character_,
     k_check = list(
       k_prime        = NA_real_,
       k_index        = NA_real_,
@@ -618,7 +674,10 @@
                            derivative_ci_nsim = 1000L,
                            k_check_thresholds = .default_k_thresholds(),
                            auto_refit_k = FALSE,
-                           k_max_iter = 2L, ...) {
+                           k_max_iter = 2L,
+                           engine = "bam",
+                           discrete = FALSE,
+                           nthreads = 1L, ...) {
   .check_parallel_plan(parallel)
   if (na_action == "complete") {
     data <- data[stats::complete.cases(
@@ -640,7 +699,9 @@
       derivative_ci_nsim = derivative_ci_nsim,
       k_check_thresholds = k_check_thresholds,
       auto_refit_k = auto_refit_k,
-      k_max_iter = k_max_iter, ...
+      k_max_iter = k_max_iter,
+      engine = engine, discrete = discrete,
+      nthreads = nthreads, ...
     )
   }
 

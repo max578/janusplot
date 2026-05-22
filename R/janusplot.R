@@ -25,7 +25,37 @@
 #'   `gam(y ~ s(x) + s(age) + s(site, bs = "re"))` for each pair.
 #'   Default `NULL` fits unadjusted pairwise smooths.
 #' @param method Smoothing-parameter estimation method passed to
-#'   [mgcv::gam()]. Default `"REML"` per mgcv recommendation.
+#'   the chosen fitting backend. Default `NULL` resolves
+#'   per-engine: `"fREML"` for `engine = "bam"` (mgcv's
+#'   recommended at scale), `"REML"` for `engine = "gam"`
+#'   (the v0.1.0 behaviour). Pass any valid mgcv method string
+#'   to override.
+#' @param engine One of `"bam"` (default, **new in v0.1.1**) or
+#'   `"gam"`. Selects mgcv's fitting backend:
+#'   * `"bam"` — [mgcv::bam()]. Block-Lanczos solve + fREML
+#'     estimation + lower memory. ~3-10x speedup at janusplot's
+#'     scale (k = 15-25 vars, 600+ pairwise fits per call). The
+#'     **default**, and the one non-byte-identical change in
+#'     v0.1.1: fREML differs from REML by ~1-3% in EDF on
+#'     identical data, so the asymmetry index may shift by
+#'     similar amounts vs v0.1.0 output. Recoverable verbatim
+#'     via `engine = "gam"`.
+#'   * `"gam"` — [mgcv::gam()]. The v0.1.0 backend. Use for
+#'     backward-compat reproduction, very small n (< 200) where
+#'     bam's setup overhead exceeds its solve gain, or
+#'     methodologically sensitive contexts that require REML
+#'     rather than fREML.
+#' @param discrete Logical. `bam`-only opt-in to mgcv's
+#'   covariate-discretisation optimisation. Further ~2-5x
+#'   speedup at the cost of small (sub-pixel at typical
+#'   janusplot resolution) prediction-shift. Default `FALSE`.
+#'   Ignored when `engine = "gam"`.
+#' @param nthreads Integer. `bam`-only intra-fit threading.
+#'   Default `1L` to avoid oversubscription when combined with
+#'   `parallel = TRUE` (`future.apply` fans out pair fits
+#'   across cores; nthreads > 1 within each pair would
+#'   double-book CPUs). Raise above 1 only when `parallel =
+#'   FALSE`. Ignored when `engine = "gam"`.
 #' @param k Integer, or named list mapping variable names to integers.
 #'   Basis dimension for `s()`. Default `-1L` (mgcv's automatic choice).
 #' @param bs Basis type for `s()`. Default `"tp"` (thin plate).
@@ -354,9 +384,12 @@ janusplot <- function(
     data,
     vars = NULL,
     adjust = NULL,
-    method = "REML",
+    method = NULL,
     k = -1L,
     bs = "tp",
+    engine = c("bam", "gam"),
+    discrete = FALSE,
+    nthreads = 1L,
     order = c("original", "hclust", "alphabetical"),
     show_data = TRUE,
     show_ci = TRUE,
@@ -404,6 +437,15 @@ janusplot <- function(
   na_action     <- rlang::arg_match(na_action)
   compact       <- rlang::arg_match(compact)
   axes          <- rlang::arg_match(axes)
+  engine        <- rlang::arg_match(engine)
+  if (!is.logical(discrete) || length(discrete) != 1L || is.na(discrete)) {
+    cli::cli_abort("{.arg discrete} must be TRUE or FALSE.")
+  }
+  if (!is.numeric(nthreads) || length(nthreads) != 1L ||
+      !is.finite(nthreads) || nthreads < 1L) {
+    cli::cli_abort("{.arg nthreads} must be a single positive integer.")
+  }
+  nthreads <- as.integer(nthreads)
   glyph_style   <- rlang::arg_match(glyph_style)
   labels        <- rlang::arg_match(labels)
   diagonal      <- rlang::arg_match(diagonal)
@@ -607,7 +649,8 @@ janusplot <- function(
     derivative_ci_nsim = derivative_ci_nsim,
     k_check_thresholds = k_thresholds,
     auto_refit_k = auto_refit_k,
-    k_max_iter = k_max_iter, ...
+    k_max_iter = k_max_iter,
+    engine = engine, discrete = discrete, nthreads = nthreads, ...
   )
 
   .summarise_k_check(fits, k_thresholds, auto_refit_k)              # nolint: object_usage_linter.
@@ -826,6 +869,8 @@ janusplot <- function(
       k_final            = kc$k_final,
       k_iterations       = as.integer(kc$k_iterations %||% 0L),
       k_at_cap           = isTRUE(kc$k_at_cap),
+      engine             = f$engine %||% NA_character_,
+      method             = f$method %||% NA_character_,
       stringsAsFactors   = FALSE
     )
   })
@@ -1020,7 +1065,7 @@ janusplot_data <- function(
     data,
     vars = NULL,
     adjust = NULL,
-    method = "REML",
+    method = NULL,
     k = -1L,
     bs = "tp",
     na_action = c("pairwise", "complete"),
@@ -1034,9 +1079,21 @@ janusplot_data <- function(
     k_check_thresholds = NULL,
     auto_refit_k       = FALSE,
     k_max_iter         = 2L,
+    engine             = c("bam", "gam"),
+    discrete           = FALSE,
+    nthreads           = 1L,
     ...) {
   na_action     <- rlang::arg_match(na_action)
   derivative_ci <- rlang::arg_match(derivative_ci)
+  engine        <- rlang::arg_match(engine)
+  if (!is.logical(discrete) || length(discrete) != 1L || is.na(discrete)) {
+    cli::cli_abort("{.arg discrete} must be TRUE or FALSE.")
+  }
+  if (!is.numeric(nthreads) || length(nthreads) != 1L ||
+      !is.finite(nthreads) || nthreads < 1L) {
+    cli::cli_abort("{.arg nthreads} must be a single positive integer.")
+  }
+  nthreads <- as.integer(nthreads)
   .validate_inputs(data, vars, adjust, na_action)
   vars <- .resolve_vars(data, vars)
   k_thresholds <- k_check_thresholds %||% .default_k_thresholds()   # nolint: object_usage_linter.
@@ -1099,7 +1156,8 @@ janusplot_data <- function(
     derivative_ci_nsim = derivative_ci_nsim,
     k_check_thresholds = k_thresholds,
     auto_refit_k = auto_refit_k,
-    k_max_iter = k_max_iter, ...
+    k_max_iter = k_max_iter,
+    engine = engine, discrete = discrete, nthreads = nthreads, ...
   )
 
   .summarise_k_check(fits, k_thresholds, auto_refit_k)              # nolint: object_usage_linter.
@@ -1163,7 +1221,9 @@ janusplot_data <- function(
         deriv_yx           = f_yx$deriv,
         deriv_xy           = f_xy$deriv,
         k_check_yx         = f_yx$k_check,
-        k_check_xy         = f_xy$k_check
+        k_check_xy         = f_xy$k_check,
+        engine             = f_yx$engine %||% f_xy$engine %||% NA_character_,
+        method             = f_yx$method %||% f_xy$method %||% NA_character_
       )
     }
   }
