@@ -121,6 +121,11 @@ single scalar correlation hides.</p>
 <span>  focus_by <span class="op">=</span> <span class="cn">NA_character_</span>,</span>
 <span>  focus_threshold <span class="op">=</span> <span class="st">"q90"</span>,</span>
 <span>  focus_dim_alpha <span class="op">=</span> <span class="fl">0.25</span>,</span>
+<span>  axes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"original"</span>, <span class="st">"standardised"</span>, <span class="st">"centred"</span>, <span class="st">"rank"</span><span class="op">)</span>,</span>
+<span>  save_as <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  save_width <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  save_height <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  save_dpi <span class="op">=</span> <span class="fl">300</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -488,6 +493,60 @@ cells in the matrix. Ignored when <code>focus_by = NA</code>.</p></dd>
 <dd><p>Numeric in <code>[0, 1]</code>. Alpha applied to the
 <code>grey85</code> wash on unfocused cells. Default <code>0.25</code>. Ignored when
 <code>focus_by = NA</code>.</p></dd>
+
+
+<dt id="arg-axes">axes<a class="anchor" aria-label="anchor" href="#arg-axes"></a></dt>
+<dd><p>One of <code>"original"</code> (default), <code>"standardised"</code>,
+<code>"centred"</code>, or <code>"rank"</code>. <strong>Rendering-only knob</strong> — the
+underlying <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam</a></code> fits are byte-identical across all four
+modes (verifiable via <code><a href="https://eddelbuettel.github.io/digest/man/digest.html" class="external-link">digest::digest()</a></code> on the fit list); the
+transformation lives entirely inside the cell renderer and
+propagates to (a) the raw scatter, (b) the spline prediction
+grid, (c) the CI ribbon, and (d) the variable label on the
+matrix border. Use:</p><ul><li><p><code>"original"</code> — raw units. Maximum interpretability per cell.
+v0.1.0 behaviour.</p></li>
+<li><p><code>"standardised"</code> — <code>(x - mean(x)) / sd(x)</code> per variable.
+Border label becomes e.g. <code>"mpg (z)"</code>. Pairs scaled into a
+comparable visual range; useful at <code>k &gt;= 15</code> when raw-unit
+panels look disparate.</p></li>
+<li><p><code>"centred"</code> — <code>x - mean(x)</code> per variable. Border label
+becomes e.g. <code>"mpg (centred)"</code>. Preserves units while
+anchoring the origin.</p></li>
+<li><p><code>"rank"</code> — empirical-CDF-based rank, scaled to <code>[0, n]</code> per
+variable. Border label becomes <code>"rank(mpg)"</code>. Sanity-check
+view: collapses outliers; if the smooth changes shape vs
+<code>"original"</code> the relationship is monotone-but-not-linear.</p></li>
+</ul><p>At compact tier 3 (<code>n_var &gt;= 25</code> under <code>compact = "auto"</code>),
+the cells render only colour fill + shape-class glyph — no
+curve, no scatter — so <code>axes</code> becomes a <strong>documented no-op</strong>
+(the border labels still pick up the mode suffix).</p></dd>
+
+
+<dt id="arg-save-as">save_as<a class="anchor" aria-label="anchor" href="#arg-save-as"></a></dt>
+<dd><p>Optional file path with extension. When set,
+the final assembled plot is written to this path via
+<code><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggplot2::ggsave()</a></code>; the device is inferred from the
+extension. Supported extensions: <code>.png</code>, <code>.pdf</code>, <code>.svg</code>,
+<code>.jpg</code> / <code>.jpeg</code>, <code>.tif</code> / <code>.tiff</code>, <code>.eps</code>, <code>.ps</code>, <code>.bmp</code>.
+Default <code>NULL</code> (no file written; <code>janusplot()</code> still
+returns the ggplot). Width / height default to <code>pmax(6, 0.65 * k_n)</code> inches each — square aspect, scaling with
+matrix dimension.</p></dd>
+
+
+<dt id="arg-save-width">save_width<a class="anchor" aria-label="anchor" href="#arg-save-width"></a></dt>
+<dd><p>Numeric. Override width (inches) for
+<code>save_as</code>. Default <code>NULL</code> uses the auto-resolved square.</p></dd>
+
+
+<dt id="arg-save-height">save_height<a class="anchor" aria-label="anchor" href="#arg-save-height"></a></dt>
+<dd><p>Numeric. Override height (inches) for
+<code>save_as</code>. Default <code>NULL</code> uses the auto-resolved square.</p></dd>
+
+
+<dt id="arg-save-dpi">save_dpi<a class="anchor" aria-label="anchor" href="#arg-save-dpi"></a></dt>
+<dd><p>Integer. Raster DPI for <code>save_as</code> when the
+inferred device is bitmap (png/jpg/tiff/bmp). Default <code>300</code>,
+matching the R Journal target.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

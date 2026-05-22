@@ -63,6 +63,11 @@ janusplot(
   focus_by = NA_character_,
   focus_threshold = "q90",
   focus_dim_alpha = 0.25,
+  axes = c("original", "standardised", "centred", "rank"),
+  save_as = NULL,
+  save_width = NULL,
+  save_height = NULL,
+  save_dpi = 300,
   ...
 )
 ```
@@ -442,6 +447,65 @@ janusplot(
 
   Numeric in `[0, 1]`. Alpha applied to the `grey85` wash on unfocused
   cells. Default `0.25`. Ignored when `focus_by = NA`.
+
+- axes:
+
+  One of `"original"` (default), `"standardised"`, `"centred"`, or
+  `"rank"`. **Rendering-only knob** — the underlying
+  [`mgcv::gam`](https://rdrr.io/pkg/mgcv/man/gam.html) fits are
+  byte-identical across all four modes (verifiable via
+  [`digest::digest()`](https://eddelbuettel.github.io/digest/man/digest.html)
+  on the fit list); the transformation lives entirely inside the cell
+  renderer and propagates to (a) the raw scatter, (b) the spline
+  prediction grid, (c) the CI ribbon, and (d) the variable label on the
+  matrix border. Use:
+
+  - `"original"` — raw units. Maximum interpretability per cell. v0.1.0
+    behaviour.
+
+  - `"standardised"` — `(x - mean(x)) / sd(x)` per variable. Border
+    label becomes e.g. `"mpg (z)"`. Pairs scaled into a comparable
+    visual range; useful at `k >= 15` when raw-unit panels look
+    disparate.
+
+  - `"centred"` — `x - mean(x)` per variable. Border label becomes e.g.
+    `"mpg (centred)"`. Preserves units while anchoring the origin.
+
+  - `"rank"` — empirical-CDF-based rank, scaled to `[0, n]` per
+    variable. Border label becomes `"rank(mpg)"`. Sanity-check view:
+    collapses outliers; if the smooth changes shape vs `"original"` the
+    relationship is monotone-but-not-linear.
+
+  At compact tier 3 (`n_var >= 25` under `compact = "auto"`), the cells
+  render only colour fill + shape-class glyph — no curve, no scatter —
+  so `axes` becomes a **documented no-op** (the border labels still pick
+  up the mode suffix).
+
+- save_as:
+
+  Optional file path with extension. When set, the final assembled plot
+  is written to this path via
+  [`ggplot2::ggsave()`](https://ggplot2.tidyverse.org/reference/ggsave.html);
+  the device is inferred from the extension. Supported extensions:
+  `.png`, `.pdf`, `.svg`, `.jpg` / `.jpeg`, `.tif` / `.tiff`, `.eps`,
+  `.ps`, `.bmp`. Default `NULL` (no file written; `janusplot()` still
+  returns the ggplot). Width / height default to `pmax(6, 0.65 * k_n)`
+  inches each — square aspect, scaling with matrix dimension.
+
+- save_width:
+
+  Numeric. Override width (inches) for `save_as`. Default `NULL` uses
+  the auto-resolved square.
+
+- save_height:
+
+  Numeric. Override height (inches) for `save_as`. Default `NULL` uses
+  the auto-resolved square.
+
+- save_dpi:
+
+  Integer. Raster DPI for `save_as` when the inferred device is bitmap
+  (png/jpg/tiff/bmp). Default `300`, matching the R Journal target.
 
 - ...:
 

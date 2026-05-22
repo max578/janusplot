@@ -41,6 +41,23 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="janusplot-development-version">janusplot (development version)<a class="anchor" aria-label="anchor" href="#janusplot-development-version"></a></h2>
 <div class="section level4">
+<h4 id="v011-feature--axes-rendering-modes--figure-to-file-output-development-version">v0.1.1 Feature 3 — Axes rendering modes + figure-to-file output<a class="anchor" aria-label="anchor" href="#v011-feature--axes-rendering-modes--figure-to-file-output-development-version"></a></h4>
+<ul><li>
+<strong><code>axes</code></strong> rendering knob with four modes: <code>"original"</code> (default), <code>"standardised"</code>, <code>"centred"</code>, <code>"rank"</code>. Applied per variable from raw data; same transform propagates consistently to (a) raw scatter, (b) spline prediction grid,
+<ol start="3" style="list-style-type: lower-alpha"><li>CI ribbon, and (d) the matrix-border variable label (<code>"mpg (z)"</code>, <code>"mpg (centred)"</code>, <code>"rank(mpg)"</code>).</li>
+</ol></li>
+<li>
+<strong>Rendering-only invariant.</strong> The underlying <code>mgcv</code> fits are byte-identical across modes — verified in <code>tests/testthat/test-axes.R</code> via direct column comparison of <code>with_data</code> output across all four modes on a non-linear DGP.</li>
+<li>
+<strong>At-k coverage.</strong> The new test suite renders every <code>(k, mode)</code> combination across <code>k ∈ {2, 5, 10, 15, 20, 26}</code> and <code>mode ∈ {original, standardised, centred, rank}</code> — 24 panels — and asserts none emit warnings. Border-label suffixing is independently verified at <code>k ∈ {3, 12, 20}</code> by walking patchwork’s plot list and matching against the expected suffix pattern.</li>
+<li>
+<strong>Tier-3 no-op.</strong> At compact tier 3 (<code>n_var &gt;= 25</code>) the cells render only colour fill + shape-class glyph (no curve, no scatter), so <code>axes</code> is a documented no-op there. The border labels still pick up the mode suffix so the user can tell which transform they’re looking at.</li>
+<li>
+<strong><code>save_as = NULL</code></strong> — new file-output knob. When set to a path with extension, writes the assembled matrix to disk via [ggplot2::ggsave()]; the device is inferred from the extension. Supported: <code>.png</code>, <code>.pdf</code>, <code>.svg</code>, <code>.jpg</code> / <code>.jpeg</code>, <code>.tif</code> / <code>.tiff</code>, <code>.eps</code>, <code>.ps</code>, <code>.bmp</code>. The function still returns the ggplot — the file is a side-effect.</li>
+<li>
+<strong><code>save_width</code> / <code>save_height</code> / <code>save_dpi</code></strong> — overrides for the auto-resolved square (<code>pmax(6, 0.65 * k_n)</code> inches, 300 dpi for raster). Useful when targeting a fixed-size R Journal figure.</li>
+</ul></div>
+<div class="section level4">
 <h4 id="v011-feature--scale-aware-compact-rendering-development-version">v0.1.1 Feature 2 — Scale-aware compact rendering<a class="anchor" aria-label="anchor" href="#v011-feature--scale-aware-compact-rendering-development-version"></a></h4>
 <ul><li>
 <strong>Progressive content tiers.</strong> New <code>compact</code> argument with values <code>"auto"</code> (default), <code>"always"</code>, and <code>"never"</code>. Under <code>"auto"</code>, each matrix renders at a tier resolved from the pixel-budget ladder:
