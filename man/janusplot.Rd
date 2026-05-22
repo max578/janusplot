@@ -38,6 +38,9 @@ janusplot(
   text_scale_off_diag = 1,
   show_glossary = TRUE,
   glossary_scale = 1,
+  k_check_thresholds = NULL,
+  auto_refit_k = FALSE,
+  k_max_iter = 2L,
   ...
 )
 }
@@ -267,6 +270,31 @@ glyphs). Only keys actually displayed are listed.}
 
 \item{glossary_scale}{Positive numeric multiplier on the glossary
 caption font size. Default \code{1}.}
+
+\item{k_check_thresholds}{Named list giving the three flag-criterion
+thresholds used by \code{mgcv::k.check()}-style basis-dimension
+diagnostics. Required entries: \code{edf_ratio} (Wood's
+\eqn{\widehat{\mathrm{edf}}/k'} ratio above which the smooth is
+too close to its basis cap), \code{k_index} (residual-difference
+variance ratio below which the basis appears underspecified), and
+\code{p} (the simulation p-value below which the basis-deficiency
+signal is significant). Defaults — \code{edf_ratio = 0.9}, \code{k_index = 1.0},
+\code{p = 0.05} — track \code{mgcv::gam.check()} and Wood (2017) §5.9.}
+
+\item{auto_refit_k}{Logical. If \code{TRUE}, every cell whose Wood
+trifecta flags an underfit is refit with a doubling-k loop until
+either the flag clears, the per-cell unique-x cap is reached, or
+\code{k_max_iter} iterations have passed. Default \code{FALSE} — the
+diagnostic (\code{k_check_status}, \code{k_flag}, \code{k_prime}, \code{k_index},
+\code{k_p}) is always computed and surfaced regardless of this flag,
+but the refit is opt-in because it can multiply wall time on
+pathological data.}
+
+\item{k_max_iter}{Integer. Maximum number of doublings allowed
+per cell when \code{auto_refit_k = TRUE}. Default \code{2L} (so a cell
+that starts at the \code{mgcv} default \code{k = 10} will visit at most
+\code{k = 20} and then \code{k = 40}, capped by the per-cell unique-x
+limit). Ignored when \code{auto_refit_k = FALSE}.}
 
 \item{...}{Additional arguments passed to \code{\link[mgcv:gam]{mgcv::gam()}}.}
 }

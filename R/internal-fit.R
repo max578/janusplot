@@ -416,7 +416,10 @@
                      na_action, n_grid = 100L,
                      derivatives = integer(),
                      derivative_ci = "pointwise",
-                     derivative_ci_nsim = 1000L, ...) {
+                     derivative_ci_nsim = 1000L,
+                     k_check_thresholds = .default_k_thresholds(),
+                     auto_refit_k = FALSE,
+                     k_max_iter = 2L, ...) {
   k_val <- .resolve_k(k, x_name)
   if (na_action == "pairwise") {
     dat <- .complete_pair(data_full, x_name, y_name, adjust)
@@ -427,7 +430,9 @@
   if (n_used < 5L) {
     return(.empty_fit_result(x_name, y_name, n_used))
   }
+  n_unique <- length(unique(dat[[x_name]]))
 
+  # Initial fit at user-requested k (mgcv resolves k=-1 internally).
   fml <- .build_formula(y_name, x_name, k_val, bs, adjust)
   fit <- tryCatch(
     mgcv::gam(fml, data = dat, method = method, ...),
@@ -437,6 +442,52 @@
     out <- .empty_fit_result(x_name, y_name, n_used)
     out$error <- conditionMessage(fit)
     return(out)
+  }
+
+  # Strategy A — diagnostic, always on.
+  k_diag <- .k_check_one_pair(fit, x_name, n_unique,
+                              thresholds = k_check_thresholds)
+  k_initial <- if (k_val < 0) {
+    # mgcv default — surface the actual k' from k.check, not -1.
+    if (!is.na(k_diag$k_prime)) k_diag$k_prime + 1 else NA_real_
+  } else {
+    as.numeric(k_val)
+  }
+  k_iterations <- 0L
+  k_at_cap <- FALSE
+
+  # Strategy B — opt-in doubling refit on flagged cells with usable n_unique.
+  if (isTRUE(auto_refit_k) &&
+      identical(k_diag$k_check_status, "flagged")) {
+    k_cap <- n_unique - 1L
+    k_cur <- if (is.na(k_initial)) {
+      if (!is.na(k_diag$k_prime)) k_diag$k_prime + 1 else 10
+    } else {
+      k_initial
+    }
+    while (isTRUE(k_diag$k_flag) &&
+           k_iterations < k_max_iter &&
+           2 * k_cur <= k_cap) {
+      k_new <- min(2 * k_cur, k_cap)
+      fml_new <- .build_formula(y_name, x_name, k_new, bs, adjust)
+      new_fit <- tryCatch(
+        mgcv::gam(fml_new, data = dat, method = method, ...),
+        error = function(e) e
+      )
+      if (inherits(new_fit, "error")) break
+      fit <- new_fit
+      k_cur <- k_new
+      k_iterations <- k_iterations + 1L
+      k_diag <- .k_check_one_pair(fit, x_name, n_unique,
+                                  thresholds = k_check_thresholds)
+      if (k_new >= k_cap) {
+        k_at_cap <- TRUE
+        break
+      }
+    }
+    k_final <- k_cur
+  } else {
+    k_final <- k_initial
   }
 
   smry <- summary(fit)
@@ -511,7 +562,18 @@
     pvalue   = pval,
     dev_exp  = dev_exp,
     n_used   = n_used,
-    error    = NA_character_
+    error    = NA_character_,
+    k_check  = list(
+      k_prime         = k_diag$k_prime,
+      k_index         = k_diag$k_index,
+      k_p             = k_diag$k_p,
+      k_flag          = k_diag$k_flag,
+      k_check_status  = k_diag$k_check_status,
+      k_initial       = as.numeric(k_initial),
+      k_final         = as.numeric(k_final),
+      k_iterations    = as.integer(k_iterations),
+      k_at_cap        = isTRUE(k_at_cap)
+    )
   )
   out$corr  <- .compute_correlations(dat, x_name, y_name)
   out$shape <- .compute_shape_metrics_raw(out)
@@ -527,6 +589,17 @@
     raw = data.frame(),
     edf = NA_real_, pvalue = NA_real_, dev_exp = NA_real_,
     n_used = n_used, error = NA_character_,
+    k_check = list(
+      k_prime        = NA_real_,
+      k_index        = NA_real_,
+      k_p            = NA_real_,
+      k_flag         = NA,
+      k_check_status = NA_character_,
+      k_initial      = NA_real_,
+      k_final        = NA_real_,
+      k_iterations   = 0L,
+      k_at_cap       = FALSE
+    ),
     corr  = list(cor_pearson = NA_real_, cor_spearman = NA_real_,
                  cor_kendall = NA_real_, tie_ratio = NA_real_),
     shape = .na_shape_raw()
@@ -542,7 +615,10 @@
                            n_grid = 100L,
                            derivatives = integer(),
                            derivative_ci = "pointwise",
-                           derivative_ci_nsim = 1000L, ...) {
+                           derivative_ci_nsim = 1000L,
+                           k_check_thresholds = .default_k_thresholds(),
+                           auto_refit_k = FALSE,
+                           k_max_iter = 2L, ...) {
   .check_parallel_plan(parallel)
   if (na_action == "complete") {
     data <- data[stats::complete.cases(
@@ -561,7 +637,10 @@
       na_action = na_action,
       n_grid = n_grid, derivatives = derivatives,
       derivative_ci = derivative_ci,
-      derivative_ci_nsim = derivative_ci_nsim, ...
+      derivative_ci_nsim = derivative_ci_nsim,
+      k_check_thresholds = k_check_thresholds,
+      auto_refit_k = auto_refit_k,
+      k_max_iter = k_max_iter, ...
     )
   }
 
@@ -575,6 +654,162 @@
   }
   names(fits) <- sprintf("%d_%d", grid$i, grid$j)
   fits
+}
+
+# ---------------------------------------------------------------
+# Save and restore the global RNG state around an expression. Base-R
+# substitute for withr::with_preserve_seed() so the runtime code path
+# doesn't depend on `withr` (Suggests-only).
+# ---------------------------------------------------------------
+
+.with_preserved_seed <- function(expr) {
+  old_seed <- if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+    get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  } else {
+    NULL
+  }
+  on.exit({
+    if (is.null(old_seed) &&
+        exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+      rm(list = ".Random.seed", envir = .GlobalEnv)
+    } else if (!is.null(old_seed)) {
+      assign(".Random.seed", old_seed, envir = .GlobalEnv)
+    }
+  })
+  force(expr)
+}
+
+# ---------------------------------------------------------------
+# Per-cell k-check (Feature 1 — Strategy A diagnostic, always-on)
+# ---------------------------------------------------------------
+#
+# Wraps mgcv::k.check() on a fitted GAM with a single s() term. Returns
+# a named list of diagnostic fields. Cells with n_unique < 10 are
+# marked "unreliable" — k.check's simulation p-value is meaningless
+# at very low n_unique. Wood's flag-trifecta (edf/k' close to 1 AND
+# k-index < 1 AND p-value < threshold) drives `k_flag`.
+.k_check_one_pair <- function(fit, x_name, n_unique,
+                              thresholds = .default_k_thresholds()) {
+  na_pack <- list(
+    k_prime         = NA_real_,
+    k_index         = NA_real_,
+    k_p             = NA_real_,
+    k_flag          = NA,
+    k_check_status  = NA_character_
+  )
+  if (is.null(fit) || inherits(fit, "error")) return(na_pack)
+  if (is.na(n_unique) || n_unique < 10L) {
+    na_pack$k_check_status <- "unreliable"
+    return(na_pack)
+  }
+  # mgcv::k.check() runs its own simulation (default n.rep = 400) for
+  # the basis-deficiency p-value. Isolate that RNG draw so the
+  # diagnostic doesn't shift downstream MC consumers (simultaneous-CI
+  # bands, future.seed reproducibility). Base-R seed-stash so this
+  # works without `withr` at runtime (withr is Suggests-only).
+  tab <- .with_preserved_seed(tryCatch(
+    mgcv::k.check(fit),
+    error = function(e) NULL
+  ))
+  if (is.null(tab) || !is.matrix(tab) || nrow(tab) < 1L) {
+    return(na_pack)
+  }
+  row_label <- sprintf("s(%s)", x_name)
+  row <- which(rownames(tab) == row_label)[1L]
+  if (is.na(row)) row <- 1L
+  k_prime <- unname(tab[row, "k'"])
+  edf_val <- unname(tab[row, "edf"])
+  k_index <- unname(tab[row, "k-index"])
+  k_p     <- unname(tab[row, "p-value"])
+
+  if (!is.finite(k_prime) || k_prime <= 0) {
+    return(na_pack)
+  }
+  ratio <- edf_val / k_prime
+  flag <- isTRUE(ratio    >  thresholds$edf_ratio) &&
+          isTRUE(k_index  <  thresholds$k_index)   &&
+          isTRUE(k_p      <  thresholds$p)
+  list(
+    k_prime         = as.numeric(k_prime),
+    k_index         = as.numeric(k_index),
+    k_p             = as.numeric(k_p),
+    k_flag          = isTRUE(flag),
+    k_check_status  = if (isTRUE(flag)) "flagged" else "ok"
+  )
+}
+
+# Default k-check thresholds. Sourced from mgcv::gam.check() conventions
+# and Wood (2017) §5.9. Exposed via `k_check_thresholds` on the public
+# API so users can tune.
+.default_k_thresholds <- function() {
+  list(edf_ratio = 0.9, k_index = 1.0, p = 0.05)
+}
+
+.validate_k_thresholds <- function(thresholds) {
+  if (!is.list(thresholds)) {
+    cli::cli_abort(
+      "{.arg k_check_thresholds} must be a named list with edf_ratio / k_index / p."
+    )
+  }
+  required <- c("edf_ratio", "k_index", "p")
+  missing <- setdiff(required, names(thresholds))
+  if (length(missing)) {
+    cli::cli_abort(c(
+      "{.arg k_check_thresholds} is missing entries: {.val {missing}}.",
+      i = "Required: {.val {required}}."
+    ))
+  }
+  for (nm in required) {
+    v <- thresholds[[nm]]
+    if (!is.numeric(v) || length(v) != 1L || !is.finite(v) || v <= 0) {
+      cli::cli_abort(
+        "{.arg k_check_thresholds${nm}} must be a single positive finite number."
+      )
+    }
+  }
+  invisible(thresholds)
+}
+
+# ---------------------------------------------------------------
+# Cross-matrix k-check summary (Feature 1, console surface).
+# Emits a 3-line cli_inform when at least one cell is flagged. Never
+# fires when nothing is flagged or every cell is unreliable.
+# ---------------------------------------------------------------
+
+.summarise_k_check <- function(fits, thresholds, auto_refit_k) {
+  if (!length(fits)) return(invisible(NULL))
+  status <- vapply(fits, function(f) {
+    s <- f$k_check$k_check_status
+    if (is.null(s) || length(s) == 0L) NA_character_ else as.character(s)
+  }, character(1L))
+  flag <- vapply(fits, function(f) isTRUE(f$k_check$k_flag), logical(1L))
+  n_cells     <- length(fits)
+  n_reliable  <- sum(status %in% c("ok", "flagged"))
+  n_flagged   <- sum(flag, na.rm = TRUE)
+  if (n_flagged == 0L) return(invisible(NULL))
+  chance <- n_reliable * thresholds$p
+  n_post_flagged <- sum(vapply(fits, function(f) {
+    isTRUE(f$k_check$k_flag) && f$k_check$k_iterations > 0L
+  }, logical(1L)))
+  chance_txt    <- format(chance, digits = 2)
+  alpha_txt     <- format(thresholds$p, digits = 2)
+  if (isTRUE(auto_refit_k)) {
+    cli::cli_inform(c(
+      i = "{n_flagged} of {n_cells} cell{?s} flagged for possible k underfit.",
+      i = "{chance_txt} expected by chance at alpha = {alpha_txt} across {n_reliable} test{?s}.",
+      i = paste0(
+        "{n_post_flagged} cell{?s} still flagged after refit; ",
+        "consider raising {.arg k_max_iter} or inspecting them directly."
+      )
+    ))
+  } else {
+    cli::cli_inform(c(
+      i = "{n_flagged} of {n_cells} cell{?s} flagged for possible k underfit.",
+      i = "{chance_txt} expected by chance at alpha = {alpha_txt} across {n_reliable} test{?s}.",
+      i = "Inspect {.code result$pairs[[i]]$k_check_*} or set {.code auto_refit_k = TRUE}."
+    ))
+  }
+  invisible(NULL)
 }
 
 # ---------------------------------------------------------------

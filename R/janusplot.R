@@ -174,6 +174,28 @@
 #' @param na_action One of `"pairwise"` (default; per-cell complete
 #'   observations) or `"complete"` (listwise; all cells use the same
 #'   rows).
+#' @param k_check_thresholds Named list giving the three flag-criterion
+#'   thresholds used by `mgcv::k.check()`-style basis-dimension
+#'   diagnostics. Required entries: `edf_ratio` (Wood's
+#'   \eqn{\widehat{\mathrm{edf}}/k'} ratio above which the smooth is
+#'   too close to its basis cap), `k_index` (residual-difference
+#'   variance ratio below which the basis appears underspecified), and
+#'   `p` (the simulation p-value below which the basis-deficiency
+#'   signal is significant). Defaults — `edf_ratio = 0.9`, `k_index = 1.0`,
+#'   `p = 0.05` — track `mgcv::gam.check()` and Wood (2017) §5.9.
+#' @param auto_refit_k Logical. If `TRUE`, every cell whose Wood
+#'   trifecta flags an underfit is refit with a doubling-k loop until
+#'   either the flag clears, the per-cell unique-x cap is reached, or
+#'   `k_max_iter` iterations have passed. Default `FALSE` — the
+#'   diagnostic (`k_check_status`, `k_flag`, `k_prime`, `k_index`,
+#'   `k_p`) is always computed and surfaced regardless of this flag,
+#'   but the refit is opt-in because it can multiply wall time on
+#'   pathological data.
+#' @param k_max_iter Integer. Maximum number of doublings allowed
+#'   per cell when `auto_refit_k = TRUE`. Default `2L` (so a cell
+#'   that starts at the `mgcv` default `k = 10` will visit at most
+#'   `k = 20` and then `k = 40`, capped by the per-cell unique-x
+#'   limit). Ignored when `auto_refit_k = FALSE`.
 #' @param parallel Logical. If `TRUE`, use `future.apply::future_mapply()`
 #'   to fit pairs in parallel. Requires the `future.apply` package and a
 #'   user-configured `future::plan()`. Default `FALSE`.
@@ -286,6 +308,9 @@ janusplot <- function(
     text_scale_off_diag = 1,
     show_glossary       = TRUE,
     glossary_scale      = 1,
+    k_check_thresholds  = NULL,
+    auto_refit_k        = FALSE,
+    k_max_iter          = 2L,
     ...) {
   order         <- rlang::arg_match(order)
   na_action     <- rlang::arg_match(na_action)
@@ -335,17 +360,12 @@ janusplot <- function(
 
   if (!is.character(annotations)) {
     cli::cli_abort(
-      "{.arg annotations} must be a character vector (subset of edf/A/shape/code)."
+      "{.arg annotations} must be a character vector (subset of edf/A/shape/code/k_warn)."
     )
   }
-  valid_annot <- c("edf", "A", "shape", "code")
-  bad <- setdiff(annotations, valid_annot)
-  if (length(bad)) {
-    cli::cli_abort(c(
-      "Unknown {.arg annotations} value{?s}: {.val {bad}}.",
-      i = "Allowed: {.val {valid_annot}}."
-    ))
-  }
+  # Annotations vocabulary now includes "k_warn" — actual setdiff
+  # check lives below the k-check validation block so the error
+  # message lists the full vocabulary in one place.
 
   # Resolve a single integer derivative order from scalar display.
   # "fit" → no derivatives computed; "d1" / "d2" → the matching order.
@@ -415,14 +435,40 @@ janusplot <- function(
     vars <- sort(vars)
   }
 
+  k_thresholds <- k_check_thresholds %||% .default_k_thresholds()
+  .validate_k_thresholds(k_thresholds)
+  if (!is.logical(auto_refit_k) || length(auto_refit_k) != 1L ||
+      is.na(auto_refit_k)) {
+    cli::cli_abort("{.arg auto_refit_k} must be TRUE or FALSE.")
+  }
+  if (!is.numeric(k_max_iter) || length(k_max_iter) != 1L ||
+      !is.finite(k_max_iter) || k_max_iter < 0) {
+    cli::cli_abort("{.arg k_max_iter} must be a single non-negative integer.")
+  }
+  k_max_iter <- as.integer(k_max_iter)
+
+  valid_annot <- c("edf", "A", "shape", "code", "k_warn")
+  bad <- setdiff(annotations, valid_annot)
+  if (length(bad)) {
+    cli::cli_abort(c(
+      "Unknown {.arg annotations} value{?s}: {.val {bad}}.",
+      i = "Allowed: {.val {valid_annot}}."
+    ))
+  }
+
   fits <- .fit_all_pairs(
     data = data, vars = vars, adjust = adjust,
     method = method, k = k, bs = bs,
     na_action = na_action, parallel = parallel,
     n_grid = n_grid, derivatives = derivative_orders,
     derivative_ci = derivative_ci,
-    derivative_ci_nsim = derivative_ci_nsim, ...
+    derivative_ci_nsim = derivative_ci_nsim,
+    k_check_thresholds = k_thresholds,
+    auto_refit_k = auto_refit_k,
+    k_max_iter = k_max_iter, ...
   )
+
+  .summarise_k_check(fits, k_thresholds, auto_refit_k)
 
   # Colour-scale limits pooled across off-diagonal cells. Correlation
   # encodings use fixed symmetric [-1, 1]; non-linearity indices use
@@ -533,6 +579,12 @@ janusplot <- function(
       f$shape$n_turning_points, f$shape$n_inflections,
       f$shape$flat_range_ratio, shape_cutoffs
     )
+    kc <- f$k_check %||% list(
+      k_prime = NA_real_, k_index = NA_real_, k_p = NA_real_,
+      k_flag = NA, k_check_status = NA_character_,
+      k_initial = NA_real_, k_final = NA_real_,
+      k_iterations = 0L, k_at_cap = FALSE
+    )
     data.frame(
       var_x              = f$x_name,
       var_y              = f$y_name,
@@ -559,6 +611,15 @@ janusplot <- function(
       shape_linear       = .shape_lookup(shape_cat, "linear"),
       colour_value       = .colour_value(f, colour_by),
       display            = display,
+      k_prime            = kc$k_prime,
+      k_index            = kc$k_index,
+      k_p                = kc$k_p,
+      k_flag             = isTRUE(kc$k_flag),
+      k_check_status     = kc$k_check_status,
+      k_initial          = kc$k_initial,
+      k_final            = kc$k_final,
+      k_iterations       = as.integer(kc$k_iterations %||% 0L),
+      k_at_cap           = isTRUE(kc$k_at_cap),
       stringsAsFactors   = FALSE
     )
   })
@@ -764,11 +825,25 @@ janusplot_data <- function(
     derivative_ci_nsim = 1000L,
     n_grid = NULL,
     shape_cutoffs = janusplot_shape_cutoffs(),
+    k_check_thresholds = NULL,
+    auto_refit_k       = FALSE,
+    k_max_iter         = 2L,
     ...) {
   na_action     <- rlang::arg_match(na_action)
   derivative_ci <- rlang::arg_match(derivative_ci)
   .validate_inputs(data, vars, adjust, na_action)
   vars <- .resolve_vars(data, vars)
+  k_thresholds <- k_check_thresholds %||% .default_k_thresholds()
+  .validate_k_thresholds(k_thresholds)
+  if (!is.logical(auto_refit_k) || length(auto_refit_k) != 1L ||
+      is.na(auto_refit_k)) {
+    cli::cli_abort("{.arg auto_refit_k} must be TRUE or FALSE.")
+  }
+  if (!is.numeric(k_max_iter) || length(k_max_iter) != 1L ||
+      !is.finite(k_max_iter) || k_max_iter < 0) {
+    cli::cli_abort("{.arg k_max_iter} must be a single non-negative integer.")
+  }
+  k_max_iter <- as.integer(k_max_iter)
 
   if (length(derivatives)) {
     if (!is.numeric(derivatives) || anyNA(derivatives)) {
@@ -815,8 +890,13 @@ janusplot_data <- function(
     na_action = na_action, parallel = parallel,
     n_grid = n_grid, derivatives = derivatives,
     derivative_ci = derivative_ci,
-    derivative_ci_nsim = derivative_ci_nsim, ...
+    derivative_ci_nsim = derivative_ci_nsim,
+    k_check_thresholds = k_thresholds,
+    auto_refit_k = auto_refit_k,
+    k_max_iter = k_max_iter, ...
   )
+
+  .summarise_k_check(fits, k_thresholds, auto_refit_k)
 
   k_n <- length(vars)
   pairs_out <- list()
@@ -875,7 +955,9 @@ janusplot_data <- function(
         shape_linear_yx    = .shape_lookup(shape_yx, "linear"),
         shape_linear_xy    = .shape_lookup(shape_xy, "linear"),
         deriv_yx           = f_yx$deriv,
-        deriv_xy           = f_xy$deriv
+        deriv_xy           = f_xy$deriv,
+        k_check_yx         = f_yx$k_check,
+        k_check_xy         = f_xy$k_check
       )
     }
   }

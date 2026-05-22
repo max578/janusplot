@@ -1,5 +1,44 @@
 # janusplot (development version)
 
+### v0.1.1 Feature 1 — Per-cell k-checking (Strategy A always-on + Strategy B opt-in)
+
+* **Diagnostic always on.** Every cell's fit now carries five new
+  diagnostic fields derived from `mgcv::k.check()`: `k_prime`,
+  `k_index`, `k_p`, `k_flag` (Wood's trifecta: `edf/k' > 0.9 &
+  k-index < 1 & p < 0.05`), and `k_check_status` (`"ok"`,
+  `"flagged"`, `"unreliable"`). Cells with `n_unique(x) < 10` are
+  marked `"unreliable"` rather than flagged — `k.check()`'s
+  simulation p-value is meaningless at very low unique-x.
+* **Opt-in auto-refit.** New `auto_refit_k = FALSE` (default) and
+  `k_max_iter = 2L` arguments on `janusplot()` and `janusplot_data()`.
+  With `auto_refit_k = TRUE`, every flagged cell is refit with a
+  doubling-k loop until either the flag clears, the per-cell
+  unique-x cap is reached, or `k_max_iter` iterations have passed.
+  Refit trajectory persisted on each cell: `k_initial`, `k_final`,
+  `k_iterations`, `k_at_cap`.
+* **Configurable thresholds.** New `k_check_thresholds =
+  list(edf_ratio = 0.9, k_index = 1.0, p = 0.05)` argument.
+  Defaults track `mgcv::gam.check()` and Wood (2017) §5.9.
+* **Console summary.** A 3-line `cli::cli_inform()` summary fires at
+  the end of `janusplot()` / `janusplot_data()` whenever at least
+  one cell is flagged: total flagged, chance-expected count under
+  α = 0.05, and a recovery hint pointing at either
+  `auto_refit_k = TRUE` or `k_max_iter`. Quiet on clean datasets.
+* **Cell annotation.** New `"k_warn"` entry in the `annotations`
+  vocabulary on `janusplot()`. When included, flagged cells render
+  a red `!` (ASCII) or `⚠` (Unicode) in the top-left corner.
+  Off by default — opt in with `annotations = c("edf", "A", "k_warn")`.
+* **Summary-table extension.** `janusplot(..., with_data = TRUE)$data`
+  gains 9 new columns: `k_prime`, `k_index`, `k_p`, `k_flag`,
+  `k_check_status`, `k_initial`, `k_final`, `k_iterations`,
+  `k_at_cap`.
+* **RNG isolation.** `mgcv::k.check()` runs its own simulation
+  (default `n.rep = 400`) for the basis-deficiency p-value. The
+  diagnostic's RNG draw is now isolated via an internal
+  seed-preservation helper, so it does not shift downstream Monte
+  Carlo consumers — `derivative_ci = "simultaneous"` bands and
+  `future.seed = TRUE` reproducibility are unaffected.
+
 
 # janusplot 0.1.0
 
