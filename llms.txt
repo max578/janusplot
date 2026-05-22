@@ -24,6 +24,7 @@ Two novelties, paired with the asymmetry story:
 ## Install
 
 ``` r
+
 # development version from GitHub (fast; no vignettes)
 pak::pak("max578/janusplot")
 
@@ -38,8 +39,9 @@ remotes::install_github(
 ```
 
 Note: neither [`pak::pak()`](https://pak.r-lib.org/reference/pak.html)
-nor `devtools::install_github()` / `remotes::install_github()` build
-vignettes by default when installing from a source repository. The
+nor `devtools::install_github()` /
+[`remotes::install_github()`](https://remotes.r-lib.org/reference/install_github.html)
+build vignettes by default when installing from a source repository. The
 `build_vignettes = TRUE` flag above is required for
 [`browseVignettes()`](https://rdrr.io/r/utils/browseVignettes.html) to
 find them. The CRAN release ships prebuilt vignettes and needs no extra
@@ -48,6 +50,7 @@ flag.
 ## Quick start
 
 ``` r
+
 library(janusplot)
 
 # Palmer penguins — four continuous traits
@@ -73,6 +76,7 @@ Default encoding:
 Opt into a per-cell shape marker via `annotations`:
 
 ``` r
+
 # Two-letter shape code, top-left (ASCII — safe on any font / PDF):
 janusplot(d, annotations = c("edf", "A", "code"))
 
@@ -83,15 +87,15 @@ janusplot(d, annotations = c("edf", "A", "shape"),
 
 ## Shape taxonomy — what gets classified
 
-| Archetype (7)     | Categories                                                                         | Example                          |
-|-------------------|------------------------------------------------------------------------------------|----------------------------------|
-| `monotone_linear` | `linear_up` `linear_down`                                                          | `y = x`                          |
-| `monotone_curved` | `convex_up` `concave_up` `convex_down` `concave_down` `s_shape` `rippled_monotone` | `tanh`, `sqrt`, `exp(−x)`        |
-| `unimodal`        | `u_shape` `inverted_u` `skewed_peak` `broad_peak` `rippled_peak`                   | `(x−.5)²`, `x·exp(−3x)`, plateau |
-| `wave`            | `wave` `warped_wave` `rippled_wave` `complex_wave`                                 | `sin(2πx)` family                |
-| `multimodal`      | `bimodal` `bimodal_ripple` `bi_wave` `bi_wave_ripple`                              | two-peak mix, `sin(4πx)`         |
-| `chaotic`         | `complex`                                                                          | ≥ 5 extrema / inflections        |
-| `degenerate`      | `flat` `indeterminate`                                                             | constant / fit failure           |
+| Archetype (7) | Categories | Example |
+|----|----|----|
+| `monotone_linear` | `linear_up` `linear_down` | `y = x` |
+| `monotone_curved` | `convex_up` `concave_up` `convex_down` `concave_down` `s_shape` `rippled_monotone` | `tanh`, `sqrt`, `exp(−x)` |
+| `unimodal` | `u_shape` `inverted_u` `skewed_peak` `broad_peak` `rippled_peak` | `(x−.5)²`, `x·exp(−3x)`, plateau |
+| `wave` | `wave` `warped_wave` `rippled_wave` `complex_wave` | `sin(2πx)` family |
+| `multimodal` | `bimodal` `bimodal_ripple` `bi_wave` `bi_wave_ripple` | two-peak mix, `sin(4πx)` |
+| `chaotic` | `complex` | ≥ 5 extrema / inflections |
+| `degenerate` | `flat` `indeterminate` | constant / fit failure |
 
 Full table (with 2-letter codes + monotonic / linear rollups + glyph +
 gloss) via
@@ -103,6 +107,7 @@ The classifier’s recovery behaviour is characterised across a full
 factorial of sample sizes × noise levels × ground-truth shapes:
 
 ``` r
+
 # Precomputed 2160-fit demo sweep — zero wait
 data("shape_sensitivity_demo")
 janusplot_shape_sensitivity_plot(shape_sensitivity_demo, "recovery_curves")
@@ -175,6 +180,7 @@ new submission / local env); 190 test expectations; 88.5 % coverage.
 ## Citation
 
 ``` r
+
 citation("janusplot")
 ```
 

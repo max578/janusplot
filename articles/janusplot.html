@@ -12,8 +12,8 @@
 <link rel="icon" sizes="any" href="../favicon.ico">
 <link rel="manifest" href="../site.webmanifest">
 <script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Asymmetric Smoothed-Association Matrices">
 </head>
@@ -66,7 +66,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Asymmetric Smoothed-Association Matrices</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/max578/janusplot/blob/main/vignettes/janusplot.Rmd" class="external-link"><code>vignettes/janusplot.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/max578/janusplot/blob/v0.1.0/vignettes/janusplot.Rmd" class="external-link"><code>vignettes/janusplot.Rmd</code></a></small>
       <div class="d-none name"><code>janusplot.Rmd</code></div>
     </div>
 
@@ -139,9 +139,9 @@ clearly exceed 1; the cell fills reflect that. Cells involving
 </h2>
 <p>When the noise scale depends on a predictor, the two directional
 smooths diverge:
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi><mo>∼</mo><mi>s</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">y \sim s(x)</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi><mo>∼</mo><mi>s</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">y \sim s(x)</annotation></semantics></math>
 recovers the mean relationship;
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi><mo>∼</mo><mi>s</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>y</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">x \sim s(y)</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi><mo>∼</mo><mi>s</mi><mo stretchy="false" form="prefix">(</mo><mi>y</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">x \sim s(y)</annotation></semantics></math>
 is distorted by the variance asymmetry.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">400</span></span>
@@ -152,7 +152,7 @@ is distorted by the variance asymmetry.</p>
 <span><span class="fu"><a href="../reference/janusplot.html">janusplot</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span></span></code></pre></div>
 <p><img src="janusplot_files/figure-html/asym-1.png" class="r-plt" alt="Asymmetric smoothed-association matrix produced by janusplot(); diagonal cells hold variable labels, off-diagonal cells show the fitted mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and per-cell annotations for n, EDF, and smooth significance glyph." width="770"></p>
 <p>The <code>A = ...</code> label per cell reports the asymmetry index
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>A</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>=</mo><mrow><mo stretchy="true" form="prefix">|</mo><mi>E</mi><mi>D</mi><msub><mi>F</mi><mrow><mi>y</mi><mo stretchy="false" form="prefix">|</mo><mi>x</mi></mrow></msub><mo>−</mo><mi>E</mi><mi>D</mi><msub><mi>F</mi><mrow><mi>x</mi><mo stretchy="false" form="prefix">|</mo><mi>y</mi></mrow></msub><mo stretchy="true" form="postfix">|</mo></mrow><mi>/</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>E</mi><mi>D</mi><msub><mi>F</mi><mrow><mi>y</mi><mo stretchy="false" form="prefix">|</mo><mi>x</mi></mrow></msub><mo>+</mo><mi>E</mi><mi>D</mi><msub><mi>F</mi><mrow><mi>x</mi><mo stretchy="false" form="prefix">|</mo><mi>y</mi></mrow></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>∈</mo><mrow><mo stretchy="true" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="true" form="postfix">]</mo></mrow></mrow><annotation encoding="application/x-tex">A_{ij} = |EDF_{y|x} - EDF_{x|y}| / (EDF_{y|x} + EDF_{x|y}) \in [0, 1]</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>A</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>=</mo><mo stretchy="false" form="prefix">|</mo><mi>E</mi><mi>D</mi><msub><mi>F</mi><mrow><mi>y</mi><mo stretchy="false" form="prefix">|</mo><mi>x</mi></mrow></msub><mo>−</mo><mi>E</mi><mi>D</mi><msub><mi>F</mi><mrow><mi>x</mi><mo stretchy="false" form="prefix">|</mo><mi>y</mi></mrow></msub><mo stretchy="false" form="prefix">|</mo><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mi>E</mi><mi>D</mi><msub><mi>F</mi><mrow><mi>y</mi><mo stretchy="false" form="prefix">|</mo><mi>x</mi></mrow></msub><mo>+</mo><mi>E</mi><mi>D</mi><msub><mi>F</mi><mrow><mi>x</mi><mo stretchy="false" form="prefix">|</mo><mi>y</mi></mrow></msub><mo stretchy="false" form="postfix">)</mo><mo>∈</mo><mo stretchy="false" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">A_{ij} = |EDF_{y|x} - EDF_{x|y}| / (EDF_{y|x} + EDF_{x|y}) \in [0, 1]</annotation></semantics></math>,
 shown by default in the bottom-left corner alongside
 <code>EDF = ...</code>.</p>
 </div>
@@ -362,12 +362,12 @@ critical multiplier per Simpson (2018):</p>
 <h3 id="what-derivatives-reveal-that-the-fit-hides">What derivatives reveal that the fit hides<a class="anchor" aria-label="anchor" href="#what-derivatives-reveal-that-the-fit-hides"></a>
 </h3>
 <p>The fitted smooth
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>𝔼</mi><mrow><mo stretchy="true" form="prefix">[</mo><mi>y</mi><mo>∣</mo><mi>x</mi><mo stretchy="true" form="postfix">]</mo></mrow></mrow><annotation encoding="application/x-tex">\hat f(x) = \mathbb{E}[y\mid x]</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>f</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>𝔼</mi><mo stretchy="false" form="prefix">[</mo><mi>y</mi><mo>∣</mo><mi>x</mi><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">\hat f(x) = \mathbb{E}[y\mid x]</annotation></semantics></math>
 is a level description. Its derivatives are different statistical
 objects with their own interpretations:</p>
 <ul>
 <li>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>f</mi><mo accent="true">̂</mo></mover><mi>′</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\hat f'(x)</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mo>′</mo></msup><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\hat f'(x)</annotation></semantics></math>
 — the <strong>local rate of change</strong> of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
 in
@@ -375,26 +375,26 @@ in
 Zero crossings localise the turning points of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>f</mi><mo accent="true">̂</mo></mover><annotation encoding="application/x-tex">\hat f</annotation></semantics></math>;
 the sign of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>f</mi><mo accent="true">̂</mo></mover><mi>′</mi></mrow><annotation encoding="application/x-tex">\hat f'</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mo>′</mo></msup><annotation encoding="application/x-tex">\hat f'</annotation></semantics></math>
 gives the direction of monotonicity; the magnitude gives the sensitivity
 at the operating point
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>.
 In control engineering this is literally the process gain
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>∂</mi><mi>y</mi><mi>/</mi><mi>∂</mi><mi>u</mi></mrow><annotation encoding="application/x-tex">K(x) = \partial y / \partial u</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>∂</mi><mi>y</mi><mi>/</mi><mi>∂</mi><mi>u</mi></mrow><annotation encoding="application/x-tex">K(x) = \partial y / \partial u</annotation></semantics></math>
 that gain-scheduled controllers are built around (Rugh &amp; Shamma,
 2000; Leith &amp; Leithead, 2000). In causal analysis of a continuous
 treatment it is the derivative of the dose–response curve
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi><mi>′</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>∂</mi><mi>𝔼</mi><mrow><mo stretchy="true" form="prefix">[</mo><mi>Y</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">]</mo></mrow><mi>/</mi><mi>∂</mi><mi>t</mi></mrow><annotation encoding="application/x-tex">\mu'(t) = \partial \mathbb{E}[Y(t)] / \partial t</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>μ</mi><mo>′</mo></msup><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>∂</mi><mi>𝔼</mi><mo stretchy="false" form="prefix">[</mo><mi>Y</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">]</mo><mi>/</mi><mi>∂</mi><mi>t</mi></mrow><annotation encoding="application/x-tex">\mu'(t) = \partial \mathbb{E}[Y(t)] / \partial t</annotation></semantics></math>,
 which Zhang &amp; Chen (2025) argue is often <em>the</em>
 treatment-effect object of interest, not the curve itself.</li>
 <li>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>f</mi><mo accent="true">̂</mo></mover><mi>″</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\hat f''(x)</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mo>″</mo></msup><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\hat f''(x)</annotation></semantics></math>
 — the <strong>local curvature</strong>. Zero crossings localise the
 inflection points of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>f</mi><mo accent="true">̂</mo></mover><annotation encoding="application/x-tex">\hat f</annotation></semantics></math>;
 a persistently positive second derivative flags accelerating growth,
 persistently negative flags saturation (diminishing returns).
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>f</mi><mo accent="true">̂</mo></mover><mi>″</mi></mrow><annotation encoding="application/x-tex">\hat f''</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mo>″</mo></msup><annotation encoding="application/x-tex">\hat f''</annotation></semantics></math>
 is the input to the convexity index
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>C</mi><annotation encoding="application/x-tex">C</annotation></semantics></math>
 defined earlier in this vignette, so the derivative panel exposes the
@@ -402,9 +402,9 @@ defined earlier in this vignette, so the derivative panel exposes the
 </ul>
 <p>The asymmetric matrix layout sharpens this. <code><a href="../reference/janusplot.html">janusplot()</a></code>
 fits both
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mi>y</mi><mo>∣</mo><mi>x</mi></mrow></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\hat f_{y\mid x}(x)</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mi>y</mi><mo>∣</mo><mi>x</mi></mrow></msub><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\hat f_{y\mid x}(x)</annotation></semantics></math>
 and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mi>x</mi><mo>∣</mo><mi>y</mi></mrow></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>y</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\hat f_{x\mid y}(y)</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mi>x</mi><mo>∣</mo><mi>y</mi></mrow></msub><mo stretchy="false" form="prefix">(</mo><mi>y</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\hat f_{x\mid y}(y)</annotation></semantics></math>,
 so derivative panels on the two triangles answer genuinely different
 questions: the upper triangle is “how steeply does
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
@@ -424,25 +424,25 @@ symmetric correlation matrix cannot expose (Janzing &amp; Schölkopf,
 <h3 id="estimation-the-lp-matrix">Estimation — the LP matrix<a class="anchor" aria-label="anchor" href="#estimation-the-lp-matrix"></a>
 </h3>
 <p>Let
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>X</mi><mi>p</mi></msub><mo>=</mo><msub><mi>X</mi><mi>p</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>𝐱</mi><mi>g</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">X_p = X_p(\mathbf{x}_g)</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>X</mi><mi>p</mi></msub><mo>=</mo><msub><mi>X</mi><mi>p</mi></msub><mo stretchy="false" form="prefix">(</mo><msub><mi>𝐱</mi><mi>g</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">X_p = X_p(\mathbf{x}_g)</annotation></semantics></math>
 denote the design (linear predictor) matrix of the fitted GAM evaluated
 on the plotting grid
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>𝐱</mi><mi>g</mi></msub><annotation encoding="application/x-tex">\mathbf{x}_g</annotation></semantics></math>,
 obtained from
 <code>predict(gam_fit, newdata = ..., type = "lpmatrix")</code> (Wood,
 2017, §7.2.4). With penalised posterior mean
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>𝛃</mi><mo accent="true">̂</mo></mover><mo>=</mo><mrow><mi>𝚌</mi><mi>𝚘</mi><mi>𝚎</mi><mi>𝚏</mi><mrow><mo stretchy="true" form="prefix" mathvariant="monospace">(</mo><mi>𝚐</mi><mi>𝚊</mi><mi>𝚖</mi><mi mathvariant="monospace">_</mi><mi>𝚏</mi><mi>𝚒</mi><mi>𝚝</mi><mo stretchy="true" form="postfix" mathvariant="monospace">)</mo></mrow></mrow></mrow><annotation encoding="application/x-tex">\hat{\boldsymbol\beta} =
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>𝛃</mi><mo accent="true">̂</mo></mover><mo>=</mo><mrow><mi>𝚌</mi><mi>𝚘</mi><mi>𝚎</mi><mi>𝚏</mi><mo stretchy="false" form="prefix" mathvariant="monospace">(</mo><mi>𝚐</mi><mi>𝚊</mi><mi>𝚖</mi><mi mathvariant="monospace">_</mi><mi>𝚏</mi><mi>𝚒</mi><mi>𝚝</mi><mo stretchy="false" form="postfix" mathvariant="monospace">)</mo></mrow></mrow><annotation encoding="application/x-tex">\hat{\boldsymbol\beta} =
 \mathtt{coef(gam\_fit)}</annotation></semantics></math> and posterior
 covariance
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>V</mi><mi>p</mi></msub><mo>=</mo><mrow><mi>𝚐</mi><mi>𝚊</mi><mi>𝚖</mi><mi mathvariant="monospace">_</mi><mi>𝚏</mi><mi>𝚒</mi><mi>𝚝</mi><mi mathvariant="monospace">$</mi><mi>𝚅</mi><mi>𝚙</mi></mrow></mrow><annotation encoding="application/x-tex">V_p =
 \mathtt{gam\_fit\$Vp}</annotation></semantics></math>, we construct a
 finite-difference operator
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>D</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><annotation encoding="application/x-tex">D^{(k)}</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>D</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>k</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup><annotation encoding="application/x-tex">D^{(k)}</annotation></semantics></math>
 on the <em>rows</em> of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>X</mi><mi>p</mi></msub><annotation encoding="application/x-tex">X_p</annotation></semantics></math>
 (central differences in the interior, second-order forward / backward
 stencils at the endpoints) and read off</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>x</mi><mi>i</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mo minsize="1.2" maxsize="1.2" stretchy="false" form="prefix">[</mo><msup><mi>D</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mover><mi>𝛃</mi><mo accent="true">̂</mo></mover><msub><mo minsize="1.2" maxsize="1.2" stretchy="false" form="postfix">]</mo><mi>i</mi></msub><mo>,</mo><mspace width="2.0em"></mspace><mover><mrow><mi mathvariant="normal">V</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">r</mi></mrow><mo accent="true">̂</mo></mover><mo minsize="1.2" maxsize="1.2" stretchy="false" form="prefix">(</mo><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>x</mi><mi>i</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo minsize="1.2" maxsize="1.2" stretchy="false" form="postfix">)</mo><mo>=</mo><mo minsize="1.2" maxsize="1.2" stretchy="false" form="prefix">[</mo><msup><mi>D</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><msub><mi>V</mi><mi>p</mi></msub><mo minsize="1.2" maxsize="1.2" stretchy="false" form="prefix">(</mo><msup><mi>D</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><msup><mo minsize="1.2" maxsize="1.2" stretchy="false" form="postfix">)</mo><mrow><mspace width="-0.167em"></mspace><mi>⊤</mi></mrow></msup><msub><mo minsize="1.2" maxsize="1.2" stretchy="false" form="postfix">]</mo><mrow><mi>i</mi><mi>i</mi></mrow></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="false" form="prefix">(</mo><mi>k</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mo minsize="120%" maxsize="120%" stretchy="true" form="prefix">[</mo><msup><mi>D</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>k</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup><mover><mi>𝛃</mi><mo accent="true">̂</mo></mover><msub><mo minsize="120%" maxsize="120%" stretchy="true" form="postfix">]</mo><mi>i</mi></msub><mo>,</mo><mspace width="2.0em"></mspace><mover><mrow><mi mathvariant="normal">V</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">r</mi></mrow><mo accent="true">̂</mo></mover><mo minsize="120%" maxsize="120%" stretchy="true" form="prefix">(</mo><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="false" form="prefix">(</mo><mi>k</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo minsize="120%" maxsize="120%" stretchy="true" form="postfix">)</mo><mo>=</mo><mo minsize="120%" maxsize="120%" stretchy="true" form="prefix">[</mo><msup><mi>D</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>k</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup><msub><mi>V</mi><mi>p</mi></msub><mo minsize="120%" maxsize="120%" stretchy="true" form="prefix">(</mo><msup><mi>D</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>k</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup><msup><mo minsize="120%" maxsize="120%" stretchy="true" form="postfix">)</mo><mrow><mspace width="-0.167em"></mspace><mi>⊤</mi></mrow></msup><msub><mo minsize="120%" maxsize="120%" stretchy="true" form="postfix">]</mo><mrow><mi>i</mi><mi>i</mi></mrow></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">
 \hat f^{(k)}(x_i) = \bigl[D^{(k)} \hat{\boldsymbol\beta}\bigr]_i,
 \qquad
 \widehat{\mathrm{Var}}\bigl(\hat f^{(k)}(x_i)\bigr) = \bigl[D^{(k)} V_p
@@ -451,7 +451,7 @@ stencils at the endpoints) and read off</p>
 <p>Pointwise
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>95</mn><mi>%</mi></mrow><annotation encoding="application/x-tex">95\%</annotation></semantics></math>
 intervals are
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>±</mo><mn>1.96</mn><mspace width="0.167em"></mspace><msqrt><mo>⋅</mo></msqrt></mrow><annotation encoding="application/x-tex">\hat f^{(k)}(x) \pm 1.96\,\sqrt{\cdot}</annotation></semantics></math>.
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="false" form="prefix">(</mo><mi>k</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo>±</mo><mn>1.96</mn><mspace width="0.167em"></mspace><msqrt><mo>⋅</mo></msqrt></mrow><annotation encoding="application/x-tex">\hat f^{(k)}(x) \pm 1.96\,\sqrt{\cdot}</annotation></semantics></math>.
 This is the standard Wood (2017) construction, and is what
 <code>gratia::derivatives()</code> implements in its default mode
 (Simpson, 2014; Simpson, 2018). Columns of
@@ -459,7 +459,7 @@ This is the standard Wood (2017) construction, and is what
 corresponding to <code>adjust</code> terms held at typical values
 contribute identical rows across the grid, so their finite differences
 are zero and they drop out of both
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><annotation encoding="application/x-tex">\hat f^{(k)}</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="false" form="prefix">(</mo><mi>k</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup><annotation encoding="application/x-tex">\hat f^{(k)}</annotation></semantics></math>
 and its variance — the derivative in the panel is therefore the
 derivative of the <em>partial smooth actually shown in the fit
 panel</em>, as expected.</p>
@@ -468,20 +468,20 @@ than pointwise, and what you want for formal feature localisation),
 <code><a href="../reference/janusplot.html">janusplot()</a></code> implements the Monte Carlo construction of
 Ruppert, Wand &amp; Carroll (2003, §6.5), popularised for GAMs by
 Simpson (2018): draw
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>𝛃</mi><mo accent="true">̃</mo></mover><mi>b</mi></msub><mo>∼</mo><mi>𝒩</mi><mrow><mo stretchy="true" form="prefix">(</mo><mover><mi>𝛃</mi><mo accent="true">̂</mo></mover><mo>,</mo><msub><mi>V</mi><mi>p</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\tilde{\boldsymbol\beta}_b \sim
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>𝛃</mi><mo accent="true">̃</mo></mover><mi>b</mi></msub><mo>∼</mo><mi>𝒩</mi><mo stretchy="false" form="prefix">(</mo><mover><mi>𝛃</mi><mo accent="true">̂</mo></mover><mo>,</mo><msub><mi>V</mi><mi>p</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\tilde{\boldsymbol\beta}_b \sim
 \mathcal{N}(\hat{\boldsymbol\beta}, V_p)</annotation></semantics></math>
 for
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>b</mi><mo>=</mo><mn>1</mn><mo>,</mo><mi>…</mi><mo>,</mo><mi>B</mi></mrow><annotation encoding="application/x-tex">b = 1, \ldots, B</annotation></semantics></math>
 and take the
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><mi>α</mi><mo stretchy="true" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(1-\alpha)</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><mi>α</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(1-\alpha)</annotation></semantics></math>
 quantile of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mo>max</mo><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">|</mo><msubsup><mi>D</mi><mi>i</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msubsup><mrow><mo stretchy="true" form="prefix">(</mo><msub><mover><mi>𝛃</mi><mo accent="true">̃</mo></mover><mi>b</mi></msub><mo>−</mo><mover><mi>𝛃</mi><mo accent="true">̂</mo></mover><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">|</mo></mrow><mi>/</mi><msub><mrow><mi>𝚜</mi><mi>𝚎</mi></mrow><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\max_i |D^{(k)}_i
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mrow><mi mathvariant="normal">max</mi><mo>⁡</mo></mrow><mi>i</mi></msub><mo stretchy="false" form="prefix">|</mo><msubsup><mi>D</mi><mi>i</mi><mrow><mo stretchy="false" form="prefix">(</mo><mi>k</mi><mo stretchy="false" form="postfix">)</mo></mrow></msubsup><mo stretchy="false" form="prefix">(</mo><msub><mover><mi>𝛃</mi><mo accent="true">̃</mo></mover><mi>b</mi></msub><mo>−</mo><mover><mi>𝛃</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="prefix">|</mo><mi>/</mi><msub><mrow><mi>𝚜</mi><mi>𝚎</mi></mrow><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\max_i |D^{(k)}_i
 (\tilde{\boldsymbol\beta}_b - \hat{\boldsymbol\beta})| /
 \mathtt{se}_i</annotation></semantics></math> across the plotting grid
 as a critical multiplier
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>c</mi><mi>α</mi></msub><annotation encoding="application/x-tex">c_\alpha</annotation></semantics></math>
 on the pointwise SE, so the simultaneous band is
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>±</mo><msub><mi>c</mi><mi>α</mi></msub><mspace width="0.167em"></mspace><mrow><mi>𝚜</mi><mi>𝚎</mi></mrow><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\hat f^{(k)}(x) \pm c_\alpha\,\mathtt{se}(x)</annotation></semantics></math>.
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="false" form="prefix">(</mo><mi>k</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo>±</mo><msub><mi>c</mi><mi>α</mi></msub><mspace width="0.167em"></mspace><mrow><mi>𝚜</mi><mi>𝚎</mi></mrow><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\hat f^{(k)}(x) \pm c_\alpha\,\mathtt{se}(x)</annotation></semantics></math>.
 Opt in via <code>derivative_ci = "simultaneous"</code> on either
 <code><a href="../reference/janusplot.html">janusplot()</a></code> or <code><a href="../reference/janusplot_data.html">janusplot_data()</a></code>; the default
 is <code>derivative_ci = "none"</code> so that no CI is drawn by default
@@ -500,14 +500,14 @@ which is affordable if you need tighter quantile estimation.</p>
 not eliminate that amplification, they trade it against bias via the
 REML-selected smoothing parameter. <code>mgcv</code>’s default
 thin-plate penalty is on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>∫</mo><msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>f</mi><mi>″</mi><mo stretchy="true" form="postfix">)</mo></mrow><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">\int (f'')^2</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>∫</mo><mo stretchy="false" form="prefix">(</mo><msup><mi>f</mi><mo>″</mo></msup><msup><mo stretchy="false" form="postfix">)</mo><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">\int (f'')^2</annotation></semantics></math>,
 which directly regularises
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>f</mi><mo accent="true">̂</mo></mover><mi>′</mi></mrow><annotation encoding="application/x-tex">\hat f'</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mo>′</mo></msup><annotation encoding="application/x-tex">\hat f'</annotation></semantics></math>
 and bounds (but does not penalise)
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>f</mi><mo accent="true">̂</mo></mover><mi>″</mi></mrow><annotation encoding="application/x-tex">\hat f''</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mo>″</mo></msup><annotation encoding="application/x-tex">\hat f''</annotation></semantics></math>
 only via the basis rank (Wood, 2017, §5.3; Eilers &amp; Marx, 1996). In
 practice we find
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="true" form="prefix">(</mo><mn>3</mn><mo stretchy="true" form="postfix">)</mo></mrow></msup><annotation encoding="application/x-tex">\hat f^{(3)}</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mo stretchy="false" form="prefix">(</mo><mn>3</mn><mo stretchy="false" form="postfix">)</mo></mrow></msup><annotation encoding="application/x-tex">\hat f^{(3)}</annotation></semantics></math>
 is dominated by noise for
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>&lt;</mo><msup><mn>10</mn><mn>4</mn></msup></mrow><annotation encoding="application/x-tex">n &lt; 10^4</annotation></semantics></math>
 at moderate
@@ -529,15 +529,15 @@ add-on but the analytical primitive the practitioner actually wants.</p>
 <strong>Process-gain scheduling.</strong> In adaptive and
 gain-scheduled control, the controller is indexed by the local process
 gain
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>∂</mi><mi>y</mi><mi>/</mi><mi>∂</mi><mi>u</mi></mrow><annotation encoding="application/x-tex">K(x) = \partial y / \partial u</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>∂</mi><mi>y</mi><mi>/</mi><mi>∂</mi><mi>u</mi></mrow><annotation encoding="application/x-tex">K(x) = \partial y / \partial u</annotation></semantics></math>
 (Rugh &amp; Shamma, 2000). For a steady-state input-output dataset,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mi>y</mi><mo>∣</mo><mi>u</mi></mrow></msub><mi>′</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>u</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\hat f_{y\mid u}'(u)</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mi>y</mi><mo>∣</mo><mi>u</mi></mrow><mo>′</mo></msubsup><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\hat f_{y\mid u}'(u)</annotation></semantics></math>
 is a direct data-driven estimate of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>u</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">K(u)</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>K</mi><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">K(u)</annotation></semantics></math>,
 and its simultaneous CI tells the engineer whether the local gain is
 distinguishable from a reference gain over an operating envelope. The
 inverse panel
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mi>u</mi><mo>∣</mo><mi>y</mi></mrow></msub><mi>′</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>y</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\hat f_{u\mid y}'(y)</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mover><mi>f</mi><mo accent="true">̂</mo></mover><mrow><mi>u</mi><mo>∣</mo><mi>y</mi></mrow><mo>′</mo></msubsup><mo stretchy="false" form="prefix">(</mo><mi>y</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\hat f_{u\mid y}'(y)</annotation></semantics></math>
 is the feedforward-linearisation sensitivity; a large divergence between
 the two panels flags that a naive inverse controller will under-perform
 (Korda &amp; Mezić, 2018). The matrix view makes a fleet of such pairs
@@ -547,11 +547,11 @@ inspectable at once.</li>
 estimand.</strong> For a continuous treatment
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>T</mi><annotation encoding="application/x-tex">T</annotation></semantics></math>
 with unconfoundedness, the dose–response
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mi>𝔼</mi><mrow><mo stretchy="true" form="prefix">[</mo><mi>Y</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">]</mo></mrow></mrow><annotation encoding="application/x-tex">\mu(t) = \mathbb{E}[Y(t)]</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>𝔼</mi><mo stretchy="false" form="prefix">[</mo><mi>Y</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">\mu(t) = \mathbb{E}[Y(t)]</annotation></semantics></math>
 and its derivative
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi><mi>′</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\mu'(t)</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>μ</mi><mo>′</mo></msup><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mu'(t)</annotation></semantics></math>
 are both estimable, and recent work (Zhang &amp; Chen, 2025) argues
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi><mi>′</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>t</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\mu'(t)</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>μ</mi><mo>′</mo></msup><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mu'(t)</annotation></semantics></math>
 is often the more directly interpretable quantity — it answers “how much
 does the expected outcome change per unit shift in treatment at this
 dose?” This is structurally the same estimand as the process gain above;
@@ -559,7 +559,7 @@ the asymmetric-matrix derivative panel delivers both forward and
 reverse-conditioned derivative curves in the same frame, which is a
 direct diagnostic for Simpson’s-paradox-style conditioning reversals
 (visible, for example, in the penguins <code>bill_depth_mm</code>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math><code>body_mass_g</code> pair once <code>species</code> is adjusted
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>×</mi><annotation encoding="application/x-tex">\times</annotation></semantics></math><code>body_mass_g</code> pair once <code>species</code> is adjusted
 for).</li>
 </ul>
 </div>

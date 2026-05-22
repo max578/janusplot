@@ -31,6 +31,7 @@ five of the seven archetypes (`chaotic` and `degenerate` have no
 realistic deterministic generator).
 
 ``` r
+
 library(janusplot)
 library(ggplot2)
 
@@ -62,6 +63,7 @@ replicates = 2160 fits — so you can explore the API without running the
 full sweep yourself.
 
 ``` r
+
 data("shape_sensitivity_demo")
 str(shape_sensitivity_demo, vec.len = 2)
 #> 'data.frame':    2160 obs. of  14 variables:
@@ -84,6 +86,7 @@ str(shape_sensitivity_demo, vec.len = 2)
 ### Recovery curves (headline figure)
 
 ``` r
+
 janusplot_shape_sensitivity_plot(shape_sensitivity_demo,
                                  "recovery_curves")
 ```
@@ -98,6 +101,7 @@ multimodal ones.
 ### Archetype confusion
 
 ``` r
+
 janusplot_shape_sensitivity_plot(shape_sensitivity_demo,
                                  "confusion_archetype")
 ```
@@ -111,6 +115,7 @@ extra turning points under noise.
 ### Archetype-level accuracy grid
 
 ``` r
+
 janusplot_shape_sensitivity_plot(shape_sensitivity_demo,
                                  "accuracy_grid")
 ```
@@ -125,6 +130,7 @@ one noise level.
 ### Numerical summary
 
 ``` r
+
 head(janusplot_shape_sensitivity_summary(shape_sensitivity_demo,
                                          level = "archetype"), 10)
 #>         truth   n sigma  accuracy
@@ -147,6 +153,7 @@ full default grid (14 shapes × 4 sample sizes × 5 noise levels × 200
 reps = 56 000 fits):
 
 ``` r
+
 # Configure parallel execution (optional) — you control the plan.
 future::plan(future::multisession, workers = 4L)
 
@@ -164,6 +171,7 @@ under stricter monotonicity thresholds to see whether tightening
 `mono_strong` buys any fine-accuracy improvement for these categories.
 
 ``` r
+
 strict <- janusplot_shape_cutoffs(mono_strong = 0.95, curv_low = 0.1)
 
 res_strict <- janusplot_shape_sensitivity(
@@ -189,8 +197,9 @@ janusplot_shape_sensitivity_summary(res_strict, level = "fine")
   splines. *Annals of Applied Statistics*, 2(3), 1013–1033.
 
 ``` r
+
 sessionInfo()
-#> R version 4.5.3 (2026-03-11)
+#> R version 4.6.0 (2026-04-24)
 #> Platform: x86_64-pc-linux-gnu
 #> Running under: Ubuntu 24.04.4 LTS
 #> 
@@ -211,16 +220,16 @@ sessionInfo()
 #> [1] stats     graphics  grDevices utils     datasets  methods   base     
 #> 
 #> other attached packages:
-#> [1] ggplot2_4.0.2   janusplot_0.1.0
+#> [1] ggplot2_4.0.3   janusplot_0.1.0
 #> 
 #> loaded via a namespace (and not attached):
 #>  [1] vctrs_0.7.3        cli_3.6.6          knitr_1.51         rlang_1.2.0       
-#>  [5] xfun_0.57          S7_0.2.1-1         textshaping_1.0.5  jsonlite_2.0.0    
+#>  [5] xfun_0.57          S7_0.2.2           textshaping_1.0.5  jsonlite_2.0.0    
 #>  [9] labeling_0.4.3     glue_1.8.1         htmltools_0.5.9    ragg_1.5.2        
-#> [13] sass_0.4.10        scales_1.4.0       rmarkdown_2.31     grid_4.5.3        
+#> [13] sass_0.4.10        scales_1.4.0       rmarkdown_2.31     grid_4.6.0        
 #> [17] evaluate_1.0.5     jquerylib_0.1.4    fastmap_1.2.0      yaml_2.3.12       
-#> [21] lifecycle_1.0.5    compiler_4.5.3     RColorBrewer_1.1-3 fs_2.1.0          
+#> [21] lifecycle_1.0.5    compiler_4.6.0     RColorBrewer_1.1-3 fs_2.1.0          
 #> [25] farver_2.1.2       systemfonts_1.3.2  digest_0.6.39      viridisLite_0.4.3 
-#> [29] R6_2.6.1           bslib_0.10.0       withr_3.0.2        tools_4.5.3       
+#> [29] R6_2.6.1           bslib_0.11.0       withr_3.0.2        tools_4.6.0       
 #> [33] gtable_0.3.6       pkgdown_2.2.0      cachem_1.1.0       desc_1.4.3
 ```

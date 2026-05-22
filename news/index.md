@@ -2,6 +2,8 @@
 
 ## janusplot 0.1.0
 
+CRAN release: 2026-04-28
+
 ### First CRAN release (2026-04-23)
 
 Initial public release of `janusplot`. The package renders a pairwise,
@@ -44,11 +46,9 @@ User-visible changes:
 - **`data.table` dependency removed.**
   `janusplot(..., with_data = TRUE)$data` and any other tabular returns
   are now always a plain `data.frame` — no runtime or documented
-  fallback to
-  [`data.table::as.data.table()`](https://rdrr.io/pkg/data.table/man/as.data.table.html).
-  The package charter bans `data.table` as a dependency (plotting
-  function, overhead unearned). `data.table` is no longer listed in
-  `Suggests:`.
+  fallback to `data.table::as.data.table()`. The package charter bans
+  `data.table` as a dependency (plotting function, overhead unearned).
+  `data.table` is no longer listed in `Suggests:`.
 - **Documentation example cleanup.** The
   [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
   example no longer passes `show_asymmetry = TRUE` (which has been
@@ -149,8 +149,8 @@ Deferred to a later maintenance sweep (not blocking 0.0.0.9001):
   features. `"pointwise"` draws `fit ± 1.96 * se` from the LP-matrix SE.
   `"simultaneous"` draws Monte Carlo critical-multiplier bands per
   Simpson (2018): draw
-  ${\widetilde{\mathbf{β}}}_{b} \sim N\left( \widehat{\mathbf{β}},V_{p} \right)$
-  and use the $(1 - \alpha)$ quantile of the normalised max-deviation
+  $`\tilde{\boldsymbol\beta}_b \sim N(\hat{\boldsymbol\beta}, V_p)`$ and
+  use the $`(1-\alpha)`$ quantile of the normalised max-deviation
   statistic as the critical multiplier on the pointwise SE.
 - **New `derivative_ci_nsim` parameter.** Integer number of Monte Carlo
   samples used when `derivative_ci = "simultaneous"`. Default `1000L`

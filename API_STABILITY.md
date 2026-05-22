@@ -20,25 +20,25 @@ for individual symbols.
 
 ## Public surface — current state (v0.0.0.9000)
 
-| Symbol                                                                                                                         | Type     | Stage        | Since      | Notes                                                                                                                                    |
-|--------------------------------------------------------------------------------------------------------------------------------|----------|--------------|------------|------------------------------------------------------------------------------------------------------------------------------------------|
-| [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)                                                     | function | experimental | 0.0.0.9000 | Core entry point. Parameters `labels`, `label_srt`, `label_cex` added 2026-04-22. `fill_by` and `show_asymmetry` are deprecated aliases. |
-| [`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md)                                           | function | experimental | 0.0.0.9000 | Companion returning raw fits + per-pair metrics.                                                                                         |
-| [`janusplot_shape_metrics()`](https://max578.github.io/janusplot/reference/janusplot_shape_metrics.md)                         | function | experimental | 0.0.0.9000 | Weighted monotonicity / convexity indices + turning / inflection counts.                                                                 |
-| [`janusplot_shape_cutoffs()`](https://max578.github.io/janusplot/reference/janusplot_shape_cutoffs.md)                         | function | experimental | 0.0.0.9000 | Default classification thresholds; override via a named list.                                                                            |
-| [`janusplot_shape_hierarchy()`](https://max578.github.io/janusplot/reference/janusplot_shape_hierarchy.md)                     | function | experimental | 0.0.0.9000 | 24-category taxonomy hierarchy table.                                                                                                    |
-| [`janusplot_shape_sensitivity()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity.md)                 | function | experimental | 0.0.0.9000 | Factorial shape × n × σ × reps sweep.                                                                                                    |
-| [`janusplot_shape_sensitivity_shapes()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_shapes.md)   | function | experimental | 0.0.0.9000 | Built-in generator catalogue (14 shapes).                                                                                                |
-| [`janusplot_shape_sensitivity_summary()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_summary.md) | function | experimental | 0.0.0.9000 | Per-cell accuracy aggregation.                                                                                                           |
-| [`janusplot_shape_sensitivity_plot()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_plot.md)       | function | experimental | 0.0.0.9000 | Four diagnostic plot types.                                                                                                              |
-| `shape_sensitivity_demo`                                                                                                       | dataset  | experimental | 0.0.0.9000 | Precomputed 2160-fit sweep. Regenerated deterministically via `data-raw/shape_sensitivity_demo.R`.                                       |
+| Symbol | Type | Stage | Since | Notes |
+|----|----|----|----|----|
+| [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md) | function | experimental | 0.0.0.9000 | Core entry point. Parameters `labels`, `label_srt`, `label_cex` added 2026-04-22. `fill_by` and `show_asymmetry` are deprecated aliases. |
+| [`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md) | function | experimental | 0.0.0.9000 | Companion returning raw fits + per-pair metrics. |
+| [`janusplot_shape_metrics()`](https://max578.github.io/janusplot/reference/janusplot_shape_metrics.md) | function | experimental | 0.0.0.9000 | Weighted monotonicity / convexity indices + turning / inflection counts. |
+| [`janusplot_shape_cutoffs()`](https://max578.github.io/janusplot/reference/janusplot_shape_cutoffs.md) | function | experimental | 0.0.0.9000 | Default classification thresholds; override via a named list. |
+| [`janusplot_shape_hierarchy()`](https://max578.github.io/janusplot/reference/janusplot_shape_hierarchy.md) | function | experimental | 0.0.0.9000 | 24-category taxonomy hierarchy table. |
+| [`janusplot_shape_sensitivity()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity.md) | function | experimental | 0.0.0.9000 | Factorial shape × n × σ × reps sweep. |
+| [`janusplot_shape_sensitivity_shapes()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_shapes.md) | function | experimental | 0.0.0.9000 | Built-in generator catalogue (14 shapes). |
+| [`janusplot_shape_sensitivity_summary()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_summary.md) | function | experimental | 0.0.0.9000 | Per-cell accuracy aggregation. |
+| [`janusplot_shape_sensitivity_plot()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_plot.md) | function | experimental | 0.0.0.9000 | Four diagnostic plot types. |
+| `shape_sensitivity_demo` | dataset | experimental | 0.0.0.9000 | Precomputed 2160-fit sweep. Regenerated deterministically via `data-raw/shape_sensitivity_demo.R`. |
 
 ## Deprecations in flight
 
-| Symbol / argument                 | Since      | Schedule                                                                          |
-|-----------------------------------|------------|-----------------------------------------------------------------------------------|
-| `janusplot(fill_by = ...)`        | 0.0.0.9000 | Removal after v1.0.0 — at least one minor version of warnings. Use `colour_by =`. |
-| `janusplot(show_asymmetry = ...)` | 0.0.0.9000 | Removal after v1.0.0. Use `annotations = c("A", ...)`.                            |
+| Symbol / argument | Since | Schedule |
+|----|----|----|
+| `janusplot(fill_by = ...)` | 0.0.0.9000 | Removal after v1.0.0 — at least one minor version of warnings. Use `colour_by =`. |
+| `janusplot(show_asymmetry = ...)` | 0.0.0.9000 | Removal after v1.0.0. Use `annotations = c("A", ...)`. |
 
 ## Breaking-change policy
 
