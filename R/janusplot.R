@@ -174,6 +174,41 @@
 #' @param na_action One of `"pairwise"` (default; per-cell complete
 #'   observations) or `"complete"` (listwise; all cells use the same
 #'   rows).
+#' @param compact One of `"auto"` (default), `"always"`, or `"never"`.
+#'   Controls scale-aware content suppression per cell:
+#'   * `"auto"` — tier 0 at `n_var < compact_threshold` (the v0.1.0
+#'     behaviour); progressively suppresses scatter, then CI, then
+#'     annotations, then the spline itself as `n_var` crosses the
+#'     `compact_levels` ladder. The matrix remains readable as
+#'     `k` grows toward 25–30 by trading detail for legibility.
+#'   * `"always"` — force at least tier 1 regardless of `n_var`.
+#'     Useful for very dense fixed-size renders.
+#'   * `"never"` — force tier 0 regardless of `n_var`. Useful for
+#'     reproducing v0.1.0 figures on large matrices.
+#' @param compact_threshold Integer. The `n_var` value at which
+#'   tier 1 (drop scatter) auto-activates under `compact = "auto"`.
+#'   Default `12L`, anchored on the 150 × 150 px-per-cell pixel
+#'   budget at typical 6"×6" 300 DPI R Journal figures.
+#' @param compact_levels Optional named list with entries `t1`, `t2`,
+#'   `t3` overriding the auto-tier ladder. Defaults derive from
+#'   `compact_threshold`: `t1 = compact_threshold`,
+#'   `t2 = compact_threshold + 6`, `t3 = compact_threshold + 13`.
+#'   `NULL` (default) uses these derived defaults.
+#' @param focus_by One of `NA` (default — no filter), `"asymmetry"`,
+#'   `"edf"`, `"k_flag"`, or `"non_linearity"` (defined as `edf - 1`).
+#'   When set, cells whose chosen metric falls below `focus_threshold`
+#'   are rendered in `grey85` at alpha `focus_dim_alpha`; the matrix
+#'   shape is preserved so attention drains visually to high-metric
+#'   cells. This is a **visual filter, not a statistical one** —
+#'   the underlying fits are unchanged and the `with_data` table
+#'   carries every cell.
+#' @param focus_threshold Either a quantile-string like `"q90"`
+#'   (default) or a numeric cutoff. The quantile is taken over the
+#'   non-`NA` distribution of `focus_by` across all off-diagonal
+#'   cells in the matrix. Ignored when `focus_by = NA`.
+#' @param focus_dim_alpha Numeric in `[0, 1]`. Alpha applied to the
+#'   `grey85` wash on unfocused cells. Default `0.25`. Ignored when
+#'   `focus_by = NA`.
 #' @param k_check_thresholds Named list giving the three flag-criterion
 #'   thresholds used by `mgcv::k.check()`-style basis-dimension
 #'   diagnostics. Required entries: `edf_ratio` (Wood's
@@ -311,9 +346,16 @@ janusplot <- function(
     k_check_thresholds  = NULL,
     auto_refit_k        = FALSE,
     k_max_iter          = 2L,
+    compact             = c("auto", "always", "never"),
+    compact_threshold   = 12L,
+    compact_levels      = NULL,
+    focus_by            = NA_character_,
+    focus_threshold     = "q90",
+    focus_dim_alpha     = 0.25,
     ...) {
   order         <- rlang::arg_match(order)
   na_action     <- rlang::arg_match(na_action)
+  compact       <- rlang::arg_match(compact)
   glyph_style   <- rlang::arg_match(glyph_style)
   labels        <- rlang::arg_match(labels)
   diagonal      <- rlang::arg_match(diagonal)
@@ -447,6 +489,32 @@ janusplot <- function(
   }
   k_max_iter <- as.integer(k_max_iter)
 
+  if (!is.numeric(compact_threshold) || length(compact_threshold) != 1L ||
+      !is.finite(compact_threshold) || compact_threshold < 2L) {
+    cli::cli_abort("{.arg compact_threshold} must be a single integer >= 2.")
+  }
+  compact_threshold <- as.integer(compact_threshold)
+  if (!is.null(compact_levels)) {
+    compact_levels <- .validate_compact_levels(           # nolint: object_usage_linter.
+      compact_levels, compact_threshold
+    )
+  }
+  valid_focus <- c(NA, "asymmetry", "edf", "k_flag", "non_linearity", "none")
+  if (length(focus_by) != 1L) {
+    cli::cli_abort("{.arg focus_by} must be a single value (NA or a metric name).")
+  }
+  if (!is.na(focus_by) && !(focus_by %in% valid_focus)) {
+    cli::cli_abort(c(
+      "Unknown {.arg focus_by} value: {.val {focus_by}}.",
+      i = "Allowed: NA or {.val {setdiff(valid_focus, NA)}}."
+    ))
+  }
+  if (!is.numeric(focus_dim_alpha) || length(focus_dim_alpha) != 1L ||
+      !is.finite(focus_dim_alpha) || focus_dim_alpha < 0 ||
+      focus_dim_alpha > 1) {
+    cli::cli_abort("{.arg focus_dim_alpha} must be in [0, 1].")
+  }
+
   valid_annot <- c("edf", "A", "shape", "code", "k_warn")
   bad <- setdiff(annotations, valid_annot)
   if (length(bad)) {
@@ -492,6 +560,27 @@ janusplot <- function(
     text_scale_diag     = text_scale_diag,
     text_scale_off_diag = text_scale_off_diag
   )
+
+  # Resolve scale-aware tier once per matrix; same tier applies to
+  # every cell within a matrix (uniform reading).
+  tier <- .compact_tier(k_n, compact = compact,                       # nolint: object_usage_linter.
+                        compact_threshold = compact_threshold,
+                        compact_levels = compact_levels)
+
+  # Focus mask — TRUE = full encoding, FALSE = dimmed wash.
+  # Stamp `key` attribute so the mask resolver can recover (i, j)
+  # for the asymmetry-keyed lookup.
+  fits_keyed <- mapply(function(f, key) {
+    attr(f, "key") <- key
+    f
+  }, fits, names(fits), SIMPLIFY = FALSE)
+  focus_arg <- if (is.na(focus_by)) NA else focus_by
+  focus_mask <- .resolve_focus_mask(fits_keyed,                       # nolint: object_usage_linter.
+                                    focus_by = focus_arg,
+                                    focus_threshold = focus_threshold,
+                                    asym_tbl = asym_tbl)
+  names(focus_mask) <- names(fits)
+
   cells_by_ij <- vector("list", length(fits))
   names(cells_by_ij) <- names(fits)
   for (key in names(fits)) {
@@ -499,6 +588,7 @@ janusplot <- function(
     ij <- as.integer(strsplit(key, "_", fixed = TRUE)[[1L]])
     is_upper <- ij[1L] < ij[2L]
     asym_key <- paste(sort(ij), collapse = "_")
+    # nolint start: object_usage_linter.
     cells_by_ij[[key]] <- .build_cell(
       fit_obj = f,
       show_data = show_data, show_ci = show_ci,
@@ -512,8 +602,11 @@ janusplot <- function(
       is_upper = is_upper,
       text_sizes = text_sizes,
       display = display,
-      derivative_ci = derivative_ci
-    )
+      derivative_ci = derivative_ci,
+      tier = tier,
+      is_focused = isTRUE(focus_mask[[key]]),
+      focus_dim_alpha = focus_dim_alpha
+    )                                                                # nolint end
   }
 
   diag_cells <- lapply(vars, function(v) {
@@ -844,10 +937,6 @@ janusplot_data <- function(
     cli::cli_abort("{.arg k_max_iter} must be a single non-negative integer.")
   }
   k_max_iter <- as.integer(k_max_iter)
-  # Note: lintr's object_usage_linter cannot see helper functions
-  # defined in internal-fit.R from this file when running in clean
-  # package mode (cf. d20f211 lint-CI failure); the nolint markers
-  # above + below are explicit suppressions, not lintr config edits.
 
   if (length(derivatives)) {
     if (!is.numeric(derivatives) || anyNA(derivatives)) {

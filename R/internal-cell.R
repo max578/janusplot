@@ -226,13 +226,125 @@
   )
 }
 
+# ---------------------------------------------------------------
+# Compact-tier resolver. Decides per-cell content suppression based
+# on n_var (= matrix dimension) and the user's `compact` setting.
+# Returns an integer tier in 0:3 — see PLAN_v011_features.md §2.2
+# for the pixel-budget rationale that anchors the thresholds.
+# ---------------------------------------------------------------
+
+.compact_tier <- function(n_var, compact = "auto", compact_threshold = 12L,
+                          compact_levels = NULL) {
+  compact <- match.arg(compact, c("auto", "always", "never"))
+  if (compact == "never") return(0L)
+  # Effective thresholds — default ladder per Feature 2 plan;
+  # overridable via compact_levels list (advanced knob).
+  levels <- if (is.null(compact_levels)) {
+    list(t1 = compact_threshold,
+         t2 = compact_threshold + 6L,
+         t3 = compact_threshold + 13L)
+  } else {
+    .validate_compact_levels(compact_levels, compact_threshold)
+  }
+  if (compact == "always") {
+    # "always" forces at least tier 1; further ladder still kicks in by n_var.
+    if (n_var >= levels$t3) return(3L)
+    if (n_var >= levels$t2) return(2L)
+    return(1L)
+  }
+  # "auto" — tier from the ladder.
+  if (n_var >= levels$t3) return(3L)
+  if (n_var >= levels$t2) return(2L)
+  if (n_var >= levels$t1) return(1L)
+  0L
+}
+
+.validate_compact_levels <- function(levels, compact_threshold) {
+  if (!is.list(levels)) {
+    cli::cli_abort(
+      "{.arg compact_levels} must be a named list with t1 / t2 / t3."
+    )
+  }
+  required <- c("t1", "t2", "t3")
+  missing <- setdiff(required, names(levels))
+  if (length(missing)) {
+    cli::cli_abort(c(
+      "{.arg compact_levels} is missing entries: {.val {missing}}.",
+      i = "Required: {.val {required}}."
+    ))
+  }
+  for (nm in required) {
+    v <- levels[[nm]]
+    if (!is.numeric(v) || length(v) != 1L || !is.finite(v) || v < 2L) {
+      cli::cli_abort(
+        "{.arg compact_levels${nm}} must be a single integer >= 2."
+      )
+    }
+  }
+  if (!(levels$t1 < levels$t2 && levels$t2 < levels$t3)) {
+    cli::cli_abort(
+      "{.arg compact_levels} must satisfy t1 < t2 < t3."
+    )
+  }
+  lapply(levels, as.integer)
+}
+
+# ---------------------------------------------------------------
+# Focus filter. Returns a logical vector — TRUE = cell is "in focus"
+# (rendered with full encoding), FALSE = cell is dimmed (grey85 at
+# alpha = focus_dim_alpha). Matrix shape is preserved either way.
+# ---------------------------------------------------------------
+
+.resolve_focus_mask <- function(fits, focus_by,
+                                focus_threshold = "q90",
+                                asym_tbl = NULL) {
+  if (is.null(focus_by) || is.na(focus_by) || identical(focus_by, "none")) {
+    return(rep(TRUE, length(fits)))
+  }
+  vals <- vapply(fits, function(f) {
+    switch(focus_by,
+      asymmetry = {
+        ij <- as.integer(strsplit(attr(f, "key") %||% "", "_", fixed = TRUE)[[1L]])
+        if (length(ij) == 2L && !is.null(asym_tbl)) {
+          asym_tbl[[paste(sort(ij), collapse = "_")]] %||% NA_real_
+        } else {
+          NA_real_
+        }
+      },
+      edf            = f$edf %||% NA_real_,
+      non_linearity  = {
+        v <- f$edf %||% NA_real_
+        if (is.na(v)) NA_real_ else v - 1
+      },
+      k_flag         = if (isTRUE(f$k_check$k_flag)) 1 else 0,
+      NA_real_
+    )
+  }, numeric(1L))
+  if (all(is.na(vals))) return(rep(TRUE, length(fits)))
+  cutoff <- if (is.character(focus_threshold) &&
+                grepl("^q[0-9]{1,2}$", focus_threshold)) {
+    q <- as.numeric(sub("^q", "", focus_threshold)) / 100
+    stats::quantile(vals, probs = q, na.rm = TRUE, names = FALSE)
+  } else if (is.numeric(focus_threshold) && length(focus_threshold) == 1L) {
+    focus_threshold
+  } else {
+    cli::cli_abort(
+      "{.arg focus_threshold} must be a quantile string like {.val q90} or a single numeric."
+    )
+  }
+  vals >= cutoff
+}
+
 .build_cell <- function(fit_obj, show_data, show_ci, colour_by, palette,
                         signif_glyph, annotations, shape_cutoffs,
                         glyph_style, asym_val,
                         colour_limits, is_upper,
                         text_sizes = .cell_text_sizes(3L),
                         display = "fit",
-                        derivative_ci = "none") {
+                        derivative_ci = "none",
+                        tier = 0L,
+                        is_focused = TRUE,
+                        focus_dim_alpha = 0.25) {
   # Single-quantity dispatch: every cell is one ggplot. "fit" calls
   # the historical renderer (unchanged behaviour), "d1" / "d2" call
   # the derivative renderer. No per-cell stacking; the matrix-level
@@ -246,15 +358,22 @@
       signif_glyph = signif_glyph, annotations = annotations,
       shape_cutoffs = shape_cutoffs, glyph_style = glyph_style,
       asym_val = asym_val, colour_limits = colour_limits,
-      is_upper = is_upper, text_sizes = text_sizes
+      is_upper = is_upper, text_sizes = text_sizes,
+      tier = tier, is_focused = is_focused,
+      focus_dim_alpha = focus_dim_alpha
     ))
   }
   k <- switch(display, d1 = 1L, d2 = 2L,
               cli::cli_abort("Unknown display {.val {display}}."))
+  # Derivative cells inherit tier suppression where it makes sense
+  # (no scatter at tier >= 1; no annotations at tier >= 2); focus
+  # dimming applies uniformly across display modes.
   .build_deriv_panel(
     fit_obj = fit_obj, order = k,
     derivative_ci = derivative_ci,
-    text_sizes = text_sizes, glyph_style = glyph_style
+    text_sizes = text_sizes, glyph_style = glyph_style,
+    tier = tier, is_focused = is_focused,
+    focus_dim_alpha = focus_dim_alpha
   )
 }
 
@@ -264,9 +383,41 @@
 .build_fit_panel <- function(fit_obj, show_data, show_ci, colour_by, palette,
                              signif_glyph, annotations, shape_cutoffs,
                              glyph_style, asym_val,
-                             colour_limits, is_upper, text_sizes) {
+                             colour_limits, is_upper, text_sizes,
+                             tier = 0L, is_focused = TRUE,
+                             focus_dim_alpha = 0.25) {
   colour_val   <- .colour_value(fit_obj, colour_by)
   colour_label <- .colour_label(colour_by)
+
+  # Tier-driven content policy. Higher tiers progressively drop
+  # detail; suppression is composable with the user's show_data /
+  # show_ci / annotations settings — tier overrides cannot ADD
+  # detail, only remove. See PLAN_v011_features.md §2.2 for the
+  # pixel-budget rationale.
+  tier <- as.integer(tier)
+  show_data    <- isTRUE(show_data) && tier < 1L
+  show_ci      <- isTRUE(show_ci)   && tier < 2L
+  show_spline  <- tier < 3L
+  show_glyphs  <- tier < 2L
+  if (tier >= 1L) {
+    # At tier 1+ keep at most one annotation; default priority is
+    # k_warn (the most actionable diagnostic at scale). User can
+    # extend behaviour by setting compact_levels but we don't
+    # second-guess priority here.
+    if ("k_warn" %in% annotations) {
+      annotations <- "k_warn"
+    } else {
+      annotations <- character()
+    }
+  }
+  if (tier >= 2L) annotations <- character()
+  # Out-of-focus cells get a grey85 wash at user-set alpha. This
+  # short-circuits colour-by encoding for those cells — by design,
+  # per Feature 2 plan §2.2 Option 2 ("matrix shape preserved;
+  # attention drains to interesting cells").
+  if (!isTRUE(is_focused)) {
+    colour_by <- "none"
+  }
 
   p <- ggplot2::ggplot() +
     ggplot2::theme_void(base_size = 8) +
@@ -279,6 +430,17 @@
                                                colour = "grey55",
                                                linewidth = 0.35)
     )
+
+  if (!isTRUE(is_focused)) {
+    # Dim wash for unfocused cells.
+    p <- p + ggplot2::geom_rect(
+      data    = data.frame(x = 1),
+      mapping = ggplot2::aes(xmin = -Inf, xmax = Inf,
+                             ymin = -Inf, ymax = Inf),
+      fill    = "grey85", alpha = focus_dim_alpha,
+      inherit.aes = FALSE
+    )
+  }
 
   if (colour_by != "none" && !is.na(colour_val) &&
       all(is.finite(colour_limits))) {
@@ -320,15 +482,36 @@
       inherit.aes = FALSE
     )
   }
-  p <- p + ggplot2::geom_line(
-    data = fit_obj$pred,
-    ggplot2::aes(x = .data$x, y = .data$fit),
-    colour = "#08306b", linewidth = 0.7,
-    inherit.aes = FALSE
-  )
+  if (show_spline) {
+    p <- p + ggplot2::geom_line(
+      data = fit_obj$pred,
+      ggplot2::aes(x = .data$x, y = .data$fit),
+      colour = "#08306b", linewidth = 0.7,
+      inherit.aes = FALSE
+    )
+  } else if (isTRUE(is_focused)) {
+    # Tier 3 — colour-only mini-tile + shape-class glyph in the
+    # cell centre. Spline is gone; the shape glyph stands for the
+    # entire curve.
+    shape_cat <- .classify_shape(
+      fit_obj$shape$monotonicity_index,
+      fit_obj$shape$convexity_index,
+      fit_obj$shape$n_turning_points, fit_obj$shape$n_inflections,
+      fit_obj$shape$flat_range_ratio, shape_cutoffs
+    )
+    g <- .shape_glyph(shape_cat, style = glyph_style)
+    if (!is.na(g) && nzchar(g)) {
+      p <- p + ggplot2::annotate(
+        "text", x = 0.5, y = 0.5,
+        label = g, size = text_sizes$shape * 1.2,
+        colour = "grey20", fontface = "bold"
+      )
+      p <- p + ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1)
+    }
+  }
 
-  # Top-right: significance glyph
-  if (signif_glyph) {
+  # Top-right: significance glyph (suppressed at tier >= 2).
+  if (signif_glyph && show_glyphs) {
     glyph <- .pvalue_to_glyph(fit_obj$pvalue)
     if (nzchar(glyph)) {
       p <- p + ggplot2::annotate(
@@ -443,7 +626,17 @@
 }
 
 .build_deriv_panel <- function(fit_obj, order, derivative_ci = "none",
-                               text_sizes, glyph_style = "ascii") {
+                               text_sizes, glyph_style = "ascii",
+                               tier = 0L, is_focused = TRUE,
+                               focus_dim_alpha = 0.25) {
+  tier <- as.integer(tier)
+  # Derivative panels don't carry the same content axis as fit
+  # panels, so tier behaviour is simplified:
+  #   tier 0–1: full derivative curve (+ ribbon if opted in).
+  #   tier 2+:  curve only, no ribbon, no order label.
+  show_ribbon <- tier < 2L
+  show_label  <- tier < 2L
+
   p <- ggplot2::ggplot() +
     ggplot2::theme_void(base_size = 8) +
     ggplot2::theme(
@@ -455,6 +648,16 @@
         fill = NA, colour = "grey55", linewidth = 0.35
       )
     )
+
+  if (!isTRUE(is_focused)) {
+    p <- p + ggplot2::geom_rect(
+      data    = data.frame(x = 1),
+      mapping = ggplot2::aes(xmin = -Inf, xmax = Inf,
+                             ymin = -Inf, ymax = Inf),
+      fill    = "grey85", alpha = focus_dim_alpha,
+      inherit.aes = FALSE
+    )
+  }
 
   deriv_df <- fit_obj$deriv[[as.character(as.integer(order))]]
   if (is.null(deriv_df) || nrow(deriv_df) == 0L) {
@@ -477,7 +680,8 @@
   # pointwise / simultaneous selection was resolved at fit time and
   # baked into deriv_df$lo / deriv_df$hi, so here we just honour the
   # mode indicator.
-  if (!identical(derivative_ci, "none") &&
+  if (show_ribbon &&
+      !identical(derivative_ci, "none") &&
       all(c("lo", "hi") %in% names(deriv_df)) &&
       all(is.finite(deriv_df$lo)) && all(is.finite(deriv_df$hi))) {
     p <- p + ggplot2::geom_ribbon(
@@ -492,17 +696,19 @@
     colour = "#6a3d9a", linewidth = 0.6, inherit.aes = FALSE
   )
 
-  # Top-left order label. ASCII by default; Unicode primes when the
-  # caller has opted in via glyph_style = "unicode".
-  lab <- .deriv_order_label(order, style = glyph_style)
-  if (nzchar(lab)) {
-    p <- p + ggplot2::annotate(
-      "text", x = -Inf, y = Inf,
-      hjust = -0.15, vjust = 1.4,
-      label = lab,
-      size = text_sizes$n_edf * 0.95,
-      colour = "grey20", fontface = "italic"
-    )
+  if (show_label) {
+    # Top-left order label. ASCII by default; Unicode primes when the
+    # caller has opted in via glyph_style = "unicode".
+    lab <- .deriv_order_label(order, style = glyph_style)
+    if (nzchar(lab)) {
+      p <- p + ggplot2::annotate(
+        "text", x = -Inf, y = Inf,
+        hjust = -0.15, vjust = 1.4,
+        label = lab,
+        size = text_sizes$n_edf * 0.95,
+        colour = "grey20", fontface = "italic"
+      )
+    }
   }
   p
 }

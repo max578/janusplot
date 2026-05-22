@@ -41,6 +41,12 @@ janusplot(
   k_check_thresholds = NULL,
   auto_refit_k = FALSE,
   k_max_iter = 2L,
+  compact = c("auto", "always", "never"),
+  compact_threshold = 12L,
+  compact_levels = NULL,
+  focus_by = NA_character_,
+  focus_threshold = "q90",
+  focus_dim_alpha = 0.25,
   ...
 )
 }
@@ -295,6 +301,49 @@ per cell when \code{auto_refit_k = TRUE}. Default \code{2L} (so a cell
 that starts at the \code{mgcv} default \code{k = 10} will visit at most
 \code{k = 20} and then \code{k = 40}, capped by the per-cell unique-x
 limit). Ignored when \code{auto_refit_k = FALSE}.}
+
+\item{compact}{One of \code{"auto"} (default), \code{"always"}, or \code{"never"}.
+Controls scale-aware content suppression per cell:
+\itemize{
+\item \code{"auto"} — tier 0 at \code{n_var < compact_threshold} (the v0.1.0
+behaviour); progressively suppresses scatter, then CI, then
+annotations, then the spline itself as \code{n_var} crosses the
+\code{compact_levels} ladder. The matrix remains readable as
+\code{k} grows toward 25–30 by trading detail for legibility.
+\item \code{"always"} — force at least tier 1 regardless of \code{n_var}.
+Useful for very dense fixed-size renders.
+\item \code{"never"} — force tier 0 regardless of \code{n_var}. Useful for
+reproducing v0.1.0 figures on large matrices.
+}}
+
+\item{compact_threshold}{Integer. The \code{n_var} value at which
+tier 1 (drop scatter) auto-activates under \code{compact = "auto"}.
+Default \code{12L}, anchored on the 150 × 150 px-per-cell pixel
+budget at typical 6"×6" 300 DPI R Journal figures.}
+
+\item{compact_levels}{Optional named list with entries \code{t1}, \code{t2},
+\code{t3} overriding the auto-tier ladder. Defaults derive from
+\code{compact_threshold}: \code{t1 = compact_threshold},
+\code{t2 = compact_threshold + 6}, \code{t3 = compact_threshold + 13}.
+\code{NULL} (default) uses these derived defaults.}
+
+\item{focus_by}{One of \code{NA} (default — no filter), \code{"asymmetry"},
+\code{"edf"}, \code{"k_flag"}, or \code{"non_linearity"} (defined as \code{edf - 1}).
+When set, cells whose chosen metric falls below \code{focus_threshold}
+are rendered in \code{grey85} at alpha \code{focus_dim_alpha}; the matrix
+shape is preserved so attention drains visually to high-metric
+cells. This is a \strong{visual filter, not a statistical one} —
+the underlying fits are unchanged and the \code{with_data} table
+carries every cell.}
+
+\item{focus_threshold}{Either a quantile-string like \code{"q90"}
+(default) or a numeric cutoff. The quantile is taken over the
+non-\code{NA} distribution of \code{focus_by} across all off-diagonal
+cells in the matrix. Ignored when \code{focus_by = NA}.}
+
+\item{focus_dim_alpha}{Numeric in \verb{[0, 1]}. Alpha applied to the
+\code{grey85} wash on unfocused cells. Default \code{0.25}. Ignored when
+\code{focus_by = NA}.}
 
 \item{...}{Additional arguments passed to \code{\link[mgcv:gam]{mgcv::gam()}}.}
 }
