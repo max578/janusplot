@@ -435,8 +435,8 @@ janusplot <- function(
     vars <- sort(vars)
   }
 
-  k_thresholds <- k_check_thresholds %||% .default_k_thresholds()
-  .validate_k_thresholds(k_thresholds)
+  k_thresholds <- k_check_thresholds %||% .default_k_thresholds()   # nolint: object_usage_linter.
+  .validate_k_thresholds(k_thresholds)                              # nolint: object_usage_linter.
   if (!is.logical(auto_refit_k) || length(auto_refit_k) != 1L ||
       is.na(auto_refit_k)) {
     cli::cli_abort("{.arg auto_refit_k} must be TRUE or FALSE.")
@@ -468,7 +468,7 @@ janusplot <- function(
     k_max_iter = k_max_iter, ...
   )
 
-  .summarise_k_check(fits, k_thresholds, auto_refit_k)
+  .summarise_k_check(fits, k_thresholds, auto_refit_k)              # nolint: object_usage_linter.
 
   # Colour-scale limits pooled across off-diagonal cells. Correlation
   # encodings use fixed symmetric [-1, 1]; non-linearity indices use
@@ -833,8 +833,8 @@ janusplot_data <- function(
   derivative_ci <- rlang::arg_match(derivative_ci)
   .validate_inputs(data, vars, adjust, na_action)
   vars <- .resolve_vars(data, vars)
-  k_thresholds <- k_check_thresholds %||% .default_k_thresholds()
-  .validate_k_thresholds(k_thresholds)
+  k_thresholds <- k_check_thresholds %||% .default_k_thresholds()   # nolint: object_usage_linter.
+  .validate_k_thresholds(k_thresholds)                              # nolint: object_usage_linter.
   if (!is.logical(auto_refit_k) || length(auto_refit_k) != 1L ||
       is.na(auto_refit_k)) {
     cli::cli_abort("{.arg auto_refit_k} must be TRUE or FALSE.")
@@ -844,6 +844,10 @@ janusplot_data <- function(
     cli::cli_abort("{.arg k_max_iter} must be a single non-negative integer.")
   }
   k_max_iter <- as.integer(k_max_iter)
+  # Note: lintr's object_usage_linter cannot see helper functions
+  # defined in internal-fit.R from this file when running in clean
+  # package mode (cf. d20f211 lint-CI failure); the nolint markers
+  # above + below are explicit suppressions, not lintr config edits.
 
   if (length(derivatives)) {
     if (!is.numeric(derivatives) || anyNA(derivatives)) {
@@ -896,7 +900,7 @@ janusplot_data <- function(
     k_max_iter = k_max_iter, ...
   )
 
-  .summarise_k_check(fits, k_thresholds, auto_refit_k)
+  .summarise_k_check(fits, k_thresholds, auto_refit_k)              # nolint: object_usage_linter.
 
   k_n <- length(vars)
   pairs_out <- list()

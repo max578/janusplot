@@ -783,16 +783,19 @@
     if (is.null(s) || length(s) == 0L) NA_character_ else as.character(s)
   }, character(1L))
   flag <- vapply(fits, function(f) isTRUE(f$k_check$k_flag), logical(1L))
-  n_cells     <- length(fits)
-  n_reliable  <- sum(status %in% c("ok", "flagged"))
+  # The following locals look unused to lintr's object_usage_linter
+  # because they're consumed via cli's `{var}` template interpolation
+  # below. cli resolves them dynamically through .envir = parent.frame().
+  n_cells     <- length(fits)                                # nolint: object_usage_linter.
+  n_reliable  <- sum(status %in% c("ok", "flagged"))         # nolint: object_usage_linter.
   n_flagged   <- sum(flag, na.rm = TRUE)
   if (n_flagged == 0L) return(invisible(NULL))
   chance <- n_reliable * thresholds$p
-  n_post_flagged <- sum(vapply(fits, function(f) {
+  n_post_flagged <- sum(vapply(fits, function(f) {            # nolint: object_usage_linter.
     isTRUE(f$k_check$k_flag) && f$k_check$k_iterations > 0L
   }, logical(1L)))
-  chance_txt    <- format(chance, digits = 2)
-  alpha_txt     <- format(thresholds$p, digits = 2)
+  chance_txt    <- format(chance, digits = 2)                # nolint: object_usage_linter.
+  alpha_txt     <- format(thresholds$p, digits = 2)          # nolint: object_usage_linter.
   if (isTRUE(auto_refit_k)) {
     cli::cli_inform(c(
       i = "{n_flagged} of {n_cells} cell{?s} flagged for possible k underfit.",
