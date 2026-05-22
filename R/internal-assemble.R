@@ -12,9 +12,21 @@
                              shape_legend_plot = NULL,
                              labels = "border",
                              label_srt = 45,
-                             label_cex = 1) {
+                             label_cex = 1,
+                             axes = "original",
+                             axis_transforms = NULL) {
   k <- length(vars)
   has_border <- identical(labels, "border")
+  # Per-variable border-label rendering: original label or
+  # mode-suffixed ("var (z)" / "var (centred)" / "rank(var)").
+  display_label <- function(var_name) {
+    if (is.null(axis_transforms) || identical(axes, "original")) {
+      return(var_name)
+    }
+    tf <- axis_transforms[[var_name]]
+    if (is.null(tf)) return(var_name)
+    .label_with_suffix(var_name, tf$suffix, axes)         # nolint: object_usage_linter.
+  }
 
   if (!has_border) {
     grid <- vector("list", k * k)
@@ -44,11 +56,11 @@
           grid[[idx]] <- .build_corner_cell()
         } else if (r == 1L) {
           grid[[idx]] <- .build_top_label_cell(
-            vars[c_ - 1L], srt = label_srt, cex = label_cex
+            display_label(vars[c_ - 1L]), srt = label_srt, cex = label_cex
           )
         } else if (c_ == 1L) {
           grid[[idx]] <- .build_left_label_cell(
-            vars[r - 1L], cex = label_cex
+            display_label(vars[r - 1L]), cex = label_cex
           )
         } else {
           i <- r - 1L

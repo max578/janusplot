@@ -209,6 +209,48 @@
 #' @param focus_dim_alpha Numeric in `[0, 1]`. Alpha applied to the
 #'   `grey85` wash on unfocused cells. Default `0.25`. Ignored when
 #'   `focus_by = NA`.
+#' @param axes One of `"original"` (default), `"standardised"`,
+#'   `"centred"`, or `"rank"`. **Rendering-only knob** — the
+#'   underlying `mgcv::gam` fits are byte-identical across all four
+#'   modes (verifiable via `digest::digest()` on the fit list); the
+#'   transformation lives entirely inside the cell renderer and
+#'   propagates to (a) the raw scatter, (b) the spline prediction
+#'   grid, (c) the CI ribbon, and (d) the variable label on the
+#'   matrix border. Use:
+#'   * `"original"` — raw units. Maximum interpretability per cell.
+#'     v0.1.0 behaviour.
+#'   * `"standardised"` — `(x - mean(x)) / sd(x)` per variable.
+#'     Border label becomes e.g. `"mpg (z)"`. Pairs scaled into a
+#'     comparable visual range; useful at `k >= 15` when raw-unit
+#'     panels look disparate.
+#'   * `"centred"` — `x - mean(x)` per variable. Border label
+#'     becomes e.g. `"mpg (centred)"`. Preserves units while
+#'     anchoring the origin.
+#'   * `"rank"` — empirical-CDF-based rank, scaled to `[0, n]` per
+#'     variable. Border label becomes `"rank(mpg)"`. Sanity-check
+#'     view: collapses outliers; if the smooth changes shape vs
+#'     `"original"` the relationship is monotone-but-not-linear.
+#'
+#'   At compact tier 3 (`n_var >= 25` under `compact = "auto"`),
+#'   the cells render only colour fill + shape-class glyph — no
+#'   curve, no scatter — so `axes` becomes a **documented no-op**
+#'   (the border labels still pick up the mode suffix).
+#' @param save_as Optional file path with extension. When set,
+#'   the final assembled plot is written to this path via
+#'   [ggplot2::ggsave()]; the device is inferred from the
+#'   extension. Supported extensions: `.png`, `.pdf`, `.svg`,
+#'   `.jpg` / `.jpeg`, `.tif` / `.tiff`, `.eps`, `.ps`, `.bmp`.
+#'   Default `NULL` (no file written; `janusplot()` still
+#'   returns the ggplot). Width / height default to `pmax(6,
+#'   0.65 * k_n)` inches each — square aspect, scaling with
+#'   matrix dimension.
+#' @param save_width Numeric. Override width (inches) for
+#'   `save_as`. Default `NULL` uses the auto-resolved square.
+#' @param save_height Numeric. Override height (inches) for
+#'   `save_as`. Default `NULL` uses the auto-resolved square.
+#' @param save_dpi Integer. Raster DPI for `save_as` when the
+#'   inferred device is bitmap (png/jpg/tiff/bmp). Default `300`,
+#'   matching the R Journal target.
 #' @param k_check_thresholds Named list giving the three flag-criterion
 #'   thresholds used by `mgcv::k.check()`-style basis-dimension
 #'   diagnostics. Required entries: `edf_ratio` (Wood's
@@ -352,10 +394,16 @@ janusplot <- function(
     focus_by            = NA_character_,
     focus_threshold     = "q90",
     focus_dim_alpha     = 0.25,
+    axes                = c("original", "standardised", "centred", "rank"),
+    save_as             = NULL,
+    save_width          = NULL,
+    save_height         = NULL,
+    save_dpi            = 300,
     ...) {
   order         <- rlang::arg_match(order)
   na_action     <- rlang::arg_match(na_action)
   compact       <- rlang::arg_match(compact)
+  axes          <- rlang::arg_match(axes)
   glyph_style   <- rlang::arg_match(glyph_style)
   labels        <- rlang::arg_match(labels)
   diagonal      <- rlang::arg_match(diagonal)
@@ -515,6 +563,32 @@ janusplot <- function(
     cli::cli_abort("{.arg focus_dim_alpha} must be in [0, 1].")
   }
 
+  if (!is.null(save_as)) {
+    if (!is.character(save_as) || length(save_as) != 1L || !nzchar(save_as)) {
+      cli::cli_abort("{.arg save_as} must be a single non-empty file path or NULL.")
+    }
+    ext <- tolower(tools::file_ext(save_as))
+    valid_ext <- c("png", "pdf", "svg", "jpg", "jpeg", "tif", "tiff",
+                   "eps", "ps", "bmp")
+    if (!nzchar(ext) || !(ext %in% valid_ext)) {
+      cli::cli_abort(c(
+        "Cannot infer image device from {.arg save_as} extension {.val {ext}}.",
+        i = "Supported: {.val {valid_ext}}."
+      ))
+    }
+  }
+  for (nm in c("save_width", "save_height")) {
+    v <- get(nm)
+    if (!is.null(v) && (!is.numeric(v) || length(v) != 1L ||
+                        !is.finite(v) || v <= 0)) {
+      cli::cli_abort("{.arg {nm}} must be a single positive numeric or NULL.")
+    }
+  }
+  if (!is.numeric(save_dpi) || length(save_dpi) != 1L ||
+      !is.finite(save_dpi) || save_dpi <= 0) {
+    cli::cli_abort("{.arg save_dpi} must be a single positive numeric.")
+  }
+
   valid_annot <- c("edf", "A", "shape", "code", "k_warn")
   bad <- setdiff(annotations, valid_annot)
   if (length(bad)) {
@@ -567,6 +641,18 @@ janusplot <- function(
                         compact_threshold = compact_threshold,
                         compact_levels = compact_levels)
 
+  # Per-variable axis-transform specs. Built once from raw data,
+  # reused for every cell that touches that variable as x or y.
+  # Identity transforms for `axes = "original"`.
+  # nolint start: object_usage_linter.
+  axis_transforms <- stats::setNames(
+    lapply(vars, function(v) {
+      .build_axis_transform(data[[v]], mode = axes)
+    }),
+    vars
+  )
+  # nolint end
+
   # Focus mask — TRUE = full encoding, FALSE = dimmed wash.
   # Stamp `key` attribute so the mask resolver can recover (i, j)
   # for the asymmetry-keyed lookup.
@@ -605,15 +691,24 @@ janusplot <- function(
       derivative_ci = derivative_ci,
       tier = tier,
       is_focused = isTRUE(focus_mask[[key]]),
-      focus_dim_alpha = focus_dim_alpha
+      focus_dim_alpha = focus_dim_alpha,
+      x_transform = axis_transforms[[f$x_name]],
+      y_transform = axis_transforms[[f$y_name]]
     )                                                                # nolint end
   }
 
+  # Diagonal name / density cells need the *displayed* variable
+  # label too — so the mode suffix is consistent with border labels.
+  # nolint start: object_usage_linter.
+  display_var <- function(v) {
+    .label_with_suffix(v, axis_transforms[[v]]$suffix, axes)
+  }
+  # nolint end
   diag_cells <- lapply(vars, function(v) {
     switch(diagonal_eff,
       blank   = .build_blank_diagonal_cell(),
-      name    = .build_diagonal_cell(v, text_sizes = text_sizes),
-      density = .build_density_rug_cell(v, data[[v]],
+      name    = .build_diagonal_cell(display_var(v), text_sizes = text_sizes),
+      density = .build_density_rug_cell(display_var(v), data[[v]],
                                         text_sizes = text_sizes)
     )
   })
@@ -627,12 +722,15 @@ janusplot <- function(
     NULL
   }
 
+  # nolint start: object_usage_linter.
   composite <- .assemble_matrix(
     cells_by_ij, diag_cells, vars,
     colour_by = colour_by, colour_limits = colour_limits,
     palette = palette, shape_legend_plot = shape_legend_plot,
-    labels = labels, label_srt = label_srt, label_cex = label_cex
+    labels = labels, label_srt = label_srt, label_cex = label_cex,
+    axes = axes, axis_transforms = axis_transforms
   )
+  # nolint end
   plot_out <- .finalize_plot(
     composite,
     title   = .display_title(display, glyph_style),
@@ -644,6 +742,21 @@ janusplot <- function(
     },
     glossary_scale = glossary_scale
   )
+
+  # Optional file-save. Device inferred from save_as extension;
+  # auto-scaling width/height grows with matrix dimension so a
+  # k = 5 plot doesn't get the same footprint as a k = 25 one.
+  if (!is.null(save_as)) {
+    auto_dim <- max(6, 0.65 * k_n)
+    ggplot2::ggsave(
+      filename = save_as,
+      plot     = plot_out,
+      width    = save_width  %||% auto_dim,
+      height   = save_height %||% auto_dim,
+      units    = "in",
+      dpi      = save_dpi
+    )
+  }
 
   if (!isTRUE(with_data)) {
     return(plot_out)

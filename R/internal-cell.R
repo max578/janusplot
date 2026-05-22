@@ -227,6 +227,75 @@
 }
 
 # ---------------------------------------------------------------
+# Axis transforms (Feature 3 — rendering-only knob).
+# Each transform exposes a function f(new_values) returning the
+# transformed numeric vector and a `suffix` to append to the
+# variable's border label. Same function is applied consistently
+# to raw scatter, spline grid, and CI ribbon — guaranteeing visual
+# coherence regardless of compact tier or matrix dimension. The
+# underlying GAM fit is NOT touched: this is a pure presentation
+# layer, byte-identical fits across all four modes.
+# ---------------------------------------------------------------
+
+.axes_modes <- function() {
+  c("original", "standardised", "centred", "rank")
+}
+
+.build_axis_transform <- function(raw, mode = "original") {
+  mode <- match.arg(mode, .axes_modes())
+  raw_clean <- raw[is.finite(raw)]
+  n_raw <- length(raw_clean)
+  switch(mode,
+    original = list(
+      fn     = function(x) x,
+      suffix = ""
+    ),
+    standardised = {
+      mu <- if (n_raw > 0L) mean(raw_clean) else 0
+      sd <- if (n_raw > 1L) stats::sd(raw_clean) else 1
+      if (!is.finite(sd) || sd <= 0) sd <- 1
+      list(
+        fn     = function(x) (x - mu) / sd,
+        suffix = " (z)"
+      )
+    },
+    centred = {
+      mu <- if (n_raw > 0L) mean(raw_clean) else 0
+      list(
+        fn     = function(x) x - mu,
+        suffix = " (centred)"
+      )
+    },
+    rank = {
+      # ecdf-based rank for any new value, including grid points
+      # not in raw. Multiply by n to get rank-like 1..n integers.
+      if (n_raw < 2L) {
+        list(
+          fn     = function(x) x,
+          suffix = " (rank)"
+        )
+      } else {
+        ec <- stats::ecdf(raw_clean)
+        list(
+          fn     = function(x) ec(x) * n_raw,
+          suffix = " (rank)"
+        )
+      }
+    }
+  )
+}
+
+.label_with_suffix <- function(name, suffix, mode) {
+  if (identical(mode, "rank")) {
+    sprintf("rank(%s)", name)
+  } else if (nzchar(suffix)) {
+    paste0(name, suffix)
+  } else {
+    name
+  }
+}
+
+# ---------------------------------------------------------------
 # Compact-tier resolver. Decides per-cell content suppression based
 # on n_var (= matrix dimension) and the user's `compact` setting.
 # Returns an integer tier in 0:3 — see PLAN_v011_features.md §2.2
@@ -344,7 +413,9 @@
                         derivative_ci = "none",
                         tier = 0L,
                         is_focused = TRUE,
-                        focus_dim_alpha = 0.25) {
+                        focus_dim_alpha = 0.25,
+                        x_transform = NULL,
+                        y_transform = NULL) {
   # Single-quantity dispatch: every cell is one ggplot. "fit" calls
   # the historical renderer (unchanged behaviour), "d1" / "d2" call
   # the derivative renderer. No per-cell stacking; the matrix-level
@@ -360,7 +431,8 @@
       asym_val = asym_val, colour_limits = colour_limits,
       is_upper = is_upper, text_sizes = text_sizes,
       tier = tier, is_focused = is_focused,
-      focus_dim_alpha = focus_dim_alpha
+      focus_dim_alpha = focus_dim_alpha,
+      x_transform = x_transform, y_transform = y_transform
     ))
   }
   k <- switch(display, d1 = 1L, d2 = 2L,
@@ -385,7 +457,13 @@
                              glyph_style, asym_val,
                              colour_limits, is_upper, text_sizes,
                              tier = 0L, is_focused = TRUE,
-                             focus_dim_alpha = 0.25) {
+                             focus_dim_alpha = 0.25,
+                             x_transform = NULL, y_transform = NULL) {
+  # Resolve transforms. NULL = identity (axes = "original" path).
+  # Same function applied to scatter, ribbon, spline grid — visual
+  # coherence regardless of mode.
+  tf_x <- if (is.null(x_transform)) function(v) v else x_transform$fn
+  tf_y <- if (is.null(y_transform)) function(v) v else y_transform$fn
   colour_val   <- .colour_value(fit_obj, colour_by)
   colour_label <- .colour_label(colour_by)
 
@@ -467,6 +545,8 @@
   if (show_data && nrow(fit_obj$raw) > 0L) {
     raw <- fit_obj$raw
     names(raw) <- c("x", "y")
+    raw$x <- tf_x(raw$x)
+    raw$y <- tf_y(raw$y)
     p <- p + ggplot2::geom_point(
       data = raw,
       ggplot2::aes(x = .data$x, y = .data$y),
@@ -475,16 +555,23 @@
     )
   }
   if (show_ci) {
+    pred_ci <- fit_obj$pred
+    pred_ci$x  <- tf_x(pred_ci$x)
+    pred_ci$lo <- tf_y(pred_ci$lo)
+    pred_ci$hi <- tf_y(pred_ci$hi)
     p <- p + ggplot2::geom_ribbon(
-      data = fit_obj$pred,
+      data = pred_ci,
       ggplot2::aes(x = .data$x, ymin = .data$lo, ymax = .data$hi),
       fill = "#08306b", alpha = 0.20,
       inherit.aes = FALSE
     )
   }
   if (show_spline) {
+    pred_line <- fit_obj$pred
+    pred_line$x   <- tf_x(pred_line$x)
+    pred_line$fit <- tf_y(pred_line$fit)
     p <- p + ggplot2::geom_line(
-      data = fit_obj$pred,
+      data = pred_line,
       ggplot2::aes(x = .data$x, y = .data$fit),
       colour = "#08306b", linewidth = 0.7,
       inherit.aes = FALSE

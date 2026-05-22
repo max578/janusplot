@@ -1,5 +1,40 @@
 # janusplot (development version)
 
+### v0.1.1 Feature 3 — Axes rendering modes + figure-to-file output
+
+* **`axes`** rendering knob with four modes:
+  `"original"` (default), `"standardised"`, `"centred"`, `"rank"`.
+  Applied per variable from raw data; same transform propagates
+  consistently to (a) raw scatter, (b) spline prediction grid,
+  (c) CI ribbon, and (d) the matrix-border variable label
+  (`"mpg (z)"`, `"mpg (centred)"`, `"rank(mpg)"`).
+* **Rendering-only invariant.** The underlying `mgcv` fits are
+  byte-identical across modes — verified in
+  `tests/testthat/test-axes.R` via direct column comparison of
+  `with_data` output across all four modes on a non-linear DGP.
+* **At-k coverage.** The new test suite renders every
+  `(k, mode)` combination across `k ∈ {2, 5, 10, 15, 20, 26}`
+  and `mode ∈ {original, standardised, centred, rank}` —
+  24 panels — and asserts none emit warnings. Border-label
+  suffixing is independently verified at `k ∈ {3, 12, 20}` by
+  walking patchwork's plot list and matching against the
+  expected suffix pattern.
+* **Tier-3 no-op.** At compact tier 3 (`n_var >= 25`) the cells
+  render only colour fill + shape-class glyph (no curve, no
+  scatter), so `axes` is a documented no-op there. The border
+  labels still pick up the mode suffix so the user can tell
+  which transform they're looking at.
+* **`save_as = NULL`** — new file-output knob. When set to a
+  path with extension, writes the assembled matrix to disk via
+  [ggplot2::ggsave()]; the device is inferred from the
+  extension. Supported: `.png`, `.pdf`, `.svg`, `.jpg` /
+  `.jpeg`, `.tif` / `.tiff`, `.eps`, `.ps`, `.bmp`. The
+  function still returns the ggplot — the file is a side-effect.
+* **`save_width` / `save_height` / `save_dpi`** — overrides
+  for the auto-resolved square (`pmax(6, 0.65 * k_n)` inches,
+  300 dpi for raster). Useful when targeting a fixed-size
+  R Journal figure.
+
 ### v0.1.1 Feature 2 — Scale-aware compact rendering
 
 * **Progressive content tiers.** New `compact` argument with values

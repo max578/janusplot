@@ -47,6 +47,11 @@ janusplot(
   focus_by = NA_character_,
   focus_threshold = "q90",
   focus_dim_alpha = 0.25,
+  axes = c("original", "standardised", "centred", "rank"),
+  save_as = NULL,
+  save_width = NULL,
+  save_height = NULL,
+  save_dpi = 300,
   ...
 )
 }
@@ -344,6 +349,54 @@ cells in the matrix. Ignored when \code{focus_by = NA}.}
 \item{focus_dim_alpha}{Numeric in \verb{[0, 1]}. Alpha applied to the
 \code{grey85} wash on unfocused cells. Default \code{0.25}. Ignored when
 \code{focus_by = NA}.}
+
+\item{axes}{One of \code{"original"} (default), \code{"standardised"},
+\code{"centred"}, or \code{"rank"}. \strong{Rendering-only knob} — the
+underlying \code{mgcv::gam} fits are byte-identical across all four
+modes (verifiable via \code{digest::digest()} on the fit list); the
+transformation lives entirely inside the cell renderer and
+propagates to (a) the raw scatter, (b) the spline prediction
+grid, (c) the CI ribbon, and (d) the variable label on the
+matrix border. Use:
+\itemize{
+\item \code{"original"} — raw units. Maximum interpretability per cell.
+v0.1.0 behaviour.
+\item \code{"standardised"} — \code{(x - mean(x)) / sd(x)} per variable.
+Border label becomes e.g. \code{"mpg (z)"}. Pairs scaled into a
+comparable visual range; useful at \code{k >= 15} when raw-unit
+panels look disparate.
+\item \code{"centred"} — \code{x - mean(x)} per variable. Border label
+becomes e.g. \code{"mpg (centred)"}. Preserves units while
+anchoring the origin.
+\item \code{"rank"} — empirical-CDF-based rank, scaled to \verb{[0, n]} per
+variable. Border label becomes \code{"rank(mpg)"}. Sanity-check
+view: collapses outliers; if the smooth changes shape vs
+\code{"original"} the relationship is monotone-but-not-linear.
+}
+
+At compact tier 3 (\code{n_var >= 25} under \code{compact = "auto"}),
+the cells render only colour fill + shape-class glyph — no
+curve, no scatter — so \code{axes} becomes a \strong{documented no-op}
+(the border labels still pick up the mode suffix).}
+
+\item{save_as}{Optional file path with extension. When set,
+the final assembled plot is written to this path via
+\code{\link[ggplot2:ggsave]{ggplot2::ggsave()}}; the device is inferred from the
+extension. Supported extensions: \code{.png}, \code{.pdf}, \code{.svg},
+\code{.jpg} / \code{.jpeg}, \code{.tif} / \code{.tiff}, \code{.eps}, \code{.ps}, \code{.bmp}.
+Default \code{NULL} (no file written; \code{janusplot()} still
+returns the ggplot). Width / height default to \code{pmax(6, 0.65 * k_n)} inches each — square aspect, scaling with
+matrix dimension.}
+
+\item{save_width}{Numeric. Override width (inches) for
+\code{save_as}. Default \code{NULL} uses the auto-resolved square.}
+
+\item{save_height}{Numeric. Override height (inches) for
+\code{save_as}. Default \code{NULL} uses the auto-resolved square.}
+
+\item{save_dpi}{Integer. Raster DPI for \code{save_as} when the
+inferred device is bitmap (png/jpg/tiff/bmp). Default \code{300},
+matching the R Journal target.}
 
 \item{...}{Additional arguments passed to \code{\link[mgcv:gam]{mgcv::gam()}}.}
 }
