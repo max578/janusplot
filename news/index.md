@@ -2,6 +2,64 @@
 
 ## janusplot (development version)
 
+#### v0.1.1 NUMERICAL-SHIFT NOTICE (engine default change)
+
+**v0.1.1 changes the default GAM fitting backend from
+[`mgcv::gam`](https://rdrr.io/pkg/mgcv/man/gam.html) to
+[`mgcv::bam`](https://rdrr.io/pkg/mgcv/man/bam.html)** (Feature 4
+below). `bam` uses fREML estimation instead of REML, which differs by
+~1-3% in effective degrees of freedom on identical data. **Existing
+v0.1.0 users will see slightly different EDFs, asymmetry indices, and
+per-cell colour fills when they upgrade.** This is the single
+non-byte-identical change in v0.1.1 — every other v0.1.1 feature is
+strictly additive.
+
+**Recovery.** Set `engine = "gam"` on
+[`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
+or
+[`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md)
+to reproduce v0.1.0 numerical output verbatim. The package’s vdiffr
+visual-regression suite pins `engine = "gam"` for exactly this purpose —
+every old snapshot remains valid under the backward-compat escape.
+
+#### v0.1.1 Feature 4 — Default fitting engine = `bam` (with `gam` escape)
+
+- **New `engine = c("bam", "gam")` argument**, default `"bam"`. At
+  janusplot’s scale (k = 15-25 vars, 600+ fits per call)
+  [`mgcv::bam`](https://rdrr.io/pkg/mgcv/man/bam.html)’s block-Lanczos
+  solve + fREML estimation delivers ~3-10x wall-time speedup vs
+  [`mgcv::gam`](https://rdrr.io/pkg/mgcv/man/gam.html) without any new
+  dependency (`mgcv` already exports both).
+- **fREML vs REML.** `bam` defaults to fREML (fast REML); `gam` defaults
+  to REML. The two methods optimise the same penalty target via
+  different paths — EDFs differ by ~1-3% on identical data. v0.1.1
+  surfaces this as the one numerical break with v0.1.0, documented
+  prominently above.
+- **`method` argument default is now `NULL`**, resolved per-engine:
+  `"fREML"` for bam, `"REML"` for gam. Users who passed `method`
+  explicitly in v0.1.0 see no behaviour change.
+- **`discrete = FALSE` (bam-only)** — opt-in to mgcv’s
+  covariate-discretisation optimisation. Further ~2-5x speedup at
+  sub-pixel prediction shift cost.
+- **`nthreads = 1L` (bam-only)** — intra-fit threading. Default 1 to
+  avoid oversubscription when combined with `parallel = TRUE` (which
+  fans out across pair-fits already).
+- **`engine` + `method` provenance** — both columns now appear in
+  `janusplot(..., with_data = TRUE)$data` and on every
+  `janusplot_data()$pairs[[i]]` entry. Useful for paper figures whose
+  methodology section needs to document which backend produced the EDFs
+  they report.
+- **`bam` inherits from `gam`** — `class(bam_fit)` is
+  `c("bam", "gam", "glm", "lm")`, so
+  [`mgcv::k.check()`](https://rdrr.io/pkg/mgcv/man/k.check.html),
+  `predict.gam()`, derivative LP-matrix arithmetic, and every
+  shape-metric extractor work without modification. Engine is plumbing,
+  not redesign.
+- **vdiffr suite pinned to `engine = "gam"`** so every legacy visual
+  snapshot continues to validate under the v0.1.0 backward-compat
+  escape. Acts as a regression gate on the `engine = "gam"` recovery
+  path.
+
 #### v0.1.1 Feature 3 — Axes rendering modes + figure-to-file output
 
 - **`axes`** rendering knob with four modes: `"original"` (default),

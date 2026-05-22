@@ -24,9 +24,12 @@ janusplot(
   data,
   vars = NULL,
   adjust = NULL,
-  method = "REML",
+  method = NULL,
   k = -1L,
   bs = "tp",
+  engine = c("bam", "gam"),
+  discrete = FALSE,
+  nthreads = 1L,
   order = c("original", "hclust", "alphabetical"),
   show_data = TRUE,
   show_ci = TRUE,
@@ -94,9 +97,11 @@ janusplot(
 
 - method:
 
-  Smoothing-parameter estimation method passed to
-  [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html). Default
-  `"REML"` per mgcv recommendation.
+  Smoothing-parameter estimation method passed to the chosen fitting
+  backend. Default `NULL` resolves per-engine: `"fREML"` for
+  `engine = "bam"` (mgcv's recommended at scale), `"REML"` for
+  `engine = "gam"` (the v0.1.0 behaviour). Pass any valid mgcv method
+  string to override.
 
 - k:
 
@@ -106,6 +111,40 @@ janusplot(
 - bs:
 
   Basis type for `s()`. Default `"tp"` (thin plate).
+
+- engine:
+
+  One of `"bam"` (default, **new in v0.1.1**) or `"gam"`. Selects mgcv's
+  fitting backend:
+
+  - `"bam"` — [`mgcv::bam()`](https://rdrr.io/pkg/mgcv/man/bam.html).
+    Block-Lanczos solve + fREML estimation + lower memory. ~3-10x
+    speedup at janusplot's scale (k = 15-25 vars, 600+ pairwise fits per
+    call). The **default**, and the one non-byte-identical change in
+    v0.1.1: fREML differs from REML by ~1-3% in EDF on identical data,
+    so the asymmetry index may shift by similar amounts vs v0.1.0
+    output. Recoverable verbatim via `engine = "gam"`.
+
+  - `"gam"` — [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html).
+    The v0.1.0 backend. Use for backward-compat reproduction, very small
+    n (\< 200) where bam's setup overhead exceeds its solve gain, or
+    methodologically sensitive contexts that require REML rather than
+    fREML.
+
+- discrete:
+
+  Logical. `bam`-only opt-in to mgcv's covariate-discretisation
+  optimisation. Further ~2-5x speedup at the cost of small (sub-pixel at
+  typical janusplot resolution) prediction-shift. Default `FALSE`.
+  Ignored when `engine = "gam"`.
+
+- nthreads:
+
+  Integer. `bam`-only intra-fit threading. Default `1L` to avoid
+  oversubscription when combined with `parallel = TRUE` (`future.apply`
+  fans out pair fits across cores; nthreads \> 1 within each pair would
+  double-book CPUs). Raise above 1 only when `parallel = FALSE`. Ignored
+  when `engine = "gam"`.
 
 - order:
 

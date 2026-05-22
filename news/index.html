@@ -41,6 +41,30 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="janusplot-development-version">janusplot (development version)<a class="anchor" aria-label="anchor" href="#janusplot-development-version"></a></h2>
 <div class="section level4">
+<h4 id="v011-numerical-shift-notice-engine-default-change-development-version">v0.1.1 NUMERICAL-SHIFT NOTICE (engine default change)<a class="anchor" aria-label="anchor" href="#v011-numerical-shift-notice-engine-default-change-development-version"></a></h4>
+<p><strong>v0.1.1 changes the default GAM fitting backend from <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam</a></code> to <code><a href="https://rdrr.io/pkg/mgcv/man/bam.html" class="external-link">mgcv::bam</a></code></strong> (Feature 4 below). <code>bam</code> uses fREML estimation instead of REML, which differs by ~1-3% in effective degrees of freedom on identical data. <strong>Existing v0.1.0 users will see slightly different EDFs, asymmetry indices, and per-cell colour fills when they upgrade.</strong> This is the single non-byte-identical change in v0.1.1 — every other v0.1.1 feature is strictly additive.</p>
+<p><strong>Recovery.</strong> Set <code>engine = "gam"</code> on <code><a href="../reference/janusplot.html">janusplot()</a></code> or <code><a href="../reference/janusplot_data.html">janusplot_data()</a></code> to reproduce v0.1.0 numerical output verbatim. The package’s vdiffr visual-regression suite pins <code>engine = "gam"</code> for exactly this purpose — every old snapshot remains valid under the backward-compat escape.</p>
+</div>
+<div class="section level4">
+<h4 id="v011-feature--default-fitting-engine--bam-with-gam-escape-development-version">v0.1.1 Feature 4 — Default fitting engine = <code>bam</code> (with <code>gam</code> escape)<a class="anchor" aria-label="anchor" href="#v011-feature--default-fitting-engine--bam-with-gam-escape-development-version"></a></h4>
+<ul><li>
+<strong>New <code>engine = c("bam", "gam")</code> argument</strong>, default <code>"bam"</code>. At janusplot’s scale (k = 15-25 vars, 600+ fits per call) <code><a href="https://rdrr.io/pkg/mgcv/man/bam.html" class="external-link">mgcv::bam</a></code>’s block-Lanczos solve + fREML estimation delivers ~3-10x wall-time speedup vs <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam</a></code> without any new dependency (<code>mgcv</code> already exports both).</li>
+<li>
+<strong>fREML vs REML.</strong> <code>bam</code> defaults to fREML (fast REML); <code>gam</code> defaults to REML. The two methods optimise the same penalty target via different paths — EDFs differ by ~1-3% on identical data. v0.1.1 surfaces this as the one numerical break with v0.1.0, documented prominently above.</li>
+<li>
+<strong><code>method</code> argument default is now <code>NULL</code></strong>, resolved per-engine: <code>"fREML"</code> for bam, <code>"REML"</code> for gam. Users who passed <code>method</code> explicitly in v0.1.0 see no behaviour change.</li>
+<li>
+<strong><code>discrete = FALSE</code> (bam-only)</strong> — opt-in to mgcv’s covariate-discretisation optimisation. Further ~2-5x speedup at sub-pixel prediction shift cost.</li>
+<li>
+<strong><code>nthreads = 1L</code> (bam-only)</strong> — intra-fit threading. Default 1 to avoid oversubscription when combined with <code>parallel = TRUE</code> (which fans out across pair-fits already).</li>
+<li>
+<strong><code>engine</code> + <code>method</code> provenance</strong> — both columns now appear in <code>janusplot(..., with_data = TRUE)$data</code> and on every <code>janusplot_data()$pairs[[i]]</code> entry. Useful for paper figures whose methodology section needs to document which backend produced the EDFs they report.</li>
+<li>
+<strong><code>bam</code> inherits from <code>gam</code></strong> — <code>class(bam_fit)</code> is <code>c("bam", "gam", "glm", "lm")</code>, so <code><a href="https://rdrr.io/pkg/mgcv/man/k.check.html" class="external-link">mgcv::k.check()</a></code>, <code>predict.gam()</code>, derivative LP-matrix arithmetic, and every shape-metric extractor work without modification. Engine is plumbing, not redesign.</li>
+<li>
+<strong>vdiffr suite pinned to <code>engine = "gam"</code></strong> so every legacy visual snapshot continues to validate under the v0.1.0 backward-compat escape. Acts as a regression gate on the <code>engine = "gam"</code> recovery path.</li>
+</ul></div>
+<div class="section level4">
 <h4 id="v011-feature--axes-rendering-modes--figure-to-file-output-development-version">v0.1.1 Feature 3 — Axes rendering modes + figure-to-file output<a class="anchor" aria-label="anchor" href="#v011-feature--axes-rendering-modes--figure-to-file-output-development-version"></a></h4>
 <ul><li>
 <strong><code>axes</code></strong> rendering knob with four modes: <code>"original"</code> (default), <code>"standardised"</code>, <code>"centred"</code>, <code>"rank"</code>. Applied per variable from raw data; same transform propagates consistently to (a) raw scatter, (b) spline prediction grid,

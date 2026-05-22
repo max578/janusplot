@@ -61,7 +61,7 @@ the ggplot. Useful for custom rendering or downstream analysis.</p>
 <span>  <span class="va">data</span>,</span>
 <span>  vars <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  adjust <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  method <span class="op">=</span> <span class="st">"REML"</span>,</span>
+<span>  method <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  k <span class="op">=</span> <span class="op">-</span><span class="fl">1L</span>,</span>
 <span>  bs <span class="op">=</span> <span class="st">"tp"</span>,</span>
 <span>  na_action <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pairwise"</span>, <span class="st">"complete"</span><span class="op">)</span>,</span>
@@ -75,6 +75,9 @@ the ggplot. Useful for custom rendering or downstream analysis.</p>
 <span>  k_check_thresholds <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  auto_refit_k <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  k_max_iter <span class="op">=</span> <span class="fl">2L</span>,</span>
+<span>  engine <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"bam"</span>, <span class="st">"gam"</span><span class="op">)</span>,</span>
+<span>  discrete <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  nthreads <span class="op">=</span> <span class="fl">1L</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -103,7 +106,11 @@ Default <code>NULL</code> fits unadjusted pairwise smooths.</p></dd>
 
 <dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
 <dd><p>Smoothing-parameter estimation method passed to
-<code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code>. Default <code>"REML"</code> per mgcv recommendation.</p></dd>
+the chosen fitting backend. Default <code>NULL</code> resolves
+per-engine: <code>"fREML"</code> for <code>engine = "bam"</code> (mgcv's
+recommended at scale), <code>"REML"</code> for <code>engine = "gam"</code>
+(the v0.1.0 behaviour). Pass any valid mgcv method string
+to override.</p></dd>
 
 
 <dt id="arg-k">k<a class="anchor" aria-label="anchor" href="#arg-k"></a></dt>
@@ -225,6 +232,40 @@ that starts at the <code>mgcv</code> default <code>k = 10</code> will visit at m
 limit). Ignored when <code>auto_refit_k = FALSE</code>.</p></dd>
 
 
+<dt id="arg-engine">engine<a class="anchor" aria-label="anchor" href="#arg-engine"></a></dt>
+<dd><p>One of <code>"bam"</code> (default, <strong>new in v0.1.1</strong>) or
+<code>"gam"</code>. Selects mgcv's fitting backend:</p><ul><li><p><code>"bam"</code> — <code><a href="https://rdrr.io/pkg/mgcv/man/bam.html" class="external-link">mgcv::bam()</a></code>. Block-Lanczos solve + fREML
+estimation + lower memory. ~3-10x speedup at janusplot's
+scale (k = 15-25 vars, 600+ pairwise fits per call). The
+<strong>default</strong>, and the one non-byte-identical change in
+v0.1.1: fREML differs from REML by ~1-3% in EDF on
+identical data, so the asymmetry index may shift by
+similar amounts vs v0.1.0 output. Recoverable verbatim
+via <code>engine = "gam"</code>.</p></li>
+<li><p><code>"gam"</code> — <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code>. The v0.1.0 backend. Use for
+backward-compat reproduction, very small n (&lt; 200) where
+bam's setup overhead exceeds its solve gain, or
+methodologically sensitive contexts that require REML
+rather than fREML.</p></li>
+</ul></dd>
+
+
+<dt id="arg-discrete">discrete<a class="anchor" aria-label="anchor" href="#arg-discrete"></a></dt>
+<dd><p>Logical. <code>bam</code>-only opt-in to mgcv's
+covariate-discretisation optimisation. Further ~2-5x
+speedup at the cost of small (sub-pixel at typical
+janusplot resolution) prediction-shift. Default <code>FALSE</code>.
+Ignored when <code>engine = "gam"</code>.</p></dd>
+
+
+<dt id="arg-nthreads">nthreads<a class="anchor" aria-label="anchor" href="#arg-nthreads"></a></dt>
+<dd><p>Integer. <code>bam</code>-only intra-fit threading.
+Default <code>1L</code> to avoid oversubscription when combined with
+<code>parallel = TRUE</code> (<code>future.apply</code> fans out pair fits
+across cores; nthreads &gt; 1 within each pair would
+double-book CPUs). Raise above 1 only when <code>parallel = FALSE</code>. Ignored when <code>engine = "gam"</code>.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Additional arguments passed to <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code>.</p></dd>
 
@@ -279,7 +320,7 @@ monotonicity and convexity indices.</p></dd>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Per-pair fits + metrics on a small mtcars slice</span></span></span>
 <span class="r-in"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">janusplot_data</span><span class="op">(</span><span class="va">mtcars</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mpg"</span>, <span class="st">"hp"</span>, <span class="st">"wt"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">out</span><span class="op">$</span><span class="va">pairs</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">asymmetry_index</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.006028176</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.006028205</span>
 <span class="r-in"><span><span class="va">out</span><span class="op">$</span><span class="va">pairs</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">cor_spearman</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] -0.8946646</span>
 <span class="r-in"><span><span class="va">out</span><span class="op">$</span><span class="va">pairs</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">shape_yx</span></span></span>

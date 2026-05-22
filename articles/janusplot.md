@@ -248,11 +248,11 @@ het$y <- 0.5 * het$x + rnorm(n, sd = 0.3 + 0.4 * het$x)
 
 out <- janusplot_data(het, vars = c("x", "y"))
 out$pairs[[1L]]$edf_yx
-#> [1] 1.00021
+#> [1] 1.000017
 out$pairs[[1L]]$edf_xy
-#> [1] 6.157621
+#> [1] 6.157622
 out$pairs[[1L]]$asymmetry_index
-#> [1] 0.720527
+#> [1] 0.7205735
 ```
 
 ## Shape metrics explained
