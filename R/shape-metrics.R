@@ -1,7 +1,7 @@
 # Shape metrics for janusplot cells.
 # Two continuous indices (monotonicity M, convexity C), two discrete
 # counts (turning points, inflections), one ratio (flat range), and a
-# rule-based classifier into 12 shape categories. All weights are the
+# rule-based classifier into 24 shape categories. All weights are the
 # empirical density of x on the prediction grid, so the metrics describe
 # the smooth *where the data actually live*, not the extrapolated tails.
 #
