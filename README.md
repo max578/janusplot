@@ -175,11 +175,18 @@ scope and explicit non-claims.
 
 ## Status
 
-`R CMD check --as-cran` clean (0 errors, 0 warnings, 3 cosmetic NOTEs —
-new submission / local env); 190 test expectations; 88.5 % coverage.
+`R CMD check --as-cran` clean (0 errors, 0 warnings; 2
+local-environmental NOTEs only). Comprehensive `testthat` suite
+including `vdiffr` visual-regression snapshots; coverage tracked via the
+Codecov badge above.
 
 ## Citation
 
 ``` r
 citation("janusplot")
 ```
+
+## License
+
+GPL (\>= 3). See the [`LICENSE.md`](LICENSE.md) file, or
+<https://www.gnu.org/licenses/gpl-3.0.html> for the full text.

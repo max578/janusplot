@@ -7,7 +7,7 @@ bibentry(
                     email = "max.moldovan@adelaide.edu.au",
                     comment = c(ORCID = "0000-0001-9680-8474")),
   year     = "2026",
-  note     = "R package version 0.1.0",
+  note     = "R package version 0.1.1",
   url      = "https://github.com/max578/janusplot"
 )
 

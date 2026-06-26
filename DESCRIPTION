@@ -1,7 +1,7 @@
 Package: janusplot
 Type: Package
 Title: Asymmetric Smoothed-Association Matrices via GAM Fits
-Version: 0.1.0.9000
+Version: 0.1.1
 Authors@R: c(
     person("Max", "Moldovan", , "max.moldovan@adelaide.edu.au",
            role = c("aut", "cre", "cph"),

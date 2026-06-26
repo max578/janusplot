@@ -1,4 +1,4 @@
-# janusplot (development version)
+# janusplot 0.1.1
 
 ### v0.1.1 NUMERICAL-SHIFT NOTICE (engine default change)
 

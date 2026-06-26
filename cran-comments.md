@@ -2,70 +2,77 @@
 
 ## Submission type
 
-First submission of `janusplot` to CRAN (version 0.1.0).
+Update of `janusplot` from 0.1.0 to **0.1.1**. The current CRAN version is 0.1.0
+(published 2026-04-28). This is a minor feature and performance release with no
+breaking change to the public API.
+
+## Summary of changes in 0.1.1
+
+- **New `engine = c("bam", "gam")` argument** selecting the `mgcv` fitting
+  backend. The default changes from `mgcv::gam` to `mgcv::bam` for a 3-10x
+  speed-up at janusplot's scale. This is the single non-byte-identical change:
+  `bam`'s fREML estimation differs from `gam`'s REML by ~1-3% in effective
+  degrees of freedom, so fitted values, the asymmetry index, and per-cell colour
+  fills may shift slightly when a user upgrades. `engine = "gam"` reproduces
+  0.1.0 output verbatim; this is documented prominently at the top of `NEWS.md`.
+- Per-cell k-checking, scale-aware compact rendering, rendering-only axes modes,
+  and figure-to-file output via `save_as`. All strictly additive.
+- Internal: shared scalar-argument validation centralised behind one helper;
+  test coverage of argument validation extended.
 
 ## Test environments
 
-- macOS 26 (Darwin 25.3) / Apple Silicon — R 4.5.2 (local).
-- win-builder (R-devel, R 4.6.0 RC 2026-04-22 r89945 ucrt) — 2 NOTEs
-  on `janusplot_0.1.0.tar.gz` (see below). Will be re-run on the
-  trimmed-example rebuild immediately before submission.
-- R-hub v2 (`rhub::rhub_check()`, GitHub-Actions-backed, all default
-  platforms) — pending; will be re-run immediately before submission.
+- macOS 26 (Darwin 25) / Apple Silicon -- R 4.5.2 (local).
+- win-builder (R-devel and R-release) -- to be re-run immediately before
+  submission.
+- R-hub v2 (`rhub::rhub_check()`, default platforms) -- to be re-run immediately
+  before submission.
 
 ## R CMD check results
 
-Expected status on the submission tarball: **1 NOTE** (new-submission
-feasibility only). Itemised below, with the resolved prior NOTE also
-documented for continuity.
+Local `R CMD check --as-cran` on the built `janusplot_0.1.1.tar.gz`: **0 ERRORs,
+0 WARNINGs, 2 NOTEs**. Both NOTEs are local-environmental and are not expected on
+the CRAN check farm, win-builder, or R-hub.
 
-### NOTE 1 — CRAN incoming feasibility
+### NOTE -- future file timestamps (local only)
 
-"New submission" — expected for a first submission; informational only.
-All URLs verified to resolve (pkgdown site live at
-`https://max578.github.io/janusplot/`).
+`checking for future file timestamps ... unable to verify current time` is
+raised on the local check host, which cannot reach a time service.
 
-### Resolved — examples execution time
+### NOTE -- HTML manual validation skipped (local only)
 
-Win-builder's initial build of `janusplot_0.1.0.tar.gz` reported
-`checking examples ... [19s] NOTE` with the `janusplot()` example
-elapsing 11.17s — over the 10s CRAN threshold. Cause: the runnable
-example used `mtcars[, c("mpg", "hp", "wt", "qsec")]` (12 off-diagonal
-GAM fits). Trimmed to a 3-variable subset (6 off-diagonal fits), which
-is expected to run in roughly half the time and clear the threshold.
-Heavier demonstrations remain under `\donttest{}`.
-
-### Local-only, not reproduced upstream
-
-Local `R CMD check --as-cran` additionally raises
-`checking for future file timestamps ... NOTE` / `unable to verify
-current time`. Environmental (check host cannot reach a standard time
-service); not reproduced on win-builder or R-hub.
+`checking HTML version of manual ... Skipping checking HTML validation: 'tidy'
+doesn't look like recent enough HTML Tidy` reflects the dated `tidy` shipped with
+the local macOS host; the CRAN farm and win-builder carry a recent HTML Tidy and
+do not raise it.
 
 ## Downstream dependencies
 
-None — this is a first submission. There are no reverse dependencies.
+There are **0 reverse dependencies** on CRAN (checked against the current CRAN
+package database on 2026-06-26: zero reverse Depends / Imports / LinkingTo, and
+zero reverse Suggests). The default-engine change therefore has no reverse-
+dependency impact.
 
 ## Package scope
 
-`janusplot` renders pairwise asymmetric smoothed-association matrices
-of continuous variables via `mgcv::gam()` fits. Each cell displays a
-directional GAM smooth; the package exposes per-pair shape descriptors
-(monotonicity, convexity, inflection counts, 24-category shape taxonomy)
-plus a recovery-rate sensitivity study
-(`janusplot_shape_sensitivity()`) with precomputed demo data.
+`janusplot` renders pairwise asymmetric smoothed-association matrices of
+continuous variables via `mgcv` GAM fits. Each off-diagonal cell displays a
+directional smooth; the package exposes per-pair shape descriptors
+(monotonicity, convexity, inflection counts, a 24-category shape taxonomy) plus
+a recovery-rate sensitivity study (`janusplot_shape_sensitivity()`) with
+precomputed demo data.
 
-A companion R Journal paper
-(*Beyond Pearson: Visualising Asymmetric Non-linear Associations with
-Generalised Additive Models*) is in preparation; the package is
-submitted independently and does not depend on the paper's publication.
+A companion R Journal paper (*Beyond Pearson: Visualising Asymmetric Non-linear
+Associations with Generalised Additive Models*) is in preparation; the package is
+maintained independently of the paper's publication.
 
 ## Notes to the maintainers
 
-- All examples are executable without `\dontrun{}`.
-- All tests run in parallel under `testthat` edition 3.
-- Vignettes build in roughly 20 seconds on reference hardware.
-- No C/C++/Rust code; pure R with `Imports:` from `mgcv`, `ggplot2`,
-  `patchwork`, `grid`, `stats`, `cli`, `lifecycle`, `rlang`.
-- Package size after build is modest (~2 MB source tarball including
-  the precomputed `shape_sensitivity_demo` dataset).
+- All examples are executable without `\dontrun{}`; the heavier demonstrations
+  sit under `\donttest{}`.
+- All tests run under `testthat` edition 3; visual output is regression-tested
+  with `vdiffr` and skips cleanly where the snapshot back-end is unavailable.
+- No compiled code; pure R with `Imports:` from `mgcv`, `ggplot2`, `patchwork`,
+  `grid`, `stats`, `cli`, `lifecycle`, `rlang`.
+- Source tarball is ~2 MB, including the precomputed `shape_sensitivity_demo`
+  dataset.
