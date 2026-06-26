@@ -28,3 +28,4 @@
 ^renv\.lock$
 ^CRAN-SUBMISSION$
 ^tools$
+^CONSTELLATION_MEMBER\.md$

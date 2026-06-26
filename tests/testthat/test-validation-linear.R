@@ -1,6 +1,6 @@
 # CI-safe numeric-validation canary.
 # Full 500-rep validation study lives under the parent
-# bidirplot_dev/simulation/ workspace (out of package scope).
+# janusplot_dev/simulation/ workspace (out of package scope).
 # This in-CI canary asserts: on a pure-linear DGP, both the
 # asymmetry index and the recovered EDFs stay close to their
 # theoretical floor.
