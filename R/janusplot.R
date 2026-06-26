@@ -438,13 +438,9 @@ janusplot <- function(
   compact       <- rlang::arg_match(compact)
   axes          <- rlang::arg_match(axes)
   engine        <- rlang::arg_match(engine)
-  if (!is.logical(discrete) || length(discrete) != 1L || is.na(discrete)) {
-    cli::cli_abort("{.arg discrete} must be TRUE or FALSE.")
-  }
-  if (!is.numeric(nthreads) || length(nthreads) != 1L ||
-      !is.finite(nthreads) || nthreads < 1L) {
-    cli::cli_abort("{.arg nthreads} must be a single positive integer.")
-  }
+  .validate_shared_scalars( # nolint: object_usage_linter.
+    discrete, nthreads, auto_refit_k, k_max_iter, derivative_ci_nsim
+  )
   nthreads <- as.integer(nthreads)
   glyph_style   <- rlang::arg_match(glyph_style)
   labels        <- rlang::arg_match(labels)
@@ -459,14 +455,6 @@ janusplot <- function(
     diagonal
   }
 
-  if (!is.numeric(derivative_ci_nsim) ||
-      length(derivative_ci_nsim) != 1L ||
-      !is.finite(derivative_ci_nsim) ||
-      derivative_ci_nsim < 100) {
-    cli::cli_abort(
-      "{.arg derivative_ci_nsim} must be a single integer >= 100."
-    )
-  }
   derivative_ci_nsim <- as.integer(derivative_ci_nsim)
 
   if (!is.numeric(label_srt) || length(label_srt) != 1L ||
@@ -569,14 +557,6 @@ janusplot <- function(
 
   k_thresholds <- k_check_thresholds %||% .default_k_thresholds()   # nolint: object_usage_linter.
   .validate_k_thresholds(k_thresholds)                              # nolint: object_usage_linter.
-  if (!is.logical(auto_refit_k) || length(auto_refit_k) != 1L ||
-      is.na(auto_refit_k)) {
-    cli::cli_abort("{.arg auto_refit_k} must be TRUE or FALSE.")
-  }
-  if (!is.numeric(k_max_iter) || length(k_max_iter) != 1L ||
-      !is.finite(k_max_iter) || k_max_iter < 0) {
-    cli::cli_abort("{.arg k_max_iter} must be a single non-negative integer.")
-  }
   k_max_iter <- as.integer(k_max_iter)
 
   if (!is.numeric(compact_threshold) || length(compact_threshold) != 1L ||
@@ -1086,26 +1066,14 @@ janusplot_data <- function(
   na_action     <- rlang::arg_match(na_action)
   derivative_ci <- rlang::arg_match(derivative_ci)
   engine        <- rlang::arg_match(engine)
-  if (!is.logical(discrete) || length(discrete) != 1L || is.na(discrete)) {
-    cli::cli_abort("{.arg discrete} must be TRUE or FALSE.")
-  }
-  if (!is.numeric(nthreads) || length(nthreads) != 1L ||
-      !is.finite(nthreads) || nthreads < 1L) {
-    cli::cli_abort("{.arg nthreads} must be a single positive integer.")
-  }
+  .validate_shared_scalars( # nolint: object_usage_linter.
+    discrete, nthreads, auto_refit_k, k_max_iter, derivative_ci_nsim
+  )
   nthreads <- as.integer(nthreads)
   .validate_inputs(data, vars, adjust, na_action)
   vars <- .resolve_vars(data, vars)
   k_thresholds <- k_check_thresholds %||% .default_k_thresholds()   # nolint: object_usage_linter.
   .validate_k_thresholds(k_thresholds)                              # nolint: object_usage_linter.
-  if (!is.logical(auto_refit_k) || length(auto_refit_k) != 1L ||
-      is.na(auto_refit_k)) {
-    cli::cli_abort("{.arg auto_refit_k} must be TRUE or FALSE.")
-  }
-  if (!is.numeric(k_max_iter) || length(k_max_iter) != 1L ||
-      !is.finite(k_max_iter) || k_max_iter < 0) {
-    cli::cli_abort("{.arg k_max_iter} must be a single non-negative integer.")
-  }
   k_max_iter <- as.integer(k_max_iter)
 
   if (length(derivatives)) {
@@ -1125,14 +1093,6 @@ janusplot_data <- function(
     }
   }
 
-  if (!is.numeric(derivative_ci_nsim) ||
-      length(derivative_ci_nsim) != 1L ||
-      !is.finite(derivative_ci_nsim) ||
-      derivative_ci_nsim < 100) {
-    cli::cli_abort(
-      "{.arg derivative_ci_nsim} must be a single integer >= 100."
-    )
-  }
   derivative_ci_nsim <- as.integer(derivative_ci_nsim)
 
   if (!is.null(n_grid)) {

@@ -89,6 +89,44 @@
   invisible(NULL)
 }
 
+# Shared scalar-argument validation for janusplot() and janusplot_data().
+# Both public entry points apply these five checks identically, so they
+# delegate here rather than duplicate the logic. `call` is forwarded so the
+# abort is reported against the calling entry point, not this helper.
+.validate_shared_scalars <- function(discrete, nthreads, auto_refit_k,
+                                     k_max_iter, derivative_ci_nsim,
+                                     call = rlang::caller_env()) {
+  if (!is.logical(discrete) || length(discrete) != 1L || is.na(discrete)) {
+    cli::cli_abort("{.arg discrete} must be TRUE or FALSE.", call = call)
+  }
+  if (!is.numeric(nthreads) || length(nthreads) != 1L ||
+      !is.finite(nthreads) || nthreads < 1L) {
+    cli::cli_abort(
+      "{.arg nthreads} must be a single positive integer.",
+      call = call
+    )
+  }
+  if (!is.logical(auto_refit_k) || length(auto_refit_k) != 1L ||
+      is.na(auto_refit_k)) {
+    cli::cli_abort("{.arg auto_refit_k} must be TRUE or FALSE.", call = call)
+  }
+  if (!is.numeric(k_max_iter) || length(k_max_iter) != 1L ||
+      !is.finite(k_max_iter) || k_max_iter < 0) {
+    cli::cli_abort(
+      "{.arg k_max_iter} must be a single non-negative integer.",
+      call = call
+    )
+  }
+  if (!is.numeric(derivative_ci_nsim) || length(derivative_ci_nsim) != 1L ||
+      !is.finite(derivative_ci_nsim) || derivative_ci_nsim < 100) {
+    cli::cli_abort(
+      "{.arg derivative_ci_nsim} must be a single integer >= 100.",
+      call = call
+    )
+  }
+  invisible(NULL)
+}
+
 # ---------------------------------------------------------------
 # Resolve vars — default to all numeric columns, validate otherwise
 # ---------------------------------------------------------------
