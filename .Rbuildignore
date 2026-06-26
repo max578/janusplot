@@ -30,3 +30,5 @@
 ^tools$
 ^CONSTELLATION_MEMBER\.md$
 ^critical_review_.*\.md$
+^rpkg_quality\.yml$
+^report$
