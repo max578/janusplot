@@ -4,8 +4,8 @@
 
 ## Context
 
-`/rpkg` v0.4 mandates honest disclosure of maintenance capacity
-(see `SUPPORT.md` and the LLM-independence rubric). janusplot is
+Good open-source practice calls for honest disclosure of
+maintenance capacity (see `SUPPORT.md`). janusplot is
 Adelaide-authored by a single maintainer with an academic time
 budget and no funded open-source FTE. Transparent posture lets
 users plan adoption.

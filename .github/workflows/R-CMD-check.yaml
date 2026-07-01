@@ -1,5 +1,5 @@
 # Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
-# Matrix includes macos-14 (Apple Silicon) per /rpkg v0.2+ invariant.
+# Matrix includes macos-14 (Apple Silicon) alongside the Linux and Windows runners.
 
 on:
   push:

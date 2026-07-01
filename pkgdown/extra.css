@@ -1,0 +1,5 @@
+/* KaTeX renders Computer-Modern glyphs appreciably larger than pkgdown's sans
+   body font even at 1em (KaTeX, unlike MathJax, does not matchFontHeight). Size
+   it down so the maths sits with the prose. */
+.katex { font-size: 0.88em !important; }
+.katex-display { margin: 0.9em 0; overflow-x: auto; overflow-y: hidden; }

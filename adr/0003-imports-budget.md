@@ -5,7 +5,8 @@
 ## Context
 
 Every `Imports:` dependency is maintenance the package author takes
-on. `/rpkg` v0.4 sets a soft archetype-1 Imports cap of 10.
+on. A soft dependency budget of 10 Imports is appropriate for a
+single-purpose statistical-method package.
 
 ## Decision
 
@@ -31,8 +32,7 @@ public API, and are free if it was internal.
 
 Every package in `Suggests:` that is called as `pkg::fun()` from `R/`
 is gated with `rlang::is_installed()` or `requireNamespace()`. See
-`audit_2026-04-20.md` for the portfolio-wide audit confirming the
-pattern.
+`audit_2026-04-20.md` for the audit confirming the pattern.
 
 ## Consequences
 

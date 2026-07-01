@@ -4,10 +4,10 @@
 
 ## Context
 
-R offers S3, S4, S7, and R6 class systems. `/rpkg` v0.3+ guidance
-prefers S7 for new formal hierarchies in methods-shape packages.
-janusplot returns `ggplot` / `patchwork` objects and does not
-introduce its own formal objects.
+R offers S3, S4, S7, and R6 class systems. Current R-package
+guidance prefers S7 for new formal object hierarchies in method
+packages. janusplot returns `ggplot` / `patchwork` objects and
+does not introduce its own formal objects.
 
 ## Decision
 
@@ -17,7 +17,7 @@ introduce its own formal objects.
   and sensitivity outputs), and `data.frame` / `data.table` (for
   the flat summary table in `janusplot(..., with_data = TRUE)`).
 - If a future version grows a result object substantial enough to
-  warrant a class, S7 is preferred per `/rpkg` v0.3 guidance.
+  warrant a class, S7 is the preferred choice per current guidance.
   Re-evaluate at each major-version bump.
 
 ## Consequences

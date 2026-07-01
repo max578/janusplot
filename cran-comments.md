@@ -62,10 +62,6 @@ directional smooth; the package exposes per-pair shape descriptors
 a recovery-rate sensitivity study (`janusplot_shape_sensitivity()`) with
 precomputed demo data.
 
-A companion R Journal paper (*Beyond Pearson: Visualising Asymmetric Non-linear
-Associations with Generalised Additive Models*) is in preparation; the package is
-maintained independently of the paper's publication.
-
 ## Notes to the maintainers
 
 - All examples are executable without `\dontrun{}`; the heavier demonstrations

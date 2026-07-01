@@ -28,7 +28,8 @@
 ^renv\.lock$
 ^CRAN-SUBMISSION$
 ^tools$
-^CONSTELLATION_MEMBER\.md$
 ^critical_review_.*\.md$
+^.*\.Rcheck$
 ^rpkg_quality\.yml$
 ^report$
+^tests/testthat/Rplots\.pdf$

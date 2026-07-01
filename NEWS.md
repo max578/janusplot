@@ -243,9 +243,9 @@ Internal / house-style fixes:
 
 Deferred to a later maintenance sweep (not blocking 0.0.0.9001):
 
-* `renv.lock` snapshot (`/rpkg env` nice-to-have).
+* `renv.lock` snapshot.
 * `covr::package_coverage() > 0.85` CI-side floor assertion.
-* `adr/` relocation to `docs/adr/` per `/rpkg governance` convention.
+* `adr/` relocation to `docs/adr/`.
 
 ### Legend height tracks matrix height (2026-04-22)
 
@@ -556,15 +556,6 @@ is a coarsened Morse-theoretic critical-point classification
   Pearson `r = 0.93`, `janusplot` recovers an asymmetry index ≈ 0.56
   (IQR [0.52, 0.65]), exposing hidden directional structure a
   scalar correlation misses.
-
-### Project context
-
-* Standalone CRAN release target (`max578/janusplot`). An earlier
-  plan to merge into `AAGI-AUS/effectsurf` was superseded on
-  2026-04-21; this package now ships on its own.
-* Accompanying R Journal paper *Beyond Pearson: Visualising
-  Asymmetric Non-linear Associations with Generalised Additive
-  Models* is in preparation (see `paper/` in the dev workspace).
 
 ### Dependency diet
 

@@ -16,3 +16,4 @@ audit_*.md
 README.html
 # Local quality-study manifest (points to the sibling _dev report/ bundle)
 rpkg_quality.yml
+Rplots.pdf

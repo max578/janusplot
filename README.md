@@ -169,9 +169,6 @@ scope and explicit non-claims.
 - `vignette("janusplot")` — quickstart + feature tour
 - `vignette("shape-recognition-sensitivity")` — design, hypotheses,
   every diagnostic plot
-- Paper: *Beyond Pearson: Visualising Asymmetric Non-linear Associations
-  with Generalised Additive Models* (Moldovan, in preparation; target
-  venue *R Journal*).
 
 ## Status
 
