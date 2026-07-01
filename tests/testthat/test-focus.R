@@ -1,3 +1,5 @@
+skip_on_cran()  # heavy GAM-fitting/rendering suite: full coverage runs on CI; skipped on CRAN to stay within the check time budget
+
 # Tests for Feature 2 — focus filter (companion to compact tiers).
 # Covers: quantile-string thresholds, numeric cutoff, NA -> no-op,
 # mask correctness against a synthetic asymmetry distribution.

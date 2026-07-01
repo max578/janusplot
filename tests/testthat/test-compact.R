@@ -1,3 +1,5 @@
+skip_on_cran()  # heavy GAM-fitting/rendering suite: full coverage runs on CI; skipped on CRAN to stay within the check time budget
+
 # Tests for Feature 2 — scale-aware compact rendering.
 # Covers: tier resolver behaviour at thresholds; compact = "always" /
 # "never" overrides; backward-compat at k < 12; compact_levels

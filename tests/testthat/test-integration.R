@@ -1,3 +1,5 @@
+skip_on_cran()  # heavy GAM-fitting/rendering suite: full coverage runs on CI; skipped on CRAN to stay within the check time budget
+
 test_that("janusplot returns a ggplot", {
   d <- make_linear_data(n = 100L)
   p <- janusplot(d, vars = c("x1", "x2", "x3"))

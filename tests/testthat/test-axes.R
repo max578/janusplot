@@ -1,3 +1,5 @@
+skip_on_cran()  # heavy GAM-fitting/rendering suite: full coverage runs on CI; skipped on CRAN to stay within the check time budget
+
 # Tests for Feature 3 — axes rendering modes.
 # Covers: byte-identity of fits across modes; label-suffix correctness;
 # transformation correctness for each mode; tier-3 no-op; at-k

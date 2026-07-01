@@ -8,6 +8,7 @@
 # ---------------------------------------------------------------
 
 test_that(".derivatives_lpmatrix recovers the true d1 of sin(3x)", {
+  skip_on_cran()
   withr::with_seed(2026L, {
     n  <- 500L
     x  <- stats::runif(n, -pi, pi)
@@ -41,6 +42,7 @@ test_that(".derivatives_lpmatrix recovers the true d1 of sin(3x)", {
 # ---------------------------------------------------------------
 
 test_that("simultaneous bands are wider than pointwise, critical >= 1.96", {
+  skip_on_cran()
   withr::with_seed(2026L, {
     n <- 300L
     x <- stats::runif(n, -pi, pi)
@@ -66,6 +68,7 @@ test_that("simultaneous bands are wider than pointwise, critical >= 1.96", {
 })
 
 test_that("derivative_ci = 'none' returns pointwise lo/hi but is tagged none", {
+  skip_on_cran()
   d <- make_nonlinear_data(n = 150L, seed = 2L)
   out <- janusplot_data(d, vars = c("x1", "x2"),
                         derivatives = 1L, derivative_ci = "none")
@@ -81,6 +84,7 @@ test_that("derivative_ci = 'none' returns pointwise lo/hi but is tagged none", {
 # ---------------------------------------------------------------
 
 test_that(".derivatives_lpmatrix works across bases (tp/cr/cs)", {
+  skip_on_cran()
   d <- make_nonlinear_data(n = 200L, seed = 2L)
   for (bs_type in c("tp", "cr", "cs")) {
     fit <- mgcv::gam(x2 ~ s(x1, bs = bs_type), data = d, method = "REML")
@@ -101,6 +105,7 @@ test_that(".derivatives_lpmatrix works across bases (tp/cr/cs)", {
 # ---------------------------------------------------------------
 
 test_that(".derivatives_lpmatrix returns empty list on bad input", {
+  skip_on_cran()
   expect_identical(
     janusplot:::.derivatives_lpmatrix(NULL, data.frame(), numeric(), 1L),
     list()
@@ -112,6 +117,7 @@ test_that(".derivatives_lpmatrix returns empty list on bad input", {
 })
 
 test_that(".diff_stencil returns NULL when the grid is too short", {
+  skip_on_cran()
   X <- matrix(1:4, nrow = 2L)
   expect_null(janusplot:::.diff_stencil(X, h = 1, order = 1L))
   X4 <- matrix(1, nrow = 3L, ncol = 2L)
@@ -119,6 +125,7 @@ test_that(".diff_stencil returns NULL when the grid is too short", {
 })
 
 test_that(".derivatives_simultaneous_bands returns empty list cleanly", {
+  skip_on_cran()
   expect_identical(
     janusplot:::.derivatives_simultaneous_bands(
       NULL, data.frame(), numeric(), 1L, n_sim = 100L
@@ -132,6 +139,7 @@ test_that(".derivatives_simultaneous_bands returns empty list cleanly", {
 # ---------------------------------------------------------------
 
 test_that("derivative estimates drop adjust covariates held at typical values", {
+  skip_on_cran()
   d <- make_linear_data(n = 300L, seed = 4L)
   d$site <- factor(sample(letters[1:3], 300L, replace = TRUE))
   f_plain <- janusplot:::.fit_pair(
@@ -158,6 +166,7 @@ test_that("derivative estimates drop adjust covariates held at typical values", 
 # ---------------------------------------------------------------
 
 test_that("janusplot(display = 'fit') returns the legacy single-panel cell type", {
+  skip_on_cran()
   # Each off-diagonal cell must still be a plain ggplot (not a
   # patchwork) — this is the invariant that keeps legacy visual
   # snapshots interpretable.
@@ -182,12 +191,14 @@ test_that("janusplot(display = 'fit') returns the legacy single-panel cell type"
 })
 
 test_that("janusplot(display = 'd1') renders a derivative panel cell", {
+  skip_on_cran()
   d <- make_nonlinear_data(n = 150L, seed = 2L)
   p <- janusplot(d, vars = c("x1", "x2"), display = "d1")
   expect_true(inherits(p, "ggplot") || inherits(p, "patchwork"))
 })
 
 test_that("janusplot(display = 'd2', derivative_ci = 'pointwise') runs", {
+  skip_on_cran()
   d <- make_nonlinear_data(n = 150L, seed = 2L)
   p <- janusplot(d, vars = c("x1", "x2"),
                  display = "d2", derivative_ci = "pointwise")
@@ -195,6 +206,7 @@ test_that("janusplot(display = 'd2', derivative_ci = 'pointwise') runs", {
 })
 
 test_that("display validation rejects unknown values", {
+  skip_on_cran()
   d <- make_linear_data(n = 60L, seed = 1L)
   expect_error(janusplot(d, vars = c("x1", "x2"), display = "d3"))
   expect_error(janusplot(d, vars = c("x1", "x2"),
@@ -202,6 +214,7 @@ test_that("display validation rejects unknown values", {
 })
 
 test_that("derivative_ci validation + nsim validation", {
+  skip_on_cran()
   d <- make_linear_data(n = 60L, seed = 1L)
   expect_error(janusplot(d, vars = c("x1", "x2"),
                          display = "d1", derivative_ci = "banana"))
@@ -212,6 +225,7 @@ test_that("derivative_ci validation + nsim validation", {
 })
 
 test_that("n_grid validation is strict and auto-resolves", {
+  skip_on_cran()
   d <- make_linear_data(n = 60L, seed = 1L)
   expect_error(janusplot(d, vars = c("x1", "x2"), n_grid = 5))
   expect_error(janusplot(d, vars = c("x1", "x2"), n_grid = "fifty"))
@@ -227,6 +241,7 @@ test_that("n_grid validation is strict and auto-resolves", {
 # ---------------------------------------------------------------
 
 test_that("summary table tags display mode on every call", {
+  skip_on_cran()
   d <- make_nonlinear_data(n = 120L, seed = 2L)
   out_fit <- janusplot(d, vars = c("x1", "x2"), with_data = TRUE)
   out_d1  <- janusplot(d, vars = c("x1", "x2"),
@@ -244,6 +259,7 @@ test_that("summary table tags display mode on every call", {
 # ---------------------------------------------------------------
 
 test_that("janusplot_data surfaces deriv_yx / deriv_xy with ci_type tag", {
+  skip_on_cran()
   d <- make_nonlinear_data(n = 120L, seed = 2L)
   out <- janusplot_data(d, vars = c("x1", "x2"),
                         derivatives = c(1L, 2L),
@@ -257,6 +273,7 @@ test_that("janusplot_data surfaces deriv_yx / deriv_xy with ci_type tag", {
 })
 
 test_that("janusplot_data derivatives validation rejects bad orders", {
+  skip_on_cran()
   d <- make_linear_data(n = 60L, seed = 1L)
   expect_error(janusplot_data(d, vars = c("x1", "x2"), derivatives = 3L))
   expect_error(janusplot_data(d, vars = c("x1", "x2"),
@@ -268,6 +285,7 @@ test_that("janusplot_data derivatives validation rejects bad orders", {
 # ---------------------------------------------------------------
 
 test_that("diagonal = 'density' renders a density+rug ggplot per variable", {
+  skip_on_cran()
   d <- make_nonlinear_data(n = 200L, seed = 2L)
   p <- janusplot(d, vars = c("x1", "x2"), diagonal = "density",
                  show_shape_legend = FALSE, show_glossary = FALSE)
@@ -282,16 +300,19 @@ test_that("diagonal = 'density' renders a density+rug ggplot per variable", {
 })
 
 test_that("diagonal = 'density' falls back to blank when n < 5", {
+  skip_on_cran()
   cell <- janusplot:::.build_density_rug_cell("x", c(1, 2, NA, NA))
   expect_s3_class(cell, "ggplot")
 })
 
 test_that("diagonal validation rejects unknown value", {
+  skip_on_cran()
   d <- make_linear_data(n = 60L, seed = 1L)
   expect_error(janusplot(d, vars = c("x1", "x2"), diagonal = "violin"))
 })
 
 test_that(".display_title emits the three mode labels", {
+  skip_on_cran()
   expect_match(janusplot:::.display_title("fit"), "Direct fit")
   expect_match(janusplot:::.display_title("d1"), "First derivative")
   expect_match(janusplot:::.display_title("d2"), "Second derivative")

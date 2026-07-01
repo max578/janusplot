@@ -1,3 +1,5 @@
+skip_on_cran()  # heavy GAM-fitting/rendering suite: full coverage runs on CI; skipped on CRAN to stay within the check time budget
+
 # Tests for Feature 4 — fitting-engine dispatch (bam vs gam).
 # Covers: both engines produce ggplot + with_data; both agree on
 # linear DGP within EDF tolerance; engine + method columns surface

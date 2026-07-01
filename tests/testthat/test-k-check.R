@@ -1,3 +1,5 @@
+skip_on_cran()  # heavy GAM-fitting/rendering suite: full coverage runs on CI; skipped on CRAN to stay within the check time budget
+
 # Tests for Feature 1 — per-cell k-checking + opt-in auto-refit.
 # Covers: diagnostic always-on; unreliable detection; flag plumbing;
 # refit loop respects k_max_iter + per-cell unique-x cap; public API
