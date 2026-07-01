@@ -19,7 +19,7 @@ PRs small, run the checks before you push.
 
 2.  One logical change per PR.
 
-3.  Run the full `/rpkg check` quality gate locally:
+3.  Run the full quality gate locally:
 
     ``` r
 
@@ -30,15 +30,25 @@ PRs small, run the checks before you push.
     covr::package_coverage()   # must stay >= 85%
     ```
 
-4.  Update `NEWS.md` under `# janusplot (development version)` with a
+4.  If you add or edit a vignette that contains mathematics, keep it
+    body-sized on both render surfaces (the standalone `html_vignette`
+    MathJax and the pkgdown-site KaTeX). Mirror the YAML of
+    `vignettes/janusplot.Rmd` (`mathjax:` +
+    `--include-in-header=mathjax-config.html`) and verify with:
+
+    ``` sh
+    Rscript tools/check_vignette_math.R
+    ```
+
+5.  Update `NEWS.md` under `# janusplot (development version)` with a
     bullet describing the user-visible change, and link the PR/issue
     number.
 
-5.  If you add or modify a public function, make sure the roxygen block
+6.  If you add or modify a public function, make sure the roxygen block
     has `@param`, `@returns`, an executable `@examples`, and a
     `@family`/`@seealso` tag.
 
-6.  Open the PR with the template pre-filled.
+7.  Open the PR with the template pre-filled.
 
 ## House style
 

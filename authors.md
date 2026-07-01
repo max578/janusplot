@@ -22,15 +22,3 @@ via GAM Fits*. R package version 0.1.1,
       note = {R package version 0.1.1},
       url = {https://github.com/max578/janusplot},
     }
-
-Moldovan M (2026). “Beyond Pearson: Visualising Asymmetric Non-linear
-Associations with Generalised Additive Models.” *The R Journal*. In
-preparation.
-
-    @Article{,
-      title = {Beyond Pearson: Visualising Asymmetric Non-linear Associations with Generalised Additive Models},
-      author = {Max Moldovan},
-      journal = {The R Journal},
-      year = {2026},
-      note = {In preparation},
-    }
