@@ -1,4 +1,4 @@
-skip_on_cran()  # heavy GAM-fitting/rendering suite: full coverage runs on CI; skipped on CRAN to stay within the check time budget
+skip_on_cran()  # heavy GAM-fit suite: full on CI, skipped on CRAN for time budget
 
 test_that("janusplot_shape_sensitivity_shapes returns 14 canonical names", {
   shapes <- janusplot_shape_sensitivity_shapes()

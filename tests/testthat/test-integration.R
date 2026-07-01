@@ -1,4 +1,4 @@
-skip_on_cran()  # heavy GAM-fitting/rendering suite: full coverage runs on CI; skipped on CRAN to stay within the check time budget
+skip_on_cran()  # heavy GAM-fit suite: full on CI, skipped on CRAN for time budget
 
 test_that("janusplot returns a ggplot", {
   d <- make_linear_data(n = 100L)

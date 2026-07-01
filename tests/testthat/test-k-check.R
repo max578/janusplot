@@ -1,4 +1,4 @@
-skip_on_cran()  # heavy GAM-fitting/rendering suite: full coverage runs on CI; skipped on CRAN to stay within the check time budget
+skip_on_cran()  # heavy GAM-fit suite: full on CI, skipped on CRAN for time budget
 
 # Tests for Feature 1 — per-cell k-checking + opt-in auto-refit.
 # Covers: diagnostic always-on; unreliable detection; flag plumbing;
