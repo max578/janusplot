@@ -633,6 +633,7 @@ janusplot <- function(
     engine = engine, discrete = discrete, nthreads = nthreads, ...
   )
 
+  .warn_failed_cells(fits)
   .summarise_k_check(fits, k_thresholds, auto_refit_k)              # nolint: object_usage_linter.
 
   # Colour-scale limits pooled across off-diagonal cells. Correlation
@@ -851,6 +852,7 @@ janusplot <- function(
       k_at_cap           = isTRUE(kc$k_at_cap),
       engine             = f$engine %||% NA_character_,
       method             = f$method %||% NA_character_,
+      error              = f$error %||% NA_character_,
       stringsAsFactors   = FALSE
     )
   })
@@ -1120,6 +1122,7 @@ janusplot_data <- function(
     engine = engine, discrete = discrete, nthreads = nthreads, ...
   )
 
+  .warn_failed_cells(fits)
   .summarise_k_check(fits, k_thresholds, auto_refit_k)              # nolint: object_usage_linter.
 
   k_n <- length(vars)
@@ -1183,7 +1186,9 @@ janusplot_data <- function(
         k_check_yx         = f_yx$k_check,
         k_check_xy         = f_xy$k_check,
         engine             = f_yx$engine %||% f_xy$engine %||% NA_character_,
-        method             = f_yx$method %||% f_xy$method %||% NA_character_
+        method             = f_yx$method %||% f_xy$method %||% NA_character_,
+        error_yx           = f_yx$error %||% NA_character_,
+        error_xy           = f_xy$error %||% NA_character_
       )
     }
   }

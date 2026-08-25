@@ -734,7 +734,17 @@ janusplot_shape_metrics <- function(fit,
   xv <- newdata[[x_name]]
   xv <- xv[is.finite(xv)]
   if (length(xv) < 3L) {
-    cli::cli_abort("Need at least 3 finite values of {.val {x_name}}.")
+    # Not a malformed call -- the arguments are well-typed, but the
+    # method's own assumption (>= 3 finite values to characterise a
+    # curve's shape) is not met on this data. Declines rather than
+    # guessing, and does so with a classed condition so an orchestra
+    # caller can recognise the decline via is_orchestra_decline()
+    # (janusplot never produces a partial shape-metrics result, so
+    # this is a refusal, not a typed abstention object).
+    rlang::abort(
+      "Need at least 3 finite values of {.val {x_name}} to characterise its shape.",
+      class = c("janusplot_refusal", "orchestra_refusal")
+    )
   }
   x_grid <- seq(min(xv), max(xv), length.out = as.integer(n_grid))
   nd     <- data.frame(placeholder = x_grid)

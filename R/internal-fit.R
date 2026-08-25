@@ -528,7 +528,10 @@
     error = function(e) e
   )
   if (inherits(fit, "error")) {
-    out <- .empty_fit_result(x_name, y_name, n_used)
+    # The fit never completed, so n_used (a count of rows *offered* to
+    # mgcv) would misrepresent a completed fit's sample size. Report it
+    # as unknown rather than a number that looks like a successful cell.
+    out <- .empty_fit_result(x_name, y_name, NA_integer_)
     out$error <- conditionMessage(fit)
     return(out)
   }
@@ -874,6 +877,24 @@
 # Emits a 3-line cli_inform when at least one cell is flagged. Never
 # fires when nothing is flagged or every cell is unreliable.
 # ---------------------------------------------------------------
+
+.warn_failed_cells <- function(fits) {
+  if (!length(fits)) return(invisible(NULL))
+  failed <- vapply(fits, function(f) {
+    err <- f$error
+    !is.null(err) && !is.na(err) && nzchar(err)
+  }, logical(1L))
+  n_failed <- sum(failed)                                    # nolint: object_usage_linter.
+  if (n_failed == 0L) return(invisible(NULL))
+  n_cells <- length(fits)                                     # nolint: object_usage_linter.
+  first_msg <- fits[[which(failed)[1L]]]$error                # nolint: object_usage_linter.
+  cli::cli_warn(c(
+    "!" = "{n_failed} of {n_cells} cell{?s} failed to fit and carry no result.",
+    "i" = "First failure: {first_msg}",
+    "i" = "Inspect {.code n_used}/{.code error} in the returned table — a failed cell reports {.code n_used = NA} and {.code edf = NA}, never a completed fit."
+  ))
+  invisible(NULL)
+}
 
 .summarise_k_check <- function(fits, thresholds, auto_refit_k) {
   if (!length(fits)) return(invisible(NULL))

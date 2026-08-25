@@ -5,7 +5,7 @@
 \alias{shape_sensitivity_demo}
 \title{Precomputed shape-recognition sensitivity results (demo)}
 \format{
-A data frame with 2160 rows and 14 columns — see the
+A data frame with 2160 rows and 14 columns -- see the
 "Value" section of \code{\link[=janusplot_shape_sensitivity]{janusplot_shape_sensitivity()}} for the
 column schema.
 }
@@ -22,7 +22,8 @@ the sweep themselves. Regenerated via
 
 Design:
 \itemize{
-\item \strong{Shapes} (6, one per non-degenerate archetype):
+\item \strong{Shapes} (6, across 5 of the 7 archetypes -- \code{u_shape}
+and \code{inverted_u} both roll up to \code{unimodal}):
 \code{linear_up}, \code{concave_up}, \code{u_shape}, \code{inverted_u}, \code{wave},
 \code{bimodal}.
 \item \strong{Sample sizes} (3): \code{c(100, 200, 500)}.

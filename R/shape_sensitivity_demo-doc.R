@@ -10,7 +10,8 @@
 #'
 #' Design:
 #' \itemize{
-#'   \item **Shapes** (6, one per non-degenerate archetype):
+#'   \item **Shapes** (6, across 5 of the 7 archetypes -- `u_shape`
+#'     and `inverted_u` both roll up to `unimodal`):
 #'     `linear_up`, `concave_up`, `u_shape`, `inverted_u`, `wave`,
 #'     `bimodal`.
 #'   \item **Sample sizes** (3): `c(100, 200, 500)`.
@@ -21,7 +22,7 @@
 #'   \item **Seed**: 2026.
 #' }
 #'
-#' @format A data frame with 2160 rows and 14 columns — see the
+#' @format A data frame with 2160 rows and 14 columns -- see the
 #'   "Value" section of [janusplot_shape_sensitivity()] for the
 #'   column schema.
 #'
