@@ -91,7 +91,7 @@ question with a full-factorial sensitivity sweep.</p>
 <li>Generates <code>n</code> points from the noiseless canonical curve
 on <code>x ∈ [0, 1]</code>, with <code>y</code> normalised to
 <code>[0, 1]</code> so that <code>sigma</code> is the fraction of
-y-range that Gaussian noise contributes — an SNR-comparable scale across
+y-range that Gaussian noise contributes – an SNR-comparable scale across
 shapes.</li>
 <li>Fits <code>mgcv::gam(y ~ s(x), method = "REML")</code>.</li>
 <li>Classifies the fit via <code><a href="../reference/janusplot_shape_metrics.html">janusplot_shape_metrics()</a></code>.</li>
@@ -115,8 +115,7 @@ deterministic generator).</p>
 <div class="section level2">
 <h2 id="pre-registered-hypotheses">Pre-registered hypotheses<a class="anchor" aria-label="anchor" href="#pre-registered-hypotheses"></a>
 </h2>
-<p>The sweep’s hypotheses are pinned in <code>simulation/PLAN.md</code>
-(Scenario 4):</p>
+<p>Four hypotheses were pinned before running the sweep:</p>
 <ul>
 <li>
 <strong>H1.</strong> At <code>n = 500</code>,
@@ -127,20 +126,61 @@ shape.</li>
 <code>n = 500</code>, <code>sigma = 0.05</code> for monotone + unimodal
 shapes; wave and multimodal tolerate less noise.</li>
 <li>
-<strong>H3.</strong> Rippled variants require <code>n ≥ 200</code>
-and <code>sigma ≤ 0.10</code> to resolve.</li>
+<strong>H3.</strong> Rippled variants require
+<code>n &gt;= 200</code> and <code>sigma &lt;= 0.10</code> to
+resolve.</li>
 <li>
 <strong>H4.</strong> At <code>sigma = 0.40</code>, archetype
 accuracy collapses below 0.50 for all but the simplest shapes.</li>
+</ul>
+<p><strong>Verdicts, evaluated against the precomputed demo below
+(<code>n = 500</code>, <code>sigma = 0.05</code> for H1/H2; the demo’s
+grid runs <code>sigma</code> up to 0.40, which covers H4):</strong></p>
+<ul>
+<li>
+<strong>H1 – refuted.</strong> <code>bimodal</code>,
+<code>concave_up</code>, <code>inverted_u</code> and
+<code>u_shape</code> all hit 1.00, <code>linear_up</code> reaches only
+0.70, and <code>wave</code> scores 0.00 at every replicate. The
+<code>wave</code> failure is not a noise-tolerance property of the
+classifier: the shipped <code>wave</code> ground-truth generator
+(<code>.shape_sensitivity_generators()</code>) has one interior turning
+point on <code>x in [0, 1]</code>, one short of what the taxonomy’s own
+<code>wave</code> definition requires, so every fit is systematically
+dispatched to the wrong archetype regardless of noise. This is a tracked
+defect in the generator, not evidence about recognition difficulty –
+treat the <code>wave</code> row of every figure below as unreliable
+until the generator is fixed, and do not read the other five shapes’
+figures as “wave included and passing”.</li>
+<li>
+<strong>H2 – partly supported, confounded by the same
+defect.</strong> The four clean shapes clear 0.75 easily;
+<code>linear_up</code> (0.70) falls just short, which the sweep’s design
+does correctly flag as a boundary case rather than a clear pass;
+<code>wave</code>’s 0.00 cannot speak to the hypothesis for the reason
+above.</li>
+<li>
+<strong>H3 – untestable with the shipped machinery.</strong> No
+<code>rippled_*</code> generator exists among the canonical shapes
+exercised here, so the hypothesis has no data to be adjudicated against
+in this vignette.</li>
+<li>
+<strong>H4 – refuted, in the other direction.</strong> At
+<code>sigma = 0.40</code> archetype accuracy stays at 0.60 or above for
+every shape except <code>wave</code> (still stuck at 0.00, for the
+generator reason above) – well clear of the predicted sub-0.50 collapse.
+Setting <code>wave</code> aside, the classifier is markedly more
+noise-robust than pre-registered.</li>
 </ul>
 </div>
 <div class="section level2">
 <h2 id="precomputed-demo">Precomputed demo<a class="anchor" aria-label="anchor" href="#precomputed-demo"></a>
 </h2>
-<p>The package ships a small-footprint precomputed sweep — 6 shapes (one
-per non-degenerate archetype) × 3 sample sizes × 4 noise levels × 30
-replicates = 2160 fits — so you can explore the API without running the
-full sweep yourself.</p>
+<p>The package ships a small-footprint precomputed sweep – 6 shapes
+across 5 of the 7 archetypes (<code>u_shape</code> and
+<code>inverted_u</code> both roll up to <code>unimodal</code>) × 3
+sample sizes × 4 noise levels × 30 replicates = 2160 fits – so you can
+explore the API without running the full sweep yourself.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"shape_sensitivity_demo"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">shape_sensitivity_demo</span>, vec.len <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
@@ -165,11 +205,24 @@ full sweep yourself.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/janusplot_shape_sensitivity_plot.html">janusplot_shape_sensitivity_plot</a></span><span class="op">(</span><span class="va">shape_sensitivity_demo</span>,</span>
 <span>                                 <span class="st">"recovery_curves"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="shape-recognition-sensitivity_files/figure-html/recovery-curves-1.png" class="r-plt" alt="" width="880" style="display: block; margin: auto;"></p>
-<p>Every shape is recovered near-perfectly at low noise; the informative
-picture is where each shape’s curve falls off as sigma grows. The
-unimodal and monotone-curved families tolerate more noise than the
-multimodal ones.</p>
+<div class="figure" style="text-align: center">
+<img src="shape-recognition-sensitivity_files/figure-html/recovery-curves-1.png" class="r-plt" alt="Line plot of archetype-recovery accuracy versus sigma, one line per shape, faceted or coloured by sample size; five lines stay high across the noise range and one (wave) is flat at zero." width="880"><p class="caption">
+Archetype-recovery accuracy against noise level (sigma) for each of the
+six ground-truth shapes, at each of the three sample sizes.
+</p>
+</div>
+<p>Five of the six shapes are recovered well across the whole noise
+range, including at <code>sigma = 0.40</code> (see H4 above):
+<code>bimodal</code>, <code>concave_up</code> and
+<code>inverted_u</code> hold at 1.00 throughout at <code>n = 500</code>,
+and <code>u_shape</code> only drops to 0.97 at the highest noise level.
+<code>linear_up</code> is the outlier among the five – it never exceeds
+0.73 even at <code>sigma = 0.05</code>, so its curve is flat and
+mediocre rather than a high-noise-tolerance decay. The sixth shape,
+<code>wave</code>, is flat at 0.00 across every <code>n</code> and
+<code>sigma</code> cell: this is the generator defect described under
+H1, not a recovered-then-lost noise-tolerance curve, and should not be
+read alongside the other five.</p>
 </div>
 <div class="section level3">
 <h3 id="archetype-confusion">Archetype confusion<a class="anchor" aria-label="anchor" href="#archetype-confusion"></a>
@@ -177,11 +230,22 @@ multimodal ones.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/janusplot_shape_sensitivity_plot.html">janusplot_shape_sensitivity_plot</a></span><span class="op">(</span><span class="va">shape_sensitivity_demo</span>,</span>
 <span>                                 <span class="st">"confusion_archetype"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="shape-recognition-sensitivity_files/figure-html/archetype-confusion-1.png" class="r-plt" alt="" width="660" style="display: block; margin: auto;"></p>
-<p>The off-diagonals reveal the classifier’s failure modes. A
-<code>unimodal</code> truth misclassified as <code>wave</code> or
-<code>multimodal</code> means the spline invented extra turning points
-under noise.</p>
+<div class="figure" style="text-align: center">
+<img src="shape-recognition-sensitivity_files/figure-html/archetype-confusion-1.png" class="r-plt" alt="Six-by-four archetype confusion matrix with predicted archetypes monotone_curved, monotone_linear, multimodal and unimodal on the columns; wave truth falls entirely in the unimodal column, and linear_up truth splits between monotone_linear and monotone_curved." width="660"><p class="caption">
+Confusion matrix of true archetype (rows) against predicted archetype
+(columns), pooled across all n, sigma and replicates in the demo.
+</p>
+</div>
+<p>Two off-diagonal patterns dominate here. <code>wave</code> is
+predicted <code>unimodal</code> on every single one of its 360
+replicates – the direct consequence of the generator defect flagged
+under H1, since a curve with only one interior turning point classifies
+as unimodal by construction, regardless of noise.
+<code>linear_up</code>, by contrast, is a genuine noise-driven
+confusion: it lands in <code>monotone_curved</code> roughly 30% of the
+time, because sampling noise on a short curve occasionally tips the
+fitted <code>monotonicity_index</code> below the monotone-linear
+cutoff.</p>
 </div>
 <div class="section level3">
 <h3 id="archetype-level-accuracy-grid">Archetype-level accuracy grid<a class="anchor" aria-label="anchor" href="#archetype-level-accuracy-grid"></a>
@@ -189,11 +253,19 @@ under noise.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/janusplot_shape_sensitivity_plot.html">janusplot_shape_sensitivity_plot</a></span><span class="op">(</span><span class="va">shape_sensitivity_demo</span>,</span>
 <span>                                 <span class="st">"accuracy_grid"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="shape-recognition-sensitivity_files/figure-html/accuracy-grid-1.png" class="r-plt" alt="" width="880" style="display: block; margin: auto;"></p>
+<div class="figure" style="text-align: center">
+<img src="shape-recognition-sensitivity_files/figure-html/accuracy-grid-1.png" class="r-plt" alt="Grid of heatmap panels, one per ground-truth shape, with sample size on one axis and noise level on the other, cells shaded by archetype-recovery accuracy; five panels are uniformly dark (high accuracy) and one (wave) is uniformly pale (zero accuracy)." width="880"><p class="caption">
+Heatmap of archetype-recovery accuracy across the full (n, sigma)
+design, one panel per shape.
+</p>
+</div>
 <p>Per-shape heatmap of <code>P(archetype correct)</code> across the
 <code>(n, sigma)</code> design. Reading across a row shows the
 noise-tolerance profile of one sample size; reading up a column shows
-the sample-size sensitivity at one noise level.</p>
+the sample-size sensitivity at one noise level. The <code>wave</code>
+panel is uniformly at zero across the whole grid – flat cells here mean
+the generator defect above, not a genuinely noise-invariant failure
+mode.</p>
 </div>
 <div class="section level3">
 <h3 id="numerical-summary">Numerical summary<a class="anchor" aria-label="anchor" href="#numerical-summary"></a>
@@ -221,7 +293,7 @@ the sample-size sensitivity at one noise level.</p>
 the full default grid (14 shapes × 4 sample sizes × 5 noise levels × 200
 reps = 56 000 fits):</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Configure parallel execution (optional) — you control the plan.</span></span>
+<code class="sourceCode R"><span><span class="co"># Configure parallel execution (optional) -- you control the plan.</span></span>
 <span><span class="fu">future</span><span class="fu">::</span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="fu">future</span><span class="fu">::</span><span class="va"><a href="https://future.futureverse.org/reference/multisession.html" class="external-link">multisession</a></span>, workers <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/janusplot_shape_sensitivity.html">janusplot_shape_sensitivity</a></span><span class="op">(</span>parallel <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -232,15 +304,22 @@ reps = 56 000 fits):</p>
 <div class="section level3">
 <h3 id="custom-shape-subsets-cutoffs">Custom shape subsets + cutoffs<a class="anchor" aria-label="anchor" href="#custom-shape-subsets-cutoffs"></a>
 </h3>
-<p>Every argument is tunable. Below, we rerun only the bimodal/wave
-family under stricter monotonicity thresholds to see whether tightening
-<code>mono_strong</code> buys any fine-accuracy improvement for these
-categories.</p>
+<p>Every argument is tunable. <code>mono_strong</code> and
+<code>curv_low</code> are only read on the monotone dispatch path
+(<code>n_turning_points == 0</code> and
+<code>n_inflections == 0</code>), so a worked example needs a monotone
+shape family to actually exercise them – <code>linear_up</code>,
+<code>concave_up</code> and <code>convex_up</code> below, rather than
+the wave/multimodal family, where these two cutoffs are never consulted.
+Tightening <code>mono_strong</code> raises the bar for calling a curve
+“strictly monotone” (versus <code>s_shape</code>/rippled), and lowering
+<code>curv_low</code> raises the bar for calling it “near-linear”
+(versus curved).</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">strict</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/janusplot_shape_cutoffs.html">janusplot_shape_cutoffs</a></span><span class="op">(</span>mono_strong <span class="op">=</span> <span class="fl">0.95</span>, curv_low <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">res_strict</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/janusplot_shape_sensitivity.html">janusplot_shape_sensitivity</a></span><span class="op">(</span></span>
-<span>  shapes     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"wave"</span>, <span class="st">"bimodal"</span>, <span class="st">"bi_wave"</span><span class="op">)</span>,</span>
+<span>  shapes     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"linear_up"</span>, <span class="st">"concave_up"</span>, <span class="st">"convex_up"</span><span class="op">)</span>,</span>
 <span>  n_grid     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">200L</span>, <span class="fl">500L</span><span class="op">)</span>,</span>
 <span>  sigma_grid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.05</span>, <span class="fl">0.10</span>, <span class="fl">0.20</span><span class="op">)</span>,</span>
 <span>  n_rep      <span class="op">=</span> <span class="fl">100L</span>,</span>

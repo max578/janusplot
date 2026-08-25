@@ -9,8 +9,9 @@ re-run the sweep themselves. Regenerated via
 
 Design:
 
-- **Shapes** (6, one per non-degenerate archetype): `linear_up`,
-  `concave_up`, `u_shape`, `inverted_u`, `wave`, `bimodal`.
+- **Shapes** (6, across 5 of the 7 archetypes – `u_shape` and
+  `inverted_u` both roll up to `unimodal`): `linear_up`, `concave_up`,
+  `u_shape`, `inverted_u`, `wave`, `bimodal`.
 
 - **Sample sizes** (3): `c(100, 200, 500)`.
 
@@ -30,7 +31,7 @@ shape_sensitivity_demo
 
 ## Format
 
-A data frame with 2160 rows and 14 columns — see the "Value" section of
+A data frame with 2160 rows and 14 columns – see the "Value" section of
 [`janusplot_shape_sensitivity()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity.md)
 for the column schema.
 

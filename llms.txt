@@ -1,5 +1,10 @@
 # janusplot
 
+Asymmetric, GAM-based smoothed-association matrices: a directional
+`y ~ s(x)` / `x ~ s(y)` fit for every pair of continuous variables, so
+shape and direction survive where a Pearson correlation matrix collapses
+both away.
+
 Asymmetric, GAM-based smoothed-association matrices for continuous
 variables. Each off-diagonal cell shows a directional
 `mgcv::gam(y ~ s(x))` fit, so the upper and lower triangles tell
@@ -43,8 +48,10 @@ nor `devtools::install_github()` / `remotes::install_github()` build
 vignettes by default when installing from a source repository. The
 `build_vignettes = TRUE` flag above is required for
 [`browseVignettes()`](https://rdrr.io/r/utils/browseVignettes.html) to
-find them. The CRAN release ships prebuilt vignettes and needs no extra
-flag.
+find them. janusplot is not yet on CRAN (submitted 2026-07-01; not yet
+accepted) – once a CRAN release exists it will ship prebuilt vignettes
+and need no extra flag, but until then always install with
+`build_vignettes = TRUE`.
 
 ## Quick start
 

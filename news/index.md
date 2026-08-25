@@ -1,5 +1,55 @@
 # Changelog
 
+## janusplot (development version)
+
+- A per-cell GAM fit that errors (e.g. a constant predictor) now carries
+  its error message into both public returns
+  (`janusplot(with_data = TRUE)$data$error` and
+  `janusplot_data()$pairs[[i]]$error_yx` / `error_xy`), reports
+  `n_used = NA` rather than the row count offered to a fit that never
+  completed, and raises one warning per matrix summarising the failed
+  cells.
+- [`janusplot_shape_metrics()`](https://max578.github.io/janusplot/reference/janusplot_shape_metrics.md)’s
+  insufficient-data decline (fewer than 3 finite predictor values) now
+  raises a classed condition (`janusplot_refusal`/`orchestra_refusal`)
+  instead of a bare error, so orchestra callers can recognise the
+  decline programmatically.
+- Vignette documentation pass: every figure chunk in both vignettes now
+  carries a `fig.cap` and `fig.alt`, plus at least one interpreting
+  sentence after the figure. The `\eqn{}` Rd macro left inert inside
+  `janusplot.Rmd` (dropping two derivative formulas from the rendered
+  text) is replaced with LaTeX math; the self-contradictory statement of
+  the thin-plate penalty’s effect on vs is corrected; the
+  scale-invariance claim for `monotonicity_index` / `convexity_index` is
+  corrected to hold under positive affine rescaling only (both indices
+  sign-flip under `a < 0`); the “200 equally-spaced points” default-grid
+  statement is corrected to 100 (200 only under
+  `display %in% c("d1", "d2")`), matching the Limitations section.
+- Fixed three factual errors in the quick-start and palette sections of
+  `janusplot.Rmd`: EDF/asymmetry render bottom-left (not bottom-right),
+  *n* is never rendered as an annotation, and the default cell fill is
+  keyed to Pearson correlation, not EDF. The “changing the palette”
+  worked example now sets `colour_by = "edf"` so the three palettes it
+  demonstrates actually differ under the default correlation encoding.
+- `shape-recognition-sensitivity.Rmd` now adjudicates its four
+  pre-registered hypotheses against the shipped demo data instead of
+  stating an unadjudicated, and in one case refuted, headline claim; the
+  `wave`/`bi_wave` ground-truth generator defect (tracked separately) is
+  called out explicitly wherever it confounds a figure or a hypothesis,
+  rather than left for the reader to notice. The “custom cutoffs” worked
+  example now demonstrates on the monotone shape family, where
+  `mono_strong`/`curv_low` are actually consulted by the classifier,
+  instead of the wave/multimodal family where they are inert by
+  construction. `simulation/PLAN.md` – a path that does not exist in the
+  installed package – is no longer cited; the four hypotheses are
+  inlined instead. The `shape_sensitivity_demo` documentation (roxygen
+  and vignette) now states “6 shapes across 5 archetypes”, correcting
+  “one per non-degenerate archetype” (`u_shape` and `inverted_u` are
+  both `unimodal`).
+- README: added a one-line purpose statement ahead of the badges, and
+  corrected the installation note’s claim that “the CRAN release ships
+  prebuilt vignettes” – janusplot is not yet on CRAN.
+
 ## janusplot 0.1.1
 
 CRAN release: 2026-07-02

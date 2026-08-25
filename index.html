@@ -70,6 +70,7 @@
 <img src="logo.png" class="logo" alt=""><h1 id="janusplot-">janusplot <a class="anchor" aria-label="anchor" href="#janusplot-"></a>
 </h1>
 </div>
+<p>Asymmetric, GAM-based smoothed-association matrices: a directional <code>y ~ s(x)</code> / <code>x ~ s(y)</code> fit for every pair of continuous variables, so shape and direction survive where a Pearson correlation matrix collapses both away.</p>
 <!-- badges: start -->
 
 <p>Asymmetric, GAM-based smoothed-association matrices for continuous variables. Each off-diagonal cell shows a directional <code>mgcv::gam(y ~ s(x))</code> fit, so the upper and lower triangles tell different stories whenever the relationship is genuinely asymmetric — precisely where a scalar Pearson correlation loses information.</p>
@@ -95,7 +96,7 @@
 <span>  build_vignettes <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  dependencies    <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Note: neither <code><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak::pak()</a></code> nor <code>devtools::install_github()</code> / <code>remotes::install_github()</code> build vignettes by default when installing from a source repository. The <code>build_vignettes = TRUE</code> flag above is required for <code><a href="https://rdrr.io/r/utils/browseVignettes.html" class="external-link">browseVignettes()</a></code> to find them. The CRAN release ships prebuilt vignettes and needs no extra flag.</p>
+<p>Note: neither <code><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak::pak()</a></code> nor <code>devtools::install_github()</code> / <code>remotes::install_github()</code> build vignettes by default when installing from a source repository. The <code>build_vignettes = TRUE</code> flag above is required for <code><a href="https://rdrr.io/r/utils/browseVignettes.html" class="external-link">browseVignettes()</a></code> to find them. janusplot is not yet on CRAN (submitted 2026-07-01; not yet accepted) – once a CRAN release exists it will ship prebuilt vignettes and need no extra flag, but until then always install with <code>build_vignettes = TRUE</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>

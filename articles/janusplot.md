@@ -3,11 +3,11 @@
 ## Why Pearson is not enough
 
 A Pearson correlation matrix gives one scalar per pair of variables. Two
-numbers are discarded in that collapse:
+things are discarded in that collapse:
 
-1.  The *shape* of the association — linear, monotone non-linear,
+1.  The *shape* of the association – linear, monotone non-linear,
     U-shaped, or irregular.
-2.  The *direction* — whether y is a smooth function of x differs in
+2.  The *direction* – whether y is a smooth function of x differs in
     general from whether x is a smooth function of y, because leverage
     and noise are directional.
 
@@ -26,21 +26,28 @@ library(janusplot)
 janusplot(mtcars[, c("mpg", "hp", "wt", "qsec")])
 ```
 
-![Asymmetric smoothed-association matrix produced by janusplot();
-diagonal cells hold variable labels, off-diagonal cells show the fitted
-mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and
-per-cell annotations for n, EDF, and smooth significance
-glyph.](janusplot_files/figure-html/quickstart-1.png)
+![Four-by-four asymmetric smoothed-association matrix for mpg, hp, wt
+and qsec, cells shaded by Pearson correlation on a diverging red-blue
+scale.](janusplot_files/figure-html/quickstart-1.png)
+
+Asymmetric association matrix for four mtcars traits: cell fill is
+Pearson correlation, and the bottom-left corner reports the asymmetry
+index A alongside EDF for the fitted direction.
 
 Each off-diagonal cell shows:
 
 - raw scatter (light grey),
 - the fitted spline (blue line) and 95% CI ribbon,
-- EDF (effective degrees of freedom) in the bottom-right,
-- *n* used in the bottom-left,
+- a stacked `A = ...` / `EDF = ...` label in the bottom-left corner
+  (asymmetry index over effective degrees of freedom for that
+  direction’s fit; suppress or reorder via `annotations =`),
 - a signif-glyph in the top-right (`***` / `**` / `*` / `·`).
 
-The cell fill is keyed to EDF: darker = more non-linear.
+The cell fill is keyed to Pearson correlation by default (a diverging
+scale symmetric around zero); pass `colour_by = "edf"` to shade by
+non-linearity instead. In the matrix above, `wt`-`mpg` (r = -0.87) and
+`hp`-`qsec` (r = -0.71) show the deepest fill of the six pairs;
+`wt`-`qsec` (r = -0.17) is the palest, near-zero-correlation cell.
 
 ## Non-linear detection
 
@@ -56,20 +63,31 @@ x3 <- sin(x1) + rnorm(n, sd = 0.4) # sinusoidal on x1
 x4 <- rnorm(n)                     # independent
 d  <- data.frame(x1 = x1, x2 = x2, x3 = x3, x4 = x4)
 
-janusplot(d)
+# colour_by = "edf" here, deliberately: x1-x2 is a symmetric quadratic,
+# so its Pearson correlation is close to 0 despite EDF being large --
+# the default correlation fill would hide exactly the non-linearity
+# this section is illustrating.
+janusplot(d, colour_by = "edf")
 ```
 
-![Asymmetric smoothed-association matrix produced by janusplot();
-diagonal cells hold variable labels, off-diagonal cells show the fitted
-mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and
-per-cell annotations for n, EDF, and smooth significance
-glyph.](janusplot_files/figure-html/nonlinear-1.png)
+![Four-by-four smoothed-association matrix for x1, x2 (quadratic in x1),
+x3 (sinusoidal in x1) and x4 (independent noise), cells shaded by
+effective degrees of
+freedom.](janusplot_files/figure-html/nonlinear-1.png)
 
-EDF for `x2 ~ s(x1)` and `x3 ~ s(x1)` should clearly exceed 1; the cell
-fills reflect that. Cells involving `x4` should be close to EDF = 1
-(linear / flat).
+Association matrix for a quadratic pair, a sinusoidal pair and an
+independent pair, shaded by EDF rather than correlation so the
+non-linearity is visible in the fill.
 
-## Asymmetry — a heteroscedastic example
+EDF for `x2 ~ s(x1)` and `x3 ~ s(x1)` clearly exceeds 1, and the cell
+fills reflect that under `colour_by = "edf"`; cells involving `x4` stay
+close to EDF = 1 (linear / flat). Note that `x1`-`x2` would look almost
+blank under the *default* `colour_by = "pearson"` (their linear
+correlation is close to zero even though the relationship is strongly,
+deterministically quadratic) – a concrete case for choosing the EDF fill
+whenever non-linearity, not linear association, is the question.
+
+## Asymmetry – a heteroscedastic example
 
 When the noise scale depends on a predictor, the two directional smooths
 diverge: y \sim s(x) recovers the mean relationship; x \sim s(y) is
@@ -85,15 +103,27 @@ d <- data.frame(x = x, y = y, z = rnorm(n))
 janusplot(d)
 ```
 
-![Asymmetric smoothed-association matrix produced by janusplot();
-diagonal cells hold variable labels, off-diagonal cells show the fitted
-mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and
-per-cell annotations for n, EDF, and smooth significance
-glyph.](janusplot_files/figure-html/asym-1.png)
+![Three-by-three smoothed-association matrix for x, y (heteroscedastic
+in x) and z (independent noise), with the x-y off-diagonal pair carrying
+a visibly different fitted curve in each
+triangle.](janusplot_files/figure-html/asym-1.png)
+
+Association matrix for a heteroscedastic x-y pair (noise variance grows
+with x) plus an independent z, showing the two directional smooths and
+their asymmetry index A.
 
 The `A = ...` label per cell reports the asymmetry index A\_{ij} =
 \|EDF\_{y\|x} - EDF\_{x\|y}\| / (EDF\_{y\|x} + EDF\_{x\|y}) \in \[0,
 1\], shown by default in the bottom-left corner alongside `EDF = ...`.
+The `x`-`y` pair carries the largest `A` in the matrix (0.72 in this
+run): y \sim s(x) recovers the linear mean with EDF close to 1, while x
+\sim s(y) is pulled around by the heteroscedastic tail and picks up a
+substantially higher EDF. `y`-`z` sits at `A ~ 0`, as expected for two
+genuinely unrelated variables. `x`-`z` is not equally clean (`A` around
+0.5 here) even though `z` is pure noise – one direction of a
+REML-selected smooth can still latch onto a spurious wiggle at finite
+`n`, which is itself a useful reminder that `A` is a sample-based
+diagnostic, not an oracle for “no relationship”.
 
 ## Partial smooths (controlling for covariates)
 
@@ -115,32 +145,47 @@ janusplot(pp[, c("bill_length_mm", "bill_depth_mm",
                  "flipper_length_mm", "body_mass_g")])
 ```
 
-![Asymmetric smoothed-association matrix produced by janusplot();
-diagonal cells hold variable labels, off-diagonal cells show the fitted
-mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and
-per-cell annotations for n, EDF, and smooth significance
-glyph.](janusplot_files/figure-html/adjust-1.png)
+![Four-by-four association matrix for four penguin bill and body traits,
+unadjusted.](janusplot_files/figure-html/adjust-1.png)
+
+Palmer penguins trait matrix with no covariate: bill_depth_mm looks
+weakly, inconsistently related to the other three traits.
 
 ``` r
 
 
-# With species as a fixed effect — resolves Simpson's-paradox geometry
+# With species as a fixed effect -- resolves Simpson's-paradox geometry
 janusplot(pp, vars = c("bill_length_mm", "bill_depth_mm",
                        "flipper_length_mm", "body_mass_g"),
          adjust = ~ species)
 ```
 
-![Asymmetric smoothed-association matrix produced by janusplot();
-diagonal cells hold variable labels, off-diagonal cells show the fitted
-mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and
-per-cell annotations for n, EDF, and smooth significance
-glyph.](janusplot_files/figure-html/adjust-2.png)
+![The same matrix after adjusting for species as a fixed effect, showing
+stronger within-species associations for
+bill_depth_mm.](janusplot_files/figure-html/adjust-2.png)
+
+The same four traits after adjusting every smooth for species:
+bill_depth_mm’s relationships strengthen once the three-species mixture
+is resolved.
+
+Adjusting for `species` changes the geometry rather than just the
+numbers: `bill_depth_mm` correlates *negatively* with the other three
+traits pooled across species (larger-bodied Gentoo penguins happen to
+have shallower bills), but *positively* within each species once the
+three-species mixture is resolved – the textbook Simpson’s-paradox
+signature, visible here as a sign flip in the corresponding cells
+between the two matrices.
 
 ## Changing the palette
 
-The cell fill encodes the EDF (or deviance-explained) of the smooth and
-is accompanied by a shared colourbar legend. Choose a palette with
-`palette =`.
+`palette =` chooses among the sequential palettes below, but only takes
+effect when the fill is *not* a correlation: a correlation is always
+symmetric around zero, so
+`colour_by %in% c("pearson", "spearman", "kendall")` is always drawn on
+a diverging palette (`RdBu` unless you name a different diverging one),
+and any sequential `palette =` you pass is silently ignored in that
+case. The three calls below use `colour_by = "edf"` so the chosen
+palette actually reaches the plot.
 
 ``` r
 
@@ -151,36 +196,44 @@ d <- data.frame(
 )
 d$x2 <- d$x1^2 + rnorm(200, sd = 0.8)  # non-linear
 
-janusplot(d, palette = "viridis")  # default, colourblind-safe
+janusplot(d, colour_by = "edf", palette = "viridis")  # default, colourblind-safe
 ```
 
-![Asymmetric smoothed-association matrix produced by janusplot();
-diagonal cells hold variable labels, off-diagonal cells show the fitted
-mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and
-per-cell annotations for n, EDF, and smooth significance
-glyph.](janusplot_files/figure-html/palette-viridis-1.png)
+![Three-by-three EDF-filled association matrix using the viridis
+sequential palette.](janusplot_files/figure-html/palette-viridis-1.png)
+
+EDF-filled matrix under the default viridis palette: the strongly
+non-linear x1-x2 cell is dark, the two noise cells are pale.
 
 ``` r
 
-janusplot(d, palette = "RdYlBu")   # diverging, colourblind-safe
+janusplot(d, colour_by = "edf", palette = "RdYlBu")   # diverging, colourblind-safe
 ```
 
-![Asymmetric smoothed-association matrix produced by janusplot();
-diagonal cells hold variable labels, off-diagonal cells show the fitted
-mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and
-per-cell annotations for n, EDF, and smooth significance
-glyph.](janusplot_files/figure-html/palette-brewer-1.png)
+![Three-by-three EDF-filled association matrix using the diverging
+RdYlBu palette.](janusplot_files/figure-html/palette-brewer-1.png)
+
+The same matrix under the diverging RdYlBu palette: still
+colourblind-safe, but a diverging scale is a poor fit for a one-sided
+quantity like EDF (values run 1 upward, never negative).
 
 ``` r
 
-janusplot(d, palette = "turbo")    # high-contrast, NOT colourblind-safe
+janusplot(d, colour_by = "edf", palette = "turbo")    # high-contrast, NOT colourblind-safe
 ```
 
-![Asymmetric smoothed-association matrix produced by janusplot();
-diagonal cells hold variable labels, off-diagonal cells show the fitted
-mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and
-per-cell annotations for n, EDF, and smooth significance
-glyph.](janusplot_files/figure-html/palette-turbo-1.png)
+![Three-by-three EDF-filled association matrix using the high-contrast,
+non-colourblind-safe turbo
+palette.](janusplot_files/figure-html/palette-turbo-1.png)
+
+The same matrix under the turbo palette: highest contrast of the three,
+but not colourblind-safe.
+
+The three renders differ only in palette: viridis and RdYlBu are both
+colourblind-safe with different sequential-versus-diverging framing of
+the same EDF values, and turbo trades that safety for the sharpest
+visual contrast between the non-linear `x1`-`x2` cell and the two noise
+cells.
 
 **Colourblind-safe choices:**
 
@@ -199,17 +252,23 @@ janusplot(airquality[, c("Ozone", "Solar.R", "Wind", "Temp")],
           na_action = "pairwise")
 ```
 
-![Asymmetric smoothed-association matrix produced by janusplot();
-diagonal cells hold variable labels, off-diagonal cells show the fitted
-mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and
-per-cell annotations for n, EDF, and smooth significance
-glyph.](janusplot_files/figure-html/missing-1.png)
+![Four-by-four association matrix for airquality's Ozone, Solar.R, Wind
+and Temp, fitted with pairwise-complete
+rows.](janusplot_files/figure-html/missing-1.png)
+
+airquality matrix under pairwise NA handling: each cell is fitted from
+whichever rows are complete for that pair, so cells not touching Ozone
+or Solar.R use all 153 rows.
 
 `na_action = "pairwise"` uses all rows for which *that* pair is
 complete; `"complete"` restricts to rows complete across every variable
-(matching listwise deletion).
+(matching listwise deletion). Under `"pairwise"` here, the `Wind`-`Temp`
+cell is fitted on all 153 rows, while any cell touching `Ozone` or
+`Solar.R` drops only the rows missing on that one variable – more data
+per cell, at the cost of every cell technically using a slightly
+different sample.
 
-## Scaling up — `order = "hclust"`
+## Scaling up – `order = "hclust"`
 
 For k large, reorder the axes by hierarchical clustering on
 \|correlation\|:
@@ -225,16 +284,25 @@ janusplot(Boston[, c("medv", "lstat", "rm", "age",
 #> ℹ Inspect `result$pairs[[i]]$k_check_*` or set `auto_refit_k = TRUE`.
 ```
 
-![Asymmetric smoothed-association matrix produced by janusplot();
-diagonal cells hold variable labels, off-diagonal cells show the fitted
-mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and
-per-cell annotations for n, EDF, and smooth significance
-glyph.](janusplot_files/figure-html/hclust-1.png)
+![Seven-by-seven Boston housing association matrix with rows and columns
+reordered by hierarchical clustering on absolute
+correlation.](janusplot_files/figure-html/hclust-1.png)
 
-## Programmatic access — `janusplot_data()`
+Boston housing matrix with axes reordered by hierarchical clustering on
+\|correlation\|: medv, lstat and rm group together as the strongest
+housing-value block, while age, indus, nox and dis form a tight
+urbanisation/pollution block.
+
+The reordering places the two strongest predictors of house value,
+`lstat` (r = -0.74) and `rm` (r = 0.70), next to `medv`, and separates
+them from the `age`-`indus`-`nox`-`dis` block, whose members are all
+`|r| >= 0.6` with each other – a proxy for the neighbourhood’s degree of
+industrialisation.
+
+## Programmatic access – `janusplot_data()`
 
 Returns raw GAM fits and per-cell metrics without constructing a ggplot
-— useful for custom rendering or downstream analysis.
+– useful for custom rendering or downstream analysis.
 
 ``` r
 
@@ -262,10 +330,11 @@ discrete counts. These drive the 24-category classifier and appear as
 columns in `janusplot(..., with_data = TRUE)$data` and as fields on each
 entry of `janusplot_data()$pairs`.
 
-Let `f(x)` be the fitted smooth on a dense grid of 200 equally-spaced
-points across the predictor range, with `f'` and `f''` the numerical
-first and second derivatives. Let `w(x)` be the empirical density of the
-predictor on the same grid, normalised to `sum(w) = 1`.
+Let `f(x)` be the fitted smooth on a dense grid of 100 equally-spaced
+points across the predictor range (200 when
+`display %in% c("d1", "d2")`; see *Limitations*), with `f'` and `f''`
+the numerical first and second derivatives. Let `w(x)` be the empirical
+density of the predictor on the same grid, normalised to `sum(w) = 1`.
 
 - **`monotonicity_index`** (paper symbol `M`):
 
@@ -282,12 +351,16 @@ predictor on the same grid, normalised to `sum(w) = 1`.
   (bowl-down), `0` inflection-dominated (S-curve, sine, flat).
 
 Both indices are density-weighted so they describe the smooth *where the
-data actually live*, not extrapolated tails, and are scale-invariant:
-replacing `y` with `a * y + b` leaves them unchanged.
+data actually live*, not extrapolated tails, and are invariant under a
+**positive** affine rescaling of `y`: replacing `y` with `a * y + b` for
+`a > 0` leaves `M` and `C` unchanged. For `a < 0` both `f'` and `f''`
+flip sign, so `M` and `C` flip sign too – a monotone-increasing
+relationship read off `y` reads as monotone-decreasing off `-y`, as it
+should.
 
-- **`n_turning_points`** — count of interior extrema (sign changes of
+- **`n_turning_points`** – count of interior extrema (sign changes of
   `f'`), robust to noise via lobe-mass weighting.
-- **`n_inflections`** — count of interior curvature flips (sign changes
+- **`n_inflections`** – count of interior curvature flips (sign changes
   of `f''`), same robust counting.
 
 Together the pair `(n_turning_points, n_inflections)` drives the primary
@@ -310,9 +383,9 @@ across sample-size and noise regimes.
 ## Derivative views: theoretical justification and applied use
 
 Each matrix renders one quantity. `display = "fit"` (default) shows the
-fitted smooth; `display = "d1"` shows ; `display = "d2"` shows . A
-top-of-matrix title names the mode, so side-by-side calls compare
-unambiguously. Orders beyond two are not exposed — see *Noise
+fitted smooth; `display = "d1"` shows \hat f'(x); `display = "d2"` shows
+\hat f''(x). A top-of-matrix title names the mode, so side-by-side calls
+compare unambiguously. Orders beyond two are not exposed – see *Noise
 amplification* below. Derivative CI rendering is **off by default**; opt
 in with `derivative_ci = "pointwise"` or `"simultaneous"`.
 
@@ -329,35 +402,41 @@ df <- data.frame(
 janusplot(df, display = "fit", show_shape_legend = FALSE)
 ```
 
-![Asymmetric smoothed-association matrix produced by janusplot();
-diagonal cells hold variable labels, off-diagonal cells show the fitted
-mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and
-per-cell annotations for n, EDF, and smooth significance
-glyph.](janusplot_files/figure-html/derivs-fit-1.png)
+![Three-by-three fitted-smooth matrix for x, y1 (x plus a sine ripple)
+and y2 (a quadratic), all against
+x.](janusplot_files/figure-html/derivs-fit-1.png)
+
+Fitted-smooth (level) view of x against a rippled-monotone y1 = x +
+sin(3x) and a convex y2 = 0.5x^2.
 
 ``` r
 
 janusplot(df, display = "d1", show_shape_legend = FALSE)
 ```
 
-![Asymmetric smoothed-association matrix produced by janusplot();
-diagonal cells hold variable labels, off-diagonal cells show the fitted
-mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and
-per-cell annotations for n, EDF, and smooth significance
-glyph.](janusplot_files/figure-html/derivs-d1-1.png)
+![First-derivative panels for x against y1 and y2, showing an
+oscillating curve for y1 and a straight increasing line for
+y2.](janusplot_files/figure-html/derivs-d1-1.png)
+
+First-derivative view of the same three variables: the y1 panel
+oscillates around a positive baseline (a locally reversing gain despite
+the globally increasing fit above), while the y2 panel is the straight
+line f’(x) = x.
 
 ``` r
 
 janusplot(df, display = "d2", show_shape_legend = FALSE)
 ```
 
-![Asymmetric smoothed-association matrix produced by janusplot();
-diagonal cells hold variable labels, off-diagonal cells show the fitted
-mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and
-per-cell annotations for n, EDF, and smooth significance
-glyph.](janusplot_files/figure-html/derivs-d2-1.png)
+![Second-derivative panels for x against y1 and y2, showing an
+oscillating curve for y1 and a flat positive line for
+y2.](janusplot_files/figure-html/derivs-d2-1.png)
 
-Turn on simultaneous bands — a single call gets the Monte Carlo critical
+Second-derivative view: y1’s curvature oscillates through zero
+repeatedly (the sine term), while y2’s curvature is flat and positive (a
+constant second derivative, as expected for a quadratic).
+
+Turn on simultaneous bands – a single call gets the Monte Carlo critical
 multiplier per Simpson (2018):
 
 ``` r
@@ -368,11 +447,12 @@ janusplot(df, display = "d1",
           show_shape_legend = FALSE)
 ```
 
-![Asymmetric smoothed-association matrix produced by janusplot();
-diagonal cells hold variable labels, off-diagonal cells show the fitted
-mgcv::gam spline with a 95% confidence envelope, raw-data scatter, and
-per-cell annotations for n, EDF, and smooth significance
-glyph.](janusplot_files/figure-html/derivs-sim-1.png)
+![First-derivative panels with simultaneous confidence ribbons for x
+against y1 and y2.](janusplot_files/figure-html/derivs-sim-1.png)
+
+First-derivative view with simultaneous 95% Monte Carlo confidence
+bands: the y1 panel’s oscillation crosses zero with a band wide enough
+to show where a reversal is and is not distinguishable from noise.
 
 ### What derivatives reveal that the fit hides
 
@@ -380,7 +460,7 @@ The fitted smooth \hat f(x) = \mathbb{E}\[y\mid x\] is a level
 description. Its derivatives are different statistical objects with
 their own interpretations:
 
-- \hat f'(x) — the **local rate of change** of y in x. Zero crossings
+- \hat f'(x) – the **local rate of change** of y in x. Zero crossings
   localise the turning points of \hat f; the sign of \hat f' gives the
   direction of monotonicity; the magnitude gives the sensitivity at the
   operating point x. In control engineering this is literally the
@@ -390,7 +470,7 @@ their own interpretations:
   derivative of the dose–response curve \mu'(t) = \partial
   \mathbb{E}\[Y(t)\] / \partial t, which Zhang & Chen (2025) argue is
   often *the* treatment-effect object of interest, not the curve itself.
-- \hat f''(x) — the **local curvature**. Zero crossings localise the
+- \hat f''(x) – the **local curvature**. Zero crossings localise the
   inflection points of \hat f; a persistently positive second derivative
   flags accelerating growth, persistently negative flags saturation
   (diminishing returns). \hat f'' is the input to the convexity index C
@@ -408,7 +488,7 @@ asymmetric process these do not transpose into each other, and the
 directional asymmetry is a diagnostic the symmetric correlation matrix
 cannot expose (Janzing & Schölkopf, 2010).
 
-### Estimation — the LP matrix
+### Estimation – the LP matrix
 
 Let X_p = X_p(\mathbf{x}\_g) denote the design (linear predictor) matrix
 of the fitted GAM evaluated on the plotting grid \mathbf{x}\_g, obtained
@@ -429,7 +509,7 @@ This is the standard Wood (2017) construction, and is what
 Simpson, 2018). Columns of X_p corresponding to `adjust` terms held at
 typical values contribute identical rows across the grid, so their
 finite differences are zero and they drop out of both \hat f^{(k)} and
-its variance — the derivative in the panel is therefore the derivative
+its variance – the derivative in the panel is therefore the derivative
 of the *partial smooth actually shown in the fit panel*, as expected.
 
 For simultaneous intervals over the full grid (a stricter question than
@@ -448,7 +528,7 @@ f^{(k)}(x) \pm c\_\alpha\\\mathtt{se}(x). Opt in via
 or
 [`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md);
 the default is `derivative_ci = "none"` so that no CI is drawn by
-default — derivative ribbons invite over-reading of local features and
+default – derivative ribbons invite over-reading of local features and
 should be a deliberate choice, not a default. The implementation uses B
 = 1000 (see `derivative_ci_nsim`); Simpson (2018) uses 10\\000, which is
 affordable if you need tighter quantile estimation.
@@ -457,14 +537,17 @@ affordable if you need tighter quantile estimation.
 
 Finite differencing of raw data amplifies noise; penalised splines do
 not eliminate that amplification, they trade it against bias via the
-REML-selected smoothing parameter. `mgcv`’s default thin-plate penalty
-is on \int (f'')^2, which directly regularises \hat f' and bounds (but
-does not penalise) \hat f'' only via the basis rank (Wood, 2017, §5.3;
-Eilers & Marx, 1996). In practice we find \hat f^{(3)} is dominated by
-noise for n \< 10^4 at moderate k, and so janusplot refuses k \ge 3 by
-design. If you have a domain-specific reason to need a higher-order
-derivative, specify a matching-order P-spline penalty explicitly
-(Eilers, Marx & Durbán, 2015) and extract it yourself from
+REML-selected smoothing parameter. `mgcv`’s default m = 2 thin-plate
+penalty is an L2 penalty on \int (f'')^2, which controls \hat f'
+pointwise but leaves \hat f^{(3)} unpenalised and bounded only by the
+basis rank k (Wood, 2017, §5.3; Eilers & Marx, 1996) – this is the
+actual mechanism behind the k \ge 3 refusal below, not a general claim
+that third derivatives are unusable. Consequently \hat f^{(3)} is the
+derivative most exposed to noise amplification at ordinary sample sizes
+and moderate k, and so janusplot refuses k \ge 3 by design. If you have
+a domain-specific reason to need a higher-order derivative, specify a
+matching-order P-spline penalty explicitly (Eilers, Marx & Durbán, 2015)
+and extract it yourself from
 [`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md).
 
 ### Applied use: gain estimation and dose–response
@@ -487,7 +570,7 @@ add-on but the analytical primitive the practitioner actually wants.
   a continuous treatment T with unconfoundedness, the dose–response
   \mu(t) = \mathbb{E}\[Y(t)\] and its derivative \mu'(t) are both
   estimable, and recent work (Zhang & Chen, 2025) argues \mu'(t) is
-  often the more directly interpretable quantity — it answers “how much
+  often the more directly interpretable quantity – it answers “how much
   does the expected outcome change per unit shift in treatment at this
   dose?” This is structurally the same estimand as the process gain
   above; the asymmetric-matrix derivative panel delivers both forward
@@ -541,16 +624,16 @@ derivative effects for continuous treatments. arXiv preprint
 
 ## Limitations
 
-- Pairwise view, not conditional — always complement with a proper
+- Pairwise view, not conditional – always complement with a proper
   multivariate model.
 - EDF depends on basis dimension `k`; defaults are sensible but
   domain-specific tuning is encouraged.
 - The asymmetry index should not be interpreted causally without strong
   assumptions.
 - `monotonicity_index` and `convexity_index` are scale-invariant in `y`
-  but sensitive to the predictor-density weighting — they describe the
+  but sensitive to the predictor-density weighting – they describe the
   smooth on the observed support of `x`, not outside it.
-- `display` is scalar — a single
+- `display` is scalar – a single
   [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
   call renders a single quantity (fit, d1, or d2). To compare fit
   against derivative, issue two or three calls; each carries its own
@@ -563,8 +646,8 @@ derivative effects for continuous treatments. arXiv preprint
 - Requesting `display %in% c("d1", "d2")` raises the default
   prediction-grid resolution from 100 to 200 points, which slightly
   shifts the numeric shape-metric values (`M`, `C`, turning and
-  inflection counts) reported alongside the fit. Shapes and asymmetry —
-  the primary reading of the matrix — are robust to this drift; `M`, `C`
+  inflection counts) reported alongside the fit. Shapes and asymmetry –
+  the primary reading of the matrix – are robust to this drift; `M`, `C`
   and the counts are secondary diagnostics. The precomputed
   `shape_sensitivity_demo` dataset was generated under `n_grid = 100`
   and is preserved as-is for reproducibility.

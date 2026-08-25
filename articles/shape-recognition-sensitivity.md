@@ -16,7 +16,7 @@ level `sigma`, the sweep:
 
 1.  Generates `n` points from the noiseless canonical curve on
     `x ∈ [0, 1]`, with `y` normalised to `[0, 1]` so that `sigma` is the
-    fraction of y-range that Gaussian noise contributes — an
+    fraction of y-range that Gaussian noise contributes – an
     SNR-comparable scale across shapes.
 2.  Fits `mgcv::gam(y ~ s(x), method = "REML")`.
 3.  Classifies the fit via
@@ -43,24 +43,55 @@ janusplot_shape_sensitivity_shapes()
 
 ## Pre-registered hypotheses
 
-The sweep’s hypotheses are pinned in `simulation/PLAN.md` (Scenario 4):
+Four hypotheses were pinned before running the sweep:
 
 - **H1.** At `n = 500`, `sigma = 0.05`, archetype accuracy exceeds 0.90
   for every shape.
 - **H2.** Fine-category accuracy exceeds 0.75 at `n = 500`,
   `sigma = 0.05` for monotone + unimodal shapes; wave and multimodal
   tolerate less noise.
-- **H3.** Rippled variants require `n ≥ 200` and `sigma ≤ 0.10` to
+- **H3.** Rippled variants require `n >= 200` and `sigma <= 0.10` to
   resolve.
 - **H4.** At `sigma = 0.40`, archetype accuracy collapses below 0.50 for
   all but the simplest shapes.
 
+**Verdicts, evaluated against the precomputed demo below (`n = 500`,
+`sigma = 0.05` for H1/H2; the demo’s grid runs `sigma` up to 0.40, which
+covers H4):**
+
+- **H1 – refuted.** `bimodal`, `concave_up`, `inverted_u` and `u_shape`
+  all hit 1.00, `linear_up` reaches only 0.70, and `wave` scores 0.00 at
+  every replicate. The `wave` failure is not a noise-tolerance property
+  of the classifier: the shipped `wave` ground-truth generator
+  (`.shape_sensitivity_generators()`) has one interior turning point on
+  `x in [0, 1]`, one short of what the taxonomy’s own `wave` definition
+  requires, so every fit is systematically dispatched to the wrong
+  archetype regardless of noise. This is a tracked defect in the
+  generator, not evidence about recognition difficulty – treat the
+  `wave` row of every figure below as unreliable until the generator is
+  fixed, and do not read the other five shapes’ figures as “wave
+  included and passing”.
+- **H2 – partly supported, confounded by the same defect.** The four
+  clean shapes clear 0.75 easily; `linear_up` (0.70) falls just short,
+  which the sweep’s design does correctly flag as a boundary case rather
+  than a clear pass; `wave`’s 0.00 cannot speak to the hypothesis for
+  the reason above.
+- **H3 – untestable with the shipped machinery.** No `rippled_*`
+  generator exists among the canonical shapes exercised here, so the
+  hypothesis has no data to be adjudicated against in this vignette.
+- **H4 – refuted, in the other direction.** At `sigma = 0.40` archetype
+  accuracy stays at 0.60 or above for every shape except `wave` (still
+  stuck at 0.00, for the generator reason above) – well clear of the
+  predicted sub-0.50 collapse. Setting `wave` aside, the classifier is
+  markedly more noise-robust than pre-registered.
+
 ## Precomputed demo
 
-The package ships a small-footprint precomputed sweep — 6 shapes (one
-per non-degenerate archetype) × 3 sample sizes × 4 noise levels × 30
-replicates = 2160 fits — so you can explore the API without running the
-full sweep yourself.
+The package ships a small-footprint precomputed sweep – 6 shapes across
+5 of the 7 archetypes (`u_shape` and `inverted_u` both roll up to
+`unimodal`) × 3 sample sizes × 4 noise levels × 30 replicates = 2160
+fits – so you can explore the API without running the full sweep
+yourself.
 
 ``` r
 
@@ -91,12 +122,24 @@ janusplot_shape_sensitivity_plot(shape_sensitivity_demo,
                                  "recovery_curves")
 ```
 
-![](shape-recognition-sensitivity_files/figure-html/recovery-curves-1.png)
+![Line plot of archetype-recovery accuracy versus sigma, one line per
+shape, faceted or coloured by sample size; five lines stay high across
+the noise range and one (wave) is flat at
+zero.](shape-recognition-sensitivity_files/figure-html/recovery-curves-1.png)
 
-Every shape is recovered near-perfectly at low noise; the informative
-picture is where each shape’s curve falls off as sigma grows. The
-unimodal and monotone-curved families tolerate more noise than the
-multimodal ones.
+Archetype-recovery accuracy against noise level (sigma) for each of the
+six ground-truth shapes, at each of the three sample sizes.
+
+Five of the six shapes are recovered well across the whole noise range,
+including at `sigma = 0.40` (see H4 above): `bimodal`, `concave_up` and
+`inverted_u` hold at 1.00 throughout at `n = 500`, and `u_shape` only
+drops to 0.97 at the highest noise level. `linear_up` is the outlier
+among the five – it never exceeds 0.73 even at `sigma = 0.05`, so its
+curve is flat and mediocre rather than a high-noise-tolerance decay. The
+sixth shape, `wave`, is flat at 0.00 across every `n` and `sigma` cell:
+this is the generator defect described under H1, not a
+recovered-then-lost noise-tolerance curve, and should not be read
+alongside the other five.
 
 ### Archetype confusion
 
@@ -106,11 +149,23 @@ janusplot_shape_sensitivity_plot(shape_sensitivity_demo,
                                  "confusion_archetype")
 ```
 
-![](shape-recognition-sensitivity_files/figure-html/archetype-confusion-1.png)
+![Six-by-four archetype confusion matrix with predicted archetypes
+monotone_curved, monotone_linear, multimodal and unimodal on the
+columns; wave truth falls entirely in the unimodal column, and linear_up
+truth splits between monotone_linear and
+monotone_curved.](shape-recognition-sensitivity_files/figure-html/archetype-confusion-1.png)
 
-The off-diagonals reveal the classifier’s failure modes. A `unimodal`
-truth misclassified as `wave` or `multimodal` means the spline invented
-extra turning points under noise.
+Confusion matrix of true archetype (rows) against predicted archetype
+(columns), pooled across all n, sigma and replicates in the demo.
+
+Two off-diagonal patterns dominate here. `wave` is predicted `unimodal`
+on every single one of its 360 replicates – the direct consequence of
+the generator defect flagged under H1, since a curve with only one
+interior turning point classifies as unimodal by construction,
+regardless of noise. `linear_up`, by contrast, is a genuine noise-driven
+confusion: it lands in `monotone_curved` roughly 30% of the time,
+because sampling noise on a short curve occasionally tips the fitted
+`monotonicity_index` below the monotone-linear cutoff.
 
 ### Archetype-level accuracy grid
 
@@ -120,12 +175,21 @@ janusplot_shape_sensitivity_plot(shape_sensitivity_demo,
                                  "accuracy_grid")
 ```
 
-![](shape-recognition-sensitivity_files/figure-html/accuracy-grid-1.png)
+![Grid of heatmap panels, one per ground-truth shape, with sample size
+on one axis and noise level on the other, cells shaded by
+archetype-recovery accuracy; five panels are uniformly dark (high
+accuracy) and one (wave) is uniformly pale (zero
+accuracy).](shape-recognition-sensitivity_files/figure-html/accuracy-grid-1.png)
+
+Heatmap of archetype-recovery accuracy across the full (n, sigma)
+design, one panel per shape.
 
 Per-shape heatmap of `P(archetype correct)` across the `(n, sigma)`
 design. Reading across a row shows the noise-tolerance profile of one
 sample size; reading up a column shows the sample-size sensitivity at
-one noise level.
+one noise level. The `wave` panel is uniformly at zero across the whole
+grid – flat cells here mean the generator defect above, not a genuinely
+noise-invariant failure mode.
 
 ### Numerical summary
 
@@ -154,7 +218,7 @@ reps = 56 000 fits):
 
 ``` r
 
-# Configure parallel execution (optional) — you control the plan.
+# Configure parallel execution (optional) -- you control the plan.
 future::plan(future::multisession, workers = 4L)
 
 res <- janusplot_shape_sensitivity(parallel = TRUE)
@@ -166,16 +230,21 @@ janusplot_shape_sensitivity_plot(res, "recovery_curves")
 
 ### Custom shape subsets + cutoffs
 
-Every argument is tunable. Below, we rerun only the bimodal/wave family
-under stricter monotonicity thresholds to see whether tightening
-`mono_strong` buys any fine-accuracy improvement for these categories.
+Every argument is tunable. `mono_strong` and `curv_low` are only read on
+the monotone dispatch path (`n_turning_points == 0` and
+`n_inflections == 0`), so a worked example needs a monotone shape family
+to actually exercise them – `linear_up`, `concave_up` and `convex_up`
+below, rather than the wave/multimodal family, where these two cutoffs
+are never consulted. Tightening `mono_strong` raises the bar for calling
+a curve “strictly monotone” (versus `s_shape`/rippled), and lowering
+`curv_low` raises the bar for calling it “near-linear” (versus curved).
 
 ``` r
 
 strict <- janusplot_shape_cutoffs(mono_strong = 0.95, curv_low = 0.1)
 
 res_strict <- janusplot_shape_sensitivity(
-  shapes     = c("wave", "bimodal", "bi_wave"),
+  shapes     = c("linear_up", "concave_up", "convex_up"),
   n_grid     = c(200L, 500L),
   sigma_grid = c(0.05, 0.10, 0.20),
   n_rep      = 100L,
