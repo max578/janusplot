@@ -154,7 +154,7 @@ janusplot_shape_sensitivity_shapes <- function() {
 #' downstream examples without requiring users to re-run the sweep.
 #'
 #' @param shapes Character vector of ground-truth names from
-#'   [janusplot_shape_sensitivity_shapes()]. Default `NULL` → all 14.
+#'   [janusplot_shape_sensitivity_shapes()]. Default `NULL` -> all 14.
 #' @param n_grid Integer vector of sample sizes. Default
 #'   `c(50L, 100L, 200L, 500L)`.
 #' @param sigma_grid Numeric vector of noise levels (fraction of the

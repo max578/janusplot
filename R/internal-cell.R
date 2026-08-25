@@ -298,7 +298,7 @@
 # ---------------------------------------------------------------
 # Compact-tier resolver. Decides per-cell content suppression based
 # on n_var (= matrix dimension) and the user's `compact` setting.
-# Returns an integer tier in 0:3 -- see PLAN_v011_features.md §2.2
+# Returns an integer tier in 0:3 -- see PLAN_v011_features.md section 2.2
 # for the pixel-budget rationale that anchors the thresholds.
 # ---------------------------------------------------------------
 
@@ -470,7 +470,7 @@
   # Tier-driven content policy. Higher tiers progressively drop
   # detail; suppression is composable with the user's show_data /
   # show_ci / annotations settings -- tier overrides cannot ADD
-  # detail, only remove. See PLAN_v011_features.md §2.2 for the
+  # detail, only remove. See PLAN_v011_features.md section 2.2 for the
   # pixel-budget rationale.
   tier <- as.integer(tier)
   show_data    <- isTRUE(show_data) && tier < 1L
@@ -491,7 +491,7 @@
   if (tier >= 2L) annotations <- character()
   # Out-of-focus cells get a grey85 wash at user-set alpha. This
   # short-circuits colour-by encoding for those cells -- by design,
-  # per Feature 2 plan §2.2 Option 2 ("matrix shape preserved;
+  # per Feature 2 plan section 2.2 Option 2 ("matrix shape preserved;
   # attention drains to interesting cells").
   if (!isTRUE(is_focused)) {
     colour_by <- "none"

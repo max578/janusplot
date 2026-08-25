@@ -100,7 +100,7 @@
 #'     nominal coverage as a joint region and can invite
 #'     over-reading of local features.
 #'   * `"pointwise"` -- 95% pointwise ribbon from
-#'     \eqn{\sqrt{\mathrm{diag}(D V_p D^\top)}} (Wood 2017 §7.2.4).
+#'     \eqn{\sqrt{\mathrm{diag}(D V_p D^\top)}} (Wood 2017 section 7.2.4).
 #'     Valid marginally; not a simultaneous statement.
 #'   * `"simultaneous"` -- 95% simultaneous band via the Monte Carlo
 #'     construction of Ruppert, Wand & Carroll (2003) popularised for
@@ -197,7 +197,7 @@
 #' @param label_cex Positive numeric multiplier on the border-label
 #'   font size. Default `1`. Ignored when `labels = "none"`.
 #' @param signif_glyph Logical. If `TRUE` (default), annotate cells
-#'   with `·` / `*` / `**` reflecting the smooth's F-test p-value.
+#'   with `-` / `*` / `**` reflecting the smooth's F-test p-value.
 #' @param show_asymmetry Deprecated. Use `annotations` instead
 #'   (`"A" %in% annotations`). When supplied, a soft deprecation
 #'   warning fires and the argument is merged into `annotations`.
@@ -289,7 +289,7 @@
 #'   variance ratio below which the basis appears underspecified), and
 #'   `p` (the simulation p-value below which the basis-deficiency
 #'   signal is significant). Defaults -- `edf_ratio = 0.9`, `k_index = 1.0`,
-#'   `p = 0.05` -- track `mgcv::gam.check()` and Wood (2017) §5.9.
+#'   `p = 0.05` -- track `mgcv::gam.check()` and Wood (2017) section 5.9.
 #' @param auto_refit_k Logical. If `TRUE`, every cell whose Wood
 #'   trifecta flags an underfit is refit with a doubling-k loop until
 #'   either the flag clears, the per-cell unique-x cap is reached, or
@@ -488,7 +488,7 @@ janusplot <- function(
   # message lists the full vocabulary in one place.
 
   # Resolve a single integer derivative order from scalar display.
-  # "fit" → no derivatives computed; "d1" / "d2" → the matching order.
+  # "fit" -> no derivatives computed; "d1" / "d2" -> the matching order.
   derivative_orders <- switch(display,
     fit = integer(),
     d1  = 1L,

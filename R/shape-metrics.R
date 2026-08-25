@@ -235,10 +235,10 @@ janusplot_shape_cutoffs <- function(...) {
 #' single source of truth consumed by the classifier, the cell
 #' renderer, the legend plate, and the `janusplot_data()` output.
 #'
-#' Hierarchy columns (finest → coarsest):
+#' Hierarchy columns (finest -> coarsest):
 #' \describe{
 #'   \item{`category`}{24-way fine label (`linear_up`, `skewed_peak`,
-#'     `bimodal`, …). Computed per cell by [janusplot()].}
+#'     `bimodal`, ...). Computed per cell by [janusplot()].}
 #'   \item{`code`}{Unique two-letter ASCII shorthand (safe on any
 #'     font or typesetting pipeline) -- e.g. `lu` for `linear_up`.}
 #'   \item{`archetype`}{Seven-family grouping: `monotone_linear`,

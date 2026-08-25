@@ -841,7 +841,7 @@
 }
 
 # Default k-check thresholds. Sourced from mgcv::gam.check() conventions
-# and Wood (2017) §5.9. Exposed via `k_check_thresholds` on the public
+# and Wood (2017) section 5.9. Exposed via `k_check_thresholds` on the public
 # API so users can tune.
 .default_k_thresholds <- function() {
   list(edf_ratio = 0.9, k_index = 1.0, p = 0.05)
@@ -961,7 +961,7 @@
 }
 
 # ---------------------------------------------------------------
-# p-value → glyph
+# p-value -> glyph
 # ---------------------------------------------------------------
 
 .pvalue_to_glyph <- function(p) {
