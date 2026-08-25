@@ -2,6 +2,8 @@
 
 ## janusplot 0.1.1
 
+CRAN release: 2026-07-02
+
 #### v0.1.1 NUMERICAL-SHIFT NOTICE (engine default change)
 
 **v0.1.1 changes the default GAM fitting backend from
