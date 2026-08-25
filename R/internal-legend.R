@@ -1,4 +1,4 @@
-# Internal helpers — NOT EXPORTED.
+# Internal helpers -- NOT EXPORTED.
 # Shape-types legend: always shows the full taxonomy as a grid of
 # canonical 1-cm thumbnail splines. Font-independent, publication-
 # ready. Attached below the matrix at full width.
@@ -24,7 +24,7 @@
     df
   })
   thumbs <- do.call(rbind, rows)
-  # Panel strip: `label (code)` — keeps the compact 2-letter code
+  # Panel strip: `label (code)` -- keeps the compact 2-letter code
   # visible next to the long name so readers can cross-reference
   # cells that render the code.
   panel_label <- paste0(
@@ -90,7 +90,7 @@
   p
 }
 
-# (Retained helper — still used by the cell renderer when the user
+# (Retained helper -- still used by the cell renderer when the user
 # explicitly opts into cell glyphs via annotations = "shape".)
 .present_shape_categories <- function(fits, cutoffs) {
   vapply(fits, function(f) {

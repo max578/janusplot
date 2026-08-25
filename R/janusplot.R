@@ -11,7 +11,7 @@
 #' * Diagonal: blank panel when labels live on the border (default),
 #'   or a variable-name label when `labels = "diagonal"`.
 #'
-#' The two triangles intentionally differ — the asymmetry reveals
+#' The two triangles intentionally differ -- the asymmetry reveals
 #' heteroscedasticity, leverage, and directional non-linearity that a
 #' single scalar correlation hides.
 #'
@@ -32,7 +32,7 @@
 #'   to override.
 #' @param engine One of `"bam"` (default, **new in v0.1.1**) or
 #'   `"gam"`. Selects mgcv's fitting backend:
-#'   * `"bam"` — [mgcv::bam()]. Block-Lanczos solve + fREML
+#'   * `"bam"` -- [mgcv::bam()]. Block-Lanczos solve + fREML
 #'     estimation + lower memory. ~3-10x speedup at janusplot's
 #'     scale (k = 15-25 vars, 600+ pairwise fits per call). The
 #'     **default**, and the one non-byte-identical change in
@@ -40,7 +40,7 @@
 #'     identical data, so the asymmetry index may shift by
 #'     similar amounts vs v0.1.0 output. Recoverable verbatim
 #'     via `engine = "gam"`.
-#'   * `"gam"` — [mgcv::gam()]. The v0.1.0 backend. Use for
+#'   * `"gam"` -- [mgcv::gam()]. The v0.1.0 backend. Use for
 #'     backward-compat reproduction, very small n (< 200) where
 #'     bam's setup overhead exceeds its solve gain, or
 #'     methodologically sensitive contexts that require REML
@@ -71,12 +71,12 @@
 #' @param display One of `"fit"` (default), `"d1"`, or `"d2"`.
 #'   Selects which single quantity is rendered in every
 #'   off-diagonal cell of the matrix.
-#'   * `"fit"` — the fitted smooth \eqn{\hat f(x)}; default,
+#'   * `"fit"` -- the fitted smooth \eqn{\hat f(x)}; default,
 #'     behaviour identical to the pre-derivative release.
-#'   * `"d1"` — the first derivative \eqn{\hat f'(x)} of the
+#'   * `"d1"` -- the first derivative \eqn{\hat f'(x)} of the
 #'     fitted smooth. Zero crossings localise turning points of
 #'     \eqn{\hat f}.
-#'   * `"d2"` — the second derivative \eqn{\hat f''(x)}. Zero
+#'   * `"d2"` -- the second derivative \eqn{\hat f''(x)}. Zero
 #'     crossings localise inflection points of \eqn{\hat f}.
 #'
 #'   A single matrix shows a single quantity by design: stacked
@@ -86,23 +86,23 @@
 #'   `with_data = TRUE` summary table tagged with the `display`
 #'   column.
 #'
-#'   Orders \eqn{k \ge 3} are not exposed — higher-order derivatives
+#'   Orders \eqn{k \ge 3} are not exposed -- higher-order derivatives
 #'   of penalised regression splines amplify noise and rarely carry
 #'   usable signal at realistic sample sizes. See
 #'   `vignette("janusplot")` for the theoretical justification and
 #'   applied use-cases.
 #' @param derivative_ci One of `"none"` (default), `"pointwise"`, or
-#'   `"simultaneous"`. Controls whether — and how — a 95%
+#'   `"simultaneous"`. Controls whether -- and how -- a 95%
 #'   confidence ribbon is drawn underneath the derivative curve when
 #'   `display %in% c("d1", "d2")`. Ignored when `display = "fit"`.
-#'   * `"none"` — no ribbon. The curve and the zero reference line
+#'   * `"none"` -- no ribbon. The curve and the zero reference line
 #'     are all you see. Default, because pointwise ribbons overshoot
 #'     nominal coverage as a joint region and can invite
 #'     over-reading of local features.
-#'   * `"pointwise"` — 95% pointwise ribbon from
+#'   * `"pointwise"` -- 95% pointwise ribbon from
 #'     \eqn{\sqrt{\mathrm{diag}(D V_p D^\top)}} (Wood 2017 §7.2.4).
 #'     Valid marginally; not a simultaneous statement.
-#'   * `"simultaneous"` — 95% simultaneous band via the Monte Carlo
+#'   * `"simultaneous"` -- 95% simultaneous band via the Monte Carlo
 #'     construction of Ruppert, Wand & Carroll (2003) popularised for
 #'     GAMs by Simpson (2018, *Frontiers Ecol. Evol.* 6:149): draw
 #'     \eqn{B} samples \eqn{\tilde{\boldsymbol\beta} \sim
@@ -113,7 +113,7 @@
 #'     pointwise SE. Valid for feature localisation ("where is
 #'     \eqn{\hat f'(x)} significantly non-zero").
 #' @param derivative_ci_nsim Integer. Number of Monte Carlo samples
-#'   used when `derivative_ci = "simultaneous"`. Default `1000L` —
+#'   used when `derivative_ci = "simultaneous"`. Default `1000L` --
 #'   a compromise between coverage accuracy (Simpson 2018 uses
 #'   10000) and CPU budget across every pair in a medium-sized
 #'   matrix. Ignored for any other `derivative_ci`.
@@ -148,10 +148,10 @@
 #' @param annotations Character vector, a subset of
 #'   `c("edf", "A", "shape", "code")`. Controls which corner
 #'   annotations appear on each off-diagonal cell:
-#'   * `"code"` — 2-letter ASCII shape code, **top-left** corner.
-#'   * `"A"` and `"edf"` — asymmetry index and effective degrees of
+#'   * `"code"` -- 2-letter ASCII shape code, **top-left** corner.
+#'   * `"A"` and `"edf"` -- asymmetry index and effective degrees of
 #'     freedom, stacked **bottom-left**.
-#'   * `"shape"` — shape glyph (Unicode or ASCII per `glyph_style`),
+#'   * `"shape"` -- shape glyph (Unicode or ASCII per `glyph_style`),
 #'     **bottom-right** corner.
 #'
 #'   Default `c("edf", "A")`. `"code"` and `"shape"` occupy distinct
@@ -171,20 +171,20 @@
 #'   the target font is known to cover the curve glyph set.
 #' @param labels One of `"border"` (default), `"diagonal"`, or
 #'   `"none"`. Controls where variable names are rendered:
-#'   * `"border"` — names along the top (rotated per `label_srt`) and
+#'   * `"border"` -- names along the top (rotated per `label_srt`) and
 #'     left margins of the matrix; diagonal cells are left blank.
 #'     Mirrors `corrplot`'s `tl.pos = "lt"` convention.
-#'   * `"diagonal"` — names centred on the diagonal cells (the
+#'   * `"diagonal"` -- names centred on the diagonal cells (the
 #'     pre-0.1 layout).
-#'   * `"none"` — labels suppressed entirely; diagonal cells blank.
+#'   * `"none"` -- labels suppressed entirely; diagonal cells blank.
 #' @param diagonal One of `"auto"` (default), `"blank"`, `"name"`,
 #'   or `"density"`. Controls what is rendered in the diagonal
 #'   cells of the matrix.
-#'   * `"auto"` — preserves the historical behaviour: variable name
+#'   * `"auto"` -- preserves the historical behaviour: variable name
 #'     when `labels = "diagonal"`, blank otherwise.
-#'   * `"blank"` — empty bordered panel (uniform grid reading).
-#'   * `"name"` — variable name centred in the cell, bold.
-#'   * `"density"` — kernel density of the variable filled in
+#'   * `"blank"` -- empty bordered panel (uniform grid reading).
+#'   * `"name"` -- variable name centred in the cell, bold.
+#'   * `"density"` -- kernel density of the variable filled in
 #'     translucent grey, with a rug of raw values along the bottom
 #'     edge. Mirrors the `GGally::ggpairs` convention; surfaces
 #'     tail weight, bimodality, and support clipping that the
@@ -206,30 +206,30 @@
 #'   rows).
 #' @param compact One of `"auto"` (default), `"always"`, or `"never"`.
 #'   Controls scale-aware content suppression per cell:
-#'   * `"auto"` — tier 0 at `n_var < compact_threshold` (the v0.1.0
+#'   * `"auto"` -- tier 0 at `n_var < compact_threshold` (the v0.1.0
 #'     behaviour); progressively suppresses scatter, then CI, then
 #'     annotations, then the spline itself as `n_var` crosses the
 #'     `compact_levels` ladder. The matrix remains readable as
-#'     `k` grows toward 25–30 by trading detail for legibility.
-#'   * `"always"` — force at least tier 1 regardless of `n_var`.
+#'     `k` grows toward 25-30 by trading detail for legibility.
+#'   * `"always"` -- force at least tier 1 regardless of `n_var`.
 #'     Useful for very dense fixed-size renders.
-#'   * `"never"` — force tier 0 regardless of `n_var`. Useful for
+#'   * `"never"` -- force tier 0 regardless of `n_var`. Useful for
 #'     reproducing v0.1.0 figures on large matrices.
 #' @param compact_threshold Integer. The `n_var` value at which
 #'   tier 1 (drop scatter) auto-activates under `compact = "auto"`.
-#'   Default `12L`, anchored on the 150 × 150 px-per-cell pixel
-#'   budget at typical 6"×6" 300 DPI R Journal figures.
+#'   Default `12L`, anchored on the 150 x 150 px-per-cell pixel
+#'   budget at typical 6"x6" 300 DPI R Journal figures.
 #' @param compact_levels Optional named list with entries `t1`, `t2`,
 #'   `t3` overriding the auto-tier ladder. Defaults derive from
 #'   `compact_threshold`: `t1 = compact_threshold`,
 #'   `t2 = compact_threshold + 6`, `t3 = compact_threshold + 13`.
 #'   `NULL` (default) uses these derived defaults.
-#' @param focus_by One of `NA` (default — no filter), `"asymmetry"`,
+#' @param focus_by One of `NA` (default -- no filter), `"asymmetry"`,
 #'   `"edf"`, `"k_flag"`, or `"non_linearity"` (defined as `edf - 1`).
 #'   When set, cells whose chosen metric falls below `focus_threshold`
 #'   are rendered in `grey85` at alpha `focus_dim_alpha`; the matrix
 #'   shape is preserved so attention drains visually to high-metric
-#'   cells. This is a **visual filter, not a statistical one** —
+#'   cells. This is a **visual filter, not a statistical one** --
 #'   the underlying fits are unchanged and the `with_data` table
 #'   carries every cell.
 #' @param focus_threshold Either a quantile-string like `"q90"`
@@ -240,30 +240,30 @@
 #'   `grey85` wash on unfocused cells. Default `0.25`. Ignored when
 #'   `focus_by = NA`.
 #' @param axes One of `"original"` (default), `"standardised"`,
-#'   `"centred"`, or `"rank"`. **Rendering-only knob** — the
+#'   `"centred"`, or `"rank"`. **Rendering-only knob** -- the
 #'   underlying `mgcv::gam` fits are byte-identical across all four
 #'   modes (verifiable via `digest::digest()` on the fit list); the
 #'   transformation lives entirely inside the cell renderer and
 #'   propagates to (a) the raw scatter, (b) the spline prediction
 #'   grid, (c) the CI ribbon, and (d) the variable label on the
 #'   matrix border. Use:
-#'   * `"original"` — raw units. Maximum interpretability per cell.
+#'   * `"original"` -- raw units. Maximum interpretability per cell.
 #'     v0.1.0 behaviour.
-#'   * `"standardised"` — `(x - mean(x)) / sd(x)` per variable.
+#'   * `"standardised"` -- `(x - mean(x)) / sd(x)` per variable.
 #'     Border label becomes e.g. `"mpg (z)"`. Pairs scaled into a
 #'     comparable visual range; useful at `k >= 15` when raw-unit
 #'     panels look disparate.
-#'   * `"centred"` — `x - mean(x)` per variable. Border label
+#'   * `"centred"` -- `x - mean(x)` per variable. Border label
 #'     becomes e.g. `"mpg (centred)"`. Preserves units while
 #'     anchoring the origin.
-#'   * `"rank"` — empirical-CDF-based rank, scaled to `[0, n]` per
+#'   * `"rank"` -- empirical-CDF-based rank, scaled to `[0, n]` per
 #'     variable. Border label becomes `"rank(mpg)"`. Sanity-check
 #'     view: collapses outliers; if the smooth changes shape vs
 #'     `"original"` the relationship is monotone-but-not-linear.
 #'
 #'   At compact tier 3 (`n_var >= 25` under `compact = "auto"`),
-#'   the cells render only colour fill + shape-class glyph — no
-#'   curve, no scatter — so `axes` becomes a **documented no-op**
+#'   the cells render only colour fill + shape-class glyph -- no
+#'   curve, no scatter -- so `axes` becomes a **documented no-op**
 #'   (the border labels still pick up the mode suffix).
 #' @param save_as Optional file path with extension. When set,
 #'   the final assembled plot is written to this path via
@@ -272,7 +272,7 @@
 #'   `.jpg` / `.jpeg`, `.tif` / `.tiff`, `.eps`, `.ps`, `.bmp`.
 #'   Default `NULL` (no file written; `janusplot()` still
 #'   returns the ggplot). Width / height default to `pmax(6,
-#'   0.65 * k_n)` inches each — square aspect, scaling with
+#'   0.65 * k_n)` inches each -- square aspect, scaling with
 #'   matrix dimension.
 #' @param save_width Numeric. Override width (inches) for
 #'   `save_as`. Default `NULL` uses the auto-resolved square.
@@ -288,12 +288,12 @@
 #'   too close to its basis cap), `k_index` (residual-difference
 #'   variance ratio below which the basis appears underspecified), and
 #'   `p` (the simulation p-value below which the basis-deficiency
-#'   signal is significant). Defaults — `edf_ratio = 0.9`, `k_index = 1.0`,
-#'   `p = 0.05` — track `mgcv::gam.check()` and Wood (2017) §5.9.
+#'   signal is significant). Defaults -- `edf_ratio = 0.9`, `k_index = 1.0`,
+#'   `p = 0.05` -- track `mgcv::gam.check()` and Wood (2017) §5.9.
 #' @param auto_refit_k Logical. If `TRUE`, every cell whose Wood
 #'   trifecta flags an underfit is refit with a doubling-k loop until
 #'   either the flag clears, the per-cell unique-x cap is reached, or
-#'   `k_max_iter` iterations have passed. Default `FALSE` — the
+#'   `k_max_iter` iterations have passed. Default `FALSE` -- the
 #'   diagnostic (`k_check_status`, `k_flag`, `k_prime`, `k_index`,
 #'   `k_p`) is always computed and surfaced regardless of this flag,
 #'   but the refit is opt-in because it can multiply wall time on
@@ -309,8 +309,8 @@
 #' @param with_data Logical. If `TRUE`, return a two-element list
 #'   `list(plot, data)` where `data` is a flat per-cell summary
 #'   (one row per off-diagonal cell) of everything the plot displays.
-#'   The `data` element is always a plain `data.frame` (base R — no
-#'   `data.table` dependency). Default `FALSE` — in which case only
+#'   The `data` element is always a plain `data.frame` (base R -- no
+#'   `data.table` dependency). Default `FALSE` -- in which case only
 #'   the ggplot is returned.
 #' @param text_scale_diag Positive numeric multiplier applied to the
 #'   diagonal variable-name labels. Default `1`. Diagonal labels
@@ -344,13 +344,13 @@
 #'   column tags which quantity the call rendered, so separate
 #'   calls for fit / d1 / d2 yield comparable, stackable tables.
 #'   Derivative *curves* themselves (grid of \eqn{x}, fitted
-#'   \eqn{\hat f^{(k)}}, SE) live on `janusplot_data()` — see there.
+#'   \eqn{\hat f^{(k)}}, SE) live on `janusplot_data()` -- see there.
 #'
 #' @family smooth-associations
 #' @seealso [janusplot_data()] for the raw per-cell fits + metrics.
 #'
 #' @examples
-#' # Minimal runnable example — 3 variables, 6 asymmetric pairwise GAM fits.
+#' # Minimal runnable example -- 3 variables, 6 asymmetric pairwise GAM fits.
 #' janusplot(mtcars[, c("mpg", "hp", "wt")])
 #'
 #' \donttest{
@@ -483,7 +483,7 @@ janusplot <- function(
       "{.arg annotations} must be a character vector (subset of edf/A/shape/code/k_warn)."
     )
   }
-  # Annotations vocabulary now includes "k_warn" — actual setdiff
+  # Annotations vocabulary now includes "k_warn" -- actual setdiff
   # check lives below the k-check validation block so the error
   # message lists the full vocabulary in one place.
 
@@ -497,7 +497,7 @@ janusplot <- function(
 
   # Validate and resolve n_grid. NULL means "100 if no derivatives,
   # 200 otherwise"; a user value overrides both defaults. Flag very
-  # large grids — fit time scales as O(n_grid) and derivative SE as
+  # large grids -- fit time scales as O(n_grid) and derivative SE as
   # O(n_grid) via the D %*% Vp %*% t(D) product.
   if (!is.null(n_grid)) {
     if (!is.numeric(n_grid) || length(n_grid) != 1L ||
@@ -677,7 +677,7 @@ janusplot <- function(
   )
   # nolint end
 
-  # Focus mask — TRUE = full encoding, FALSE = dimmed wash.
+  # Focus mask -- TRUE = full encoding, FALSE = dimmed wash.
   # Stamp `key` attribute so the mask resolver can recover (i, j)
   # for the asymmetry-keyed lookup.
   fits_keyed <- mapply(function(f, key) {
@@ -722,7 +722,7 @@ janusplot <- function(
   }
 
   # Diagonal name / density cells need the *displayed* variable
-  # label too — so the mode suffix is consistent with border labels.
+  # label too -- so the mode suffix is consistent with border labels.
   # nolint start: object_usage_linter.
   display_var <- function(v) {
     .label_with_suffix(v, axis_transforms[[v]]$suffix, axes)
@@ -794,7 +794,7 @@ janusplot <- function(
 }
 
 # ---------------------------------------------------------------
-# Flat per-cell summary table — mirrors what the plot displays.
+# Flat per-cell summary table -- mirrors what the plot displays.
 # ---------------------------------------------------------------
 
 .build_summary_table <- function(fits, vars, colour_by, asym_tbl,
@@ -887,7 +887,7 @@ janusplot <- function(
 }
 
 # ---------------------------------------------------------------
-# Glossary caption body — only lists keys actually shown on the
+# Glossary caption body -- only lists keys actually shown on the
 # plot. Extended to mention the derivative CI mode when a
 # derivative is displayed.
 # ---------------------------------------------------------------
@@ -930,7 +930,7 @@ janusplot <- function(
 }
 
 # ---------------------------------------------------------------
-# Finalise composite plot — add title + optional caption in a
+# Finalise composite plot -- add title + optional caption in a
 # single plot_annotation call so patchwork lays them out cleanly.
 # ---------------------------------------------------------------
 
@@ -990,9 +990,9 @@ janusplot <- function(
 #' @inheritParams janusplot
 #' @param keep_fits Logical. If `TRUE`, retain full [mgcv::gam()] model
 #'   objects in the return (large memory footprint for `k` above ~15).
-#'   Default `FALSE` — retains summary metrics and prediction grids only.
+#'   Default `FALSE` -- retains summary metrics and prediction grids only.
 #' @param derivatives Integer vector of derivative orders to compute
-#'   on every pair (subset of `1:2`). Default `integer()` — no
+#'   on every pair (subset of `1:2`). Default `integer()` -- no
 #'   derivatives. Unlike `janusplot()`, the data companion can
 #'   return multiple orders from a single call for programmatic
 #'   analysis; pass `c(1L, 2L)` to surface both.

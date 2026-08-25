@@ -13,8 +13,8 @@
 #'
 #' # Main functions
 #'
-#' * [janusplot()] — returns a ggplot of the matrix.
-#' * [janusplot_data()] — returns the raw GAM fits + per-cell metrics
+#' * [janusplot()] -- returns a ggplot of the matrix.
+#' * [janusplot_data()] -- returns the raw GAM fits + per-cell metrics
 #'   (for custom plotting or downstream analysis).
 #'
 #' # Asymmetry index

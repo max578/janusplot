@@ -86,11 +86,11 @@ janusplot_shape_cutoffs <- function(...) {
   # then waves, then multi-peak, with flat / indeterminate last.
   #
   # Four hierarchy columns layered from finest to coarsest:
-  #   category  — 24-way fine label (primary dispatch)
-  #   code      — unique 2-letter ASCII shorthand (cell-safe)
-  #   archetype — 7-family grouping (SCAM / dose-response inspired)
-  #   monotonic — monotone / non_monotone / degenerate
-  #   linear    — linear / non_linear / degenerate
+  #   category  -- 24-way fine label (primary dispatch)
+  #   code      -- unique 2-letter ASCII shorthand (cell-safe)
+  #   archetype -- 7-family grouping (SCAM / dose-response inspired)
+  #   monotonic -- monotone / non_monotone / degenerate
+  #   linear    -- linear / non_linear / degenerate
   data.frame(
     category  = c(
       "linear_up", "linear_down",
@@ -216,7 +216,7 @@ janusplot_shape_cutoffs <- function(...) {
   )
 }
 
-# Quick lookup helper — given a vector of category names, returns the
+# Quick lookup helper -- given a vector of category names, returns the
 # corresponding column (code / archetype / monotonic / linear) from
 # the single source-of-truth taxonomy table.
 .shape_lookup <- function(category, column) {
@@ -240,7 +240,7 @@ janusplot_shape_cutoffs <- function(...) {
 #'   \item{`category`}{24-way fine label (`linear_up`, `skewed_peak`,
 #'     `bimodal`, …). Computed per cell by [janusplot()].}
 #'   \item{`code`}{Unique two-letter ASCII shorthand (safe on any
-#'     font or typesetting pipeline) — e.g. `lu` for `linear_up`.}
+#'     font or typesetting pipeline) -- e.g. `lu` for `linear_up`.}
 #'   \item{`archetype`}{Seven-family grouping: `monotone_linear`,
 #'     `monotone_curved`, `unimodal`, `wave`, `multimodal`,
 #'     `chaotic`, `degenerate`.}
@@ -265,15 +265,15 @@ janusplot_shape_cutoffs <- function(...) {
 #' @references
 #' Calabrese, E. J. (2008). Hormesis: why it is important to
 #'   toxicology and toxicologists. *Environmental Toxicology and
-#'   Chemistry*, **27**(7), 1451–1474.
+#'   Chemistry*, **27**(7), 1451-1474.
 #'
 #' Meyer, M. C. (2008). Inference using shape-restricted regression
-#'   splines. *Annals of Applied Statistics*, **2**(3), 1013–1033.
+#'   splines. *Annals of Applied Statistics*, **2**(3), 1013-1033.
 #'
 #' Milnor, J. (1963). *Morse Theory*. Princeton University Press.
 #'
 #' Pya, N., & Wood, S. N. (2015). Shape constrained additive models.
-#'   *Statistics and Computing*, **25**(3), 543–559.
+#'   *Statistics and Computing*, **25**(3), 543-559.
 #'
 #' @examples
 #' tax <- janusplot_shape_hierarchy()
@@ -345,7 +345,7 @@ janusplot_shape_hierarchy <- function() {
 # Rule-based classifier. Inputs must be finite scalars or NA.
 # ---------------------------------------------------------------
 
-# Dispatch for the monotone (T=0, I=0) cell — no turning points, no
+# Dispatch for the monotone (T=0, I=0) cell -- no turning points, no
 # inflections. Uses the (M, C) indices to separate strict-linear from
 # curved monotone, with orientation from sign(M) and curvature from
 # sign(C).
@@ -613,7 +613,7 @@ janusplot_shape_hierarchy <- function() {
   )
 }
 
-# Classified variant — raw + shape_category via user cutoffs.
+# Classified variant -- raw + shape_category via user cutoffs.
 .compute_shape_metrics <- function(fit_obj,
                                    cutoffs = janusplot_shape_cutoffs()) {
   raw <- .compute_shape_metrics_raw(fit_obj)
@@ -683,7 +683,7 @@ janusplot_shape_hierarchy <- function() {
 #'       sign changes of `f'`. Equals the number of interior extrema.}
 #'     \item{`n_inflections`}{Integer count of lobe-mass-weighted
 #'       sign changes of `f''`.}
-#'     \item{`flat_range_ratio`}{`range(f) / sd(y)` — small values
+#'     \item{`flat_range_ratio`}{`range(f) / sd(y)` -- small values
 #'       indicate a degenerate flat smooth.}
 #'     \item{`shape_category`}{One of 24 labels from
 #'       [janusplot_shape_hierarchy()] dispatched on

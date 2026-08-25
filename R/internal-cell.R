@@ -1,12 +1,12 @@
-# Internal helpers — NOT EXPORTED.
+# Internal helpers -- NOT EXPORTED.
 # Cell-layer logic: build one ggplot per matrix cell.
 
 # ---------------------------------------------------------------
 # Colour encodings.
-#  * "spearman" / "pearson" / "kendall" — symmetric correlation
+#  * "spearman" / "pearson" / "kendall" -- symmetric correlation
 #     coefficient, diverging palette, limits c(-1, 1).
-#  * "edf" / "deviance_gap" — non-linearity index, sequential palette.
-#  * "none" — no fill.
+#  * "edf" / "deviance_gap" -- non-linearity index, sequential palette.
+#  * "none" -- no fill.
 # Supported values for colour_by:
 .colour_choices <- function() {
   c("spearman", "pearson", "kendall", "edf", "deviance_gap", "none")
@@ -227,11 +227,11 @@
 }
 
 # ---------------------------------------------------------------
-# Axis transforms (Feature 3 — rendering-only knob).
+# Axis transforms (Feature 3 -- rendering-only knob).
 # Each transform exposes a function f(new_values) returning the
 # transformed numeric vector and a `suffix` to append to the
 # variable's border label. Same function is applied consistently
-# to raw scatter, spline grid, and CI ribbon — guaranteeing visual
+# to raw scatter, spline grid, and CI ribbon -- guaranteeing visual
 # coherence regardless of compact tier or matrix dimension. The
 # underlying GAM fit is NOT touched: this is a pure presentation
 # layer, byte-identical fits across all four modes.
@@ -298,7 +298,7 @@
 # ---------------------------------------------------------------
 # Compact-tier resolver. Decides per-cell content suppression based
 # on n_var (= matrix dimension) and the user's `compact` setting.
-# Returns an integer tier in 0:3 — see PLAN_v011_features.md §2.2
+# Returns an integer tier in 0:3 -- see PLAN_v011_features.md §2.2
 # for the pixel-budget rationale that anchors the thresholds.
 # ---------------------------------------------------------------
 
@@ -306,7 +306,7 @@
                           compact_levels = NULL) {
   compact <- match.arg(compact, c("auto", "always", "never"))
   if (compact == "never") return(0L)
-  # Effective thresholds — default ladder per Feature 2 plan;
+  # Effective thresholds -- default ladder per Feature 2 plan;
   # overridable via compact_levels list (advanced knob).
   levels <- if (is.null(compact_levels)) {
     list(t1 = compact_threshold,
@@ -321,7 +321,7 @@
     if (n_var >= levels$t2) return(2L)
     return(1L)
   }
-  # "auto" — tier from the ladder.
+  # "auto" -- tier from the ladder.
   if (n_var >= levels$t3) return(3L)
   if (n_var >= levels$t2) return(2L)
   if (n_var >= levels$t1) return(1L)
@@ -359,7 +359,7 @@
 }
 
 # ---------------------------------------------------------------
-# Focus filter. Returns a logical vector — TRUE = cell is "in focus"
+# Focus filter. Returns a logical vector -- TRUE = cell is "in focus"
 # (rendered with full encoding), FALSE = cell is dimmed (grey85 at
 # alpha = focus_dim_alpha). Matrix shape is preserved either way.
 # ---------------------------------------------------------------
@@ -450,7 +450,7 @@
 }
 
 # Original cell body, factored out. Full fit + CI + scatter + all
-# corner annotations + colour fill — identical output to the pre-
+# corner annotations + colour fill -- identical output to the pre-
 # derivative release when display = "fit".
 .build_fit_panel <- function(fit_obj, show_data, show_ci, colour_by, palette,
                              signif_glyph, annotations, shape_cutoffs,
@@ -460,7 +460,7 @@
                              focus_dim_alpha = 0.25,
                              x_transform = NULL, y_transform = NULL) {
   # Resolve transforms. NULL = identity (axes = "original" path).
-  # Same function applied to scatter, ribbon, spline grid — visual
+  # Same function applied to scatter, ribbon, spline grid -- visual
   # coherence regardless of mode.
   tf_x <- if (is.null(x_transform)) function(v) v else x_transform$fn
   tf_y <- if (is.null(y_transform)) function(v) v else y_transform$fn
@@ -469,7 +469,7 @@
 
   # Tier-driven content policy. Higher tiers progressively drop
   # detail; suppression is composable with the user's show_data /
-  # show_ci / annotations settings — tier overrides cannot ADD
+  # show_ci / annotations settings -- tier overrides cannot ADD
   # detail, only remove. See PLAN_v011_features.md §2.2 for the
   # pixel-budget rationale.
   tier <- as.integer(tier)
@@ -490,7 +490,7 @@
   }
   if (tier >= 2L) annotations <- character()
   # Out-of-focus cells get a grey85 wash at user-set alpha. This
-  # short-circuits colour-by encoding for those cells — by design,
+  # short-circuits colour-by encoding for those cells -- by design,
   # per Feature 2 plan §2.2 Option 2 ("matrix shape preserved;
   # attention drains to interesting cells").
   if (!isTRUE(is_focused)) {
@@ -577,7 +577,7 @@
       inherit.aes = FALSE
     )
   } else if (isTRUE(is_focused)) {
-    # Tier 3 — colour-only mini-tile + shape-class glyph in the
+    # Tier 3 -- colour-only mini-tile + shape-class glyph in the
     # cell centre. Spline is gone; the shape glyph stands for the
     # entire curve.
     shape_cat <- .classify_shape(
@@ -628,7 +628,7 @@
   }
 
   # Compute shape category once if either code (top-left) or shape
-  # (bottom-right) is requested — they occupy distinct corners and
+  # (bottom-right) is requested -- they occupy distinct corners and
   # no longer compete.
   want_code  <- "code"  %in% annotations
   want_glyph <- "shape" %in% annotations
@@ -693,7 +693,7 @@
 # Derivative sub-panel. Renders f^{(k)}(x) on the full x-grid with
 # a 95% pointwise CI ribbon (LP-matrix SE) and a dashed zero-line
 # reference. Deliberately minimal: no scatter, no cell fill, no
-# corner annotations — all of those live on the fit panel. A small
+# corner annotations -- all of those live on the fit panel. A small
 # f' / f'' label in the top-left corner identifies the order.
 # ---------------------------------------------------------------
 
@@ -719,7 +719,7 @@
   tier <- as.integer(tier)
   # Derivative panels don't carry the same content axis as fit
   # panels, so tier behaviour is simplified:
-  #   tier 0–1: full derivative curve (+ ribbon if opted in).
+  #   tier 0-1: full derivative curve (+ ribbon if opted in).
   #   tier 2+:  curve only, no ribbon, no order label.
   show_ribbon <- tier < 2L
   show_label  <- tier < 2L
@@ -755,7 +755,7 @@
     ) + ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1))
   }
 
-  # Reference line at zero — sign flips of the derivative correspond
+  # Reference line at zero -- sign flips of the derivative correspond
   # to turning points (k=1) or inflections (k=2), so the zero crossing
   # is the feature of interest the panel exists to surface.
   p <- p + ggplot2::geom_hline(
@@ -801,7 +801,7 @@
 }
 
 # ---------------------------------------------------------------
-# Blank diagonal cell — used when labels live on the border (or are
+# Blank diagonal cell -- used when labels live on the border (or are
 # suppressed entirely). Same panel geometry as an off-diagonal cell
 # (no fill, thin grey border) so the matrix grid reads uniformly.
 # ---------------------------------------------------------------
@@ -822,7 +822,7 @@
 }
 
 # ---------------------------------------------------------------
-# Border-label cells — variable names in the top strip (rotated)
+# Border-label cells -- variable names in the top strip (rotated)
 # and left strip (horizontal, right-aligned). Mirrors corrplot's
 # tl.pos = "lt" convention. No panel border, no aspect ratio;
 # widths / heights are set by the assembly layer.
@@ -878,7 +878,7 @@
 }
 
 # ---------------------------------------------------------------
-# Diagonal cell — kernel density of the variable with a rug of raw
+# Diagonal cell -- kernel density of the variable with a rug of raw
 # values along the bottom edge. Mirrors the GGally::ggpairs default
 # diagonal so readers can see tail weight, bimodality, support
 # clipping, and any concentration of mass that would otherwise be
@@ -929,7 +929,7 @@
 }
 
 # ---------------------------------------------------------------
-# Diagonal cell — the variable name, bold, neutral grey background.
+# Diagonal cell -- the variable name, bold, neutral grey background.
 # Used only when labels = "diagonal" (legacy layout).
 # ---------------------------------------------------------------
 

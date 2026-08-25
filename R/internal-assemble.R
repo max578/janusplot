@@ -1,4 +1,4 @@
-# Internal helpers — NOT EXPORTED.
+# Internal helpers -- NOT EXPORTED.
 # Matrix-assembly layer: stitch cells + diagonals into a k x k patchwork
 # (labels on diagonals or suppressed) or a (k+1) x (k+1) patchwork
 # with a top row + left column of border labels (corrplot tl.pos = "lt").

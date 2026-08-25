@@ -1,11 +1,11 @@
-# Internal helpers — NOT EXPORTED.
+# Internal helpers -- NOT EXPORTED.
 # Fit-layer logic for janusplot(): input validation, formula assembly,
 # GAM fitting, asymmetry index, and hclust reorder.
 
 # Local null-coalesce (R >= 4.4 has this in base; keep local for 4.3 support).
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
-# Argument validation — single positive scalar.
+# Argument validation -- single positive scalar.
 .check_scalar_positive <- function(x, arg_name) {
   if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x <= 0) {
     cli::cli_abort("{.arg {arg_name}} must be a single positive number.")
@@ -128,7 +128,7 @@
 }
 
 # ---------------------------------------------------------------
-# Resolve vars — default to all numeric columns, validate otherwise
+# Resolve vars -- default to all numeric columns, validate otherwise
 # ---------------------------------------------------------------
 
 .resolve_vars <- function(data, vars) {
@@ -242,7 +242,7 @@
 # the corresponding columns of X_p are identical across grid rows,
 # their finite differences are zero, and they contribute nothing to
 # either estimate or variance. So the derivative is with respect to
-# x_i of the (partial) fit shown in the cell — i.e. exactly what the
+# x_i of the (partial) fit shown in the cell -- i.e. exactly what the
 # user sees in the fit panel.
 #
 # Returns a named list keyed by order ("1", "2", ...) of data frames
@@ -298,7 +298,7 @@
 # / se_i across the plotting grid, and use the (1 - alpha) quantile
 # as a critical multiplier on the pointwise SE. Returns only the
 # replacement `lo` and `hi` columns (plus the critical multiplier
-# for diagnostic record) — the point estimate and pointwise SE are
+# for diagnostic record) -- the point estimate and pointwise SE are
 # unchanged and are reused from `.derivatives_lpmatrix()`.
 
 .derivatives_simultaneous_bands <- function(fit, newdata, x_grid, orders,
@@ -452,13 +452,13 @@
 
 # ---------------------------------------------------------------
 # Fitting-engine dispatch (Feature 4). `bam` is mgcv's "big additive
-# model" — same formula language as `gam`, but uses fREML (fast REML)
+# model" -- same formula language as `gam`, but uses fREML (fast REML)
 # by default, block-Lanczos / discrete-method optimisations for the
 # basis-coefficient solve, lower memory, and a built-in `nthreads`
 # argument. bam objects inherit from gam (`class(b)` ==
 # c("bam", "gam", "glm", "lm")) so every downstream code path
 # (predict, summary, k.check, derivative LP-matrix arithmetic)
-# works without modification — engine is plumbing, not redesign.
+# works without modification -- engine is plumbing, not redesign.
 #
 # Default method-per-engine: `fREML` for bam (mgcv's recommended at
 # scale), `REML` for gam (v0.1.0 behaviour). A user-supplied `method`
@@ -536,11 +536,11 @@
     return(out)
   }
 
-  # Strategy A — diagnostic, always on.
+  # Strategy A -- diagnostic, always on.
   k_diag <- .k_check_one_pair(fit, x_name, n_unique,
                               thresholds = k_check_thresholds)
   k_initial <- if (k_val < 0) {
-    # mgcv default — surface the actual k' from k.check, not -1.
+    # mgcv default -- surface the actual k' from k.check, not -1.
     if (!is.na(k_diag$k_prime)) k_diag$k_prime + 1 else NA_real_
   } else {
     as.numeric(k_val)
@@ -548,7 +548,7 @@
   k_iterations <- 0L
   k_at_cap <- FALSE
 
-  # Strategy B — opt-in doubling refit on flagged cells with usable n_unique.
+  # Strategy B -- opt-in doubling refit on flagged cells with usable n_unique.
   if (isTRUE(auto_refit_k) &&
       identical(k_diag$k_check_status, "flagged")) {
     k_cap <- n_unique - 1L
@@ -782,12 +782,12 @@
 }
 
 # ---------------------------------------------------------------
-# Per-cell k-check (Feature 1 — Strategy A diagnostic, always-on)
+# Per-cell k-check (Feature 1 -- Strategy A diagnostic, always-on)
 # ---------------------------------------------------------------
 #
 # Wraps mgcv::k.check() on a fitted GAM with a single s() term. Returns
 # a named list of diagnostic fields. Cells with n_unique < 10 are
-# marked "unreliable" — k.check's simulation p-value is meaningless
+# marked "unreliable" -- k.check's simulation p-value is meaningless
 # at very low n_unique. Wood's flag-trifecta (edf/k' close to 1 AND
 # k-index < 1 AND p-value < threshold) drives `k_flag`.
 .k_check_one_pair <- function(fit, x_name, n_unique,
@@ -891,7 +891,7 @@
   cli::cli_warn(c(
     "!" = "{n_failed} of {n_cells} cell{?s} failed to fit and carry no result.",
     "i" = "First failure: {first_msg}",
-    "i" = "Inspect {.code n_used}/{.code error} in the returned table — a failed cell reports {.code n_used = NA} and {.code edf = NA}, never a completed fit."
+    "i" = "Inspect {.code n_used}/{.code error} in the returned table -- a failed cell reports {.code n_used = NA} and {.code edf = NA}, never a completed fit."
   ))
   invisible(NULL)
 }

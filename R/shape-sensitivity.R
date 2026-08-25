@@ -41,7 +41,7 @@
   )
 }
 
-# Expected archetype per truth — pulled from the live taxonomy so the
+# Expected archetype per truth -- pulled from the live taxonomy so the
 # sensitivity study cannot drift from the classifier code.
 .shape_sensitivity_archetypes <- function() {
   gens  <- .shape_sensitivity_generators()
@@ -118,7 +118,7 @@
 #' `unimodal`, `wave`, `multimodal`). The `chaotic` and `degenerate`
 #' archetypes are out of scope (no realistic deterministic generator).
 #'
-#' @returns Character vector of length 14 — the generator names.
+#' @returns Character vector of length 14 -- the generator names.
 #'
 #' @seealso [janusplot_shape_sensitivity()], [janusplot_shape_hierarchy()].
 #'
@@ -165,7 +165,7 @@ janusplot_shape_sensitivity_shapes <- function() {
 #' @param parallel Logical. If `TRUE` and `future.apply` is installed,
 #'   dispatch replicates in parallel. The caller is responsible for
 #'   configuring `future::plan()` (e.g. `future::plan(future::multisession)`).
-#' @param seed Integer. Base seed — each fit uses `seed + row_index`
+#' @param seed Integer. Base seed -- each fit uses `seed + row_index`
 #'   so results are reproducible and cell-permutation-invariant.
 #' @param verbose Logical. Print progress messages to the console.
 #'   Default is `interactive()`.
@@ -177,10 +177,10 @@ janusplot_shape_sensitivity_shapes <- function() {
 #'   \item{`sigma`}{Noise level for this fit.}
 #'   \item{`seed`}{RNG seed used.}
 #'   \item{`predicted`}{Classifier output at the fine (24-category) level.}
-#'   \item{`correct`}{Logical — does `predicted == truth`?}
+#'   \item{`correct`}{Logical -- does `predicted == truth`?}
 #'   \item{`archetype_truth`}{Expected archetype for `truth`.}
 #'   \item{`archetype_pred`}{Archetype of `predicted`.}
-#'   \item{`archetype_correct`}{Logical — archetype-level correctness.}
+#'   \item{`archetype_correct`}{Logical -- archetype-level correctness.}
 #'   \item{`monotonicity_index`}{Monotonicity index `M` (see
 #'     [janusplot_shape_metrics()]).}
 #'   \item{`convexity_index`}{Convexity index `C` (see
@@ -446,7 +446,7 @@ janusplot_shape_sensitivity_summary <- function(
 #' by [janusplot_shape_sensitivity()]:
 #' \describe{
 #'   \item{`"confusion_fine"`}{24 x (|shapes|) confusion matrix at the
-#'     fine category level — rows = ground truth, columns = predicted,
+#'     fine category level -- rows = ground truth, columns = predicted,
 #'     cells coloured by `P(pred | truth)`.}
 #'   \item{`"confusion_archetype"`}{7 x 7 confusion matrix at the
 #'     archetype level.}
