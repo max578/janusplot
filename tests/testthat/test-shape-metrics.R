@@ -227,3 +227,15 @@ test_that("bimodal recovered from two-gaussian mixture", {
   expect_equal(m$n_turning_points, 3L)
   expect_true(m$shape_category %in% c("bimodal", "bimodal_ripple"))
 })
+
+test_that("janusplot_shape_metrics() declines with a classed refusal on too few finite values", {
+  fit <- mgcv::gam(mpg ~ s(wt), data = mtcars, method = "REML")
+  cond <- tryCatch(
+    janusplot_shape_metrics(fit, x_name = "wt", newdata = data.frame(wt = 5)),
+    error = function(e) e
+  )
+  expect_s3_class(cond, "error")
+  expect_true("janusplot_refusal" %in% class(cond))
+  expect_true(grepl("_refusal$", class(cond)[1L]))
+  expect_true(any(grepl("_(refusal|abstention)$", class(cond))))
+})
