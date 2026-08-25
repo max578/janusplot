@@ -1,3 +1,16 @@
+# janusplot (development version)
+
+* A per-cell GAM fit that errors (e.g. a constant predictor) now carries
+  its error message into both public returns (`janusplot(with_data =
+  TRUE)$data$error` and `janusplot_data()$pairs[[i]]$error_yx` /
+  `error_xy`), reports `n_used = NA` rather than the row count offered to
+  a fit that never completed, and raises one warning per matrix
+  summarising the failed cells.
+* `janusplot_shape_metrics()`'s insufficient-data decline (fewer than 3
+  finite predictor values) now raises a classed condition
+  (`janusplot_refusal`/`orchestra_refusal`) instead of a bare error, so
+  orchestra callers can recognise the decline programmatically.
+
 # janusplot 0.1.1
 
 ### v0.1.1 NUMERICAL-SHIFT NOTICE (engine default change)
