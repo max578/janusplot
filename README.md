@@ -4,6 +4,11 @@
 
 # janusplot <img src="man/figures/logo.png" align="right" height="139" alt="janusplot logo" />
 
+Asymmetric, GAM-based smoothed-association matrices: a directional
+`y ~ s(x)` / `x ~ s(y)` fit for every pair of continuous variables, so
+shape and direction survive where a Pearson correlation matrix collapses
+both away.
+
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/max578/janusplot/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/max578/janusplot/actions/workflows/R-CMD-check.yaml)
@@ -53,8 +58,10 @@ remotes::install_github(
 Note: neither `pak::pak()` nor `devtools::install_github()` /
 `remotes::install_github()` build vignettes by default when installing
 from a source repository. The `build_vignettes = TRUE` flag above is
-required for `browseVignettes()` to find them. The CRAN release ships
-prebuilt vignettes and needs no extra flag.
+required for `browseVignettes()` to find them. janusplot is not yet on
+CRAN (submitted 2026-07-01; not yet accepted) – once a CRAN release
+exists it will ship prebuilt vignettes and need no extra flag, but until
+then always install with `build_vignettes = TRUE`.
 
 ## Quick start
 
@@ -185,4 +192,5 @@ citation("janusplot")
 
 ## License
 
-GPL (\>= 3). See <https://www.gnu.org/licenses/gpl-3.0.html> for the full text.
+GPL (\>= 3). See <https://www.gnu.org/licenses/gpl-3.0.html> for the
+full text.
