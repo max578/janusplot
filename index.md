@@ -191,5 +191,5 @@ citation("janusplot")
 
 ## License
 
-GPL (\>= 3). See <https://www.gnu.org/licenses/gpl-3.0.html> for the
-full text.
+MIT. See [`LICENSE.md`](https://max578.github.io/janusplot/LICENSE.md)
+for the full text.
