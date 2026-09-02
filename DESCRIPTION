@@ -17,7 +17,7 @@ Description: Render a pairwise, asymmetric smoothed-association matrix
     a single scalar correlation hides. An asymmetry index and a
     24-category shape taxonomy quantify the directional difference
     and qualitative form of each fitted smooth.
-License: GPL (>= 3)
+License: MIT + file LICENSE
 URL: https://github.com/max578/janusplot,
     https://max578.github.io/janusplot/
 BugReports: https://github.com/max578/janusplot/issues

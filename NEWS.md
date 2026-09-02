@@ -1,5 +1,7 @@
 # janusplot (development version)
 
+* Relicensed from GPL (>= 3) to MIT (orchestra-wide licence unification, 2026-09-02). No code change.
+
 * A per-cell GAM fit that errors (e.g. a constant predictor) now carries
   its error message into both public returns (`janusplot(with_data =
   TRUE)$data$error` and `janusplot_data()$pairs[[i]]$error_yx` /
