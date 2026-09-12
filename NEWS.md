@@ -1,4 +1,4 @@
-# janusplot (development version)
+# janusplot 0.1.1.9000 (development version)
 
 * The test covering the `parallel = TRUE` diagnostic now installs a
   sequential `future` plan for its duration and restores the previous
