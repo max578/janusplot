@@ -1,5 +1,20 @@
 # janusplot (development version)
 
+* The test covering the `parallel = TRUE` diagnostic now installs a
+  sequential `future` plan for its duration and restores the previous
+  plan afterwards, instead of setting the `future.plan` option. `future`
+  consults that option only while initialising its own plan, so on a
+  machine whose R startup profile has already called
+  `future::plan("multisession")` the option changed nothing: two workers
+  stayed active, `janusplot()` rightly stayed quiet about falling back to
+  sequential dispatch, and the test recorded a failure against correct
+  behaviour. The same suite came back clean under `R CMD check`, where
+  such startup profiles conventionally stand aside, and reported one
+  failure in 504 when run from `Rscript` -- a difference in the machine,
+  not in the package. The suite-wide setup file carried the identical
+  inert option and now installs the sequential plan directly, so the
+  intent to keep test runs single-worker is actually met.
+
 * Relicensed from GPL (>= 3) to MIT (orchestra-wide licence unification, 2026-09-02). No code change.
 
 * A per-cell GAM fit that errors (e.g. a constant predictor) now carries

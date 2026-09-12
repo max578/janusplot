@@ -23,7 +23,13 @@ Sys.unsetenv(c(
 ))
 
 # Disable parallelism in tests unless a specific test opts in.
-# (future.apply respects options(future.plan = "sequential").)
-options(future.plan = "sequential")
+# The plan is installed directly rather than requested through
+# options(future.plan = "sequential"): future reads that option only
+# while initialising its own plan, so once a plan exists -- a startup
+# profile calling future::plan("multisession") is enough -- the option
+# is inert and the suite inherits whatever the session already had.
+if (requireNamespace("future", quietly = TRUE)) {
+  future::plan(future::sequential)
+}
 
 # vdiffr snapshot directory lives under tests/testthat/_snaps/ (default).

@@ -174,14 +174,22 @@ test_that("janusplot text-scale args reject non-positive or invalid values", {
 test_that(".check_parallel_plan informs on sequential plan", {
   skip_if_not_installed("future.apply")
   skip_if_not_installed("future")
+  # The sequential plan has to be installed, not merely requested via
+  # the `future.plan` option: future consults that option only while
+  # initialising its own plan, so setting it afterwards leaves an
+  # already-established plan in place. On a machine whose startup
+  # profile calls future::plan("multisession"), the old
+  # with_options(future.plan = "sequential") wrapper therefore left two
+  # workers active, .check_parallel_plan() correctly stayed silent, and
+  # the expectation failed on ambient state the test believed it
+  # controlled.
   # .throttle = FALSE bypasses rlang's per-session message dedup so
   # the test is deterministic regardless of run order.
-  withr::with_options(
-    list(future.plan = "sequential"),
-    expect_message(
-      janusplot:::.check_parallel_plan(parallel = TRUE, .throttle = FALSE),
-      regexp = "sequential"
-    )
+  old_plan <- future::plan(future::sequential)
+  withr::defer(future::plan(old_plan))
+  expect_message(
+    janusplot:::.check_parallel_plan(parallel = TRUE, .throttle = FALSE),
+    regexp = "sequential"
   )
 })
 
