@@ -38,6 +38,7 @@ Suggests:
     agridat,
     future,
     future.apply,
+    kernR (>= 0.8.0),
     knitr,
     MASS,
     palmerpenguins,

@@ -41,6 +41,14 @@ reference:
       - janusplot
       - janusplot_data
 
+  - title: "Directional licensing"
+    desc: >
+      The residual-independence test that turns a pair's fit asymmetry
+      into a directional claim, and abstains where the additive noise
+      model cannot decide.
+    contents:
+      - janusplot_direction_test
+
   - title: "Shape taxonomy"
     desc: >
       The 24-category objective shape descriptor. Public helpers for

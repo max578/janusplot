@@ -8,6 +8,25 @@
   `error_xy`), reports `n_used = NA` rather than the row count offered to
   a fit that never completed, and raises one warning per matrix
   summarising the failed cells.
+* New `janusplot_direction_test()`. The package could already show that
+  a pair's two directions of fit differ, and that asymmetry is what
+  invites a directional reading of the matrix; what it could not do was
+  check the condition that licenses such a reading. Under the additive
+  noise model a direction is supported only when the residuals of the
+  fit in that direction are independent of the putative cause, and the
+  residuals of the fit the other way round are not. The new function
+  fits both directions, tests each residual set against its putative
+  cause with the kernel (HSIC) permutation test in `kernR`, and returns
+  a verdict of `forward`, `reverse` or `undecided` alongside both
+  p-values and both test statistics. It abstains rather than ranking the
+  two p-values: when both directions admit an additive noise model, when
+  neither does, and in the linear-Gaussian case -- where a linear model
+  with Gaussian noise reproduces the joint distribution equally well
+  read either way, so no direction is identifiable at all -- the verdict
+  is `undecided`, and the reason returned with it says which of those
+  situations produced it. `kernR` is a suggested dependency; where it is
+  absent the function says so instead of falling back to a weaker rule.
+
 * `janusplot_shape_metrics()`'s insufficient-data decline (fewer than 3
   finite predictor values) now raises a classed condition
   (`janusplot_refusal`/`orchestra_refusal`) instead of a bare error, so

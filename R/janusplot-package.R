@@ -16,6 +16,9 @@
 #' * [janusplot()] -- returns a ggplot of the matrix.
 #' * [janusplot_data()] -- returns the raw GAM fits + per-cell metrics
 #'   (for custom plotting or downstream analysis).
+#' * [janusplot_direction_test()] -- runs the residual-independence test
+#'   that licenses a directional reading of a pair's asymmetry, and
+#'   abstains where the additive noise model cannot decide.
 #'
 #' # Asymmetry index
 #'
@@ -33,9 +36,13 @@
 #' package vignette and accompanying paper for full scope and
 #' limitations (in particular the failure modes under
 #' heteroscedasticity, confounding, and Gaussian-linear DGPs).
+#' [janusplot_direction_test()] supplies the missing half of that
+#' procedure: the residual-independence test whose one-sided outcome
+#' is what actually licenses a directional claim.
 #'
 #' @keywords internal
 #' @aliases janusplot-package
 #' @importFrom stats as.formula complete.cases predict quantile sd cor as.dist hclust
+#' @importFrom stats residuals fitted shapiro.test
 #' @importFrom rlang arg_match check_installed is_installed .data
 "_PACKAGE"
