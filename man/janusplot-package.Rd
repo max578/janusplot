@@ -17,10 +17,10 @@ non-linearity become visually evident.
 }
 \section{Main functions}{
 \itemize{
-\item \code{\link[=janusplot]{janusplot()}} — returns a ggplot of the matrix.
-\item \code{\link[=janusplot_data]{janusplot_data()}} — returns the raw GAM fits + per-cell metrics
+\item \code{\link[=janusplot]{janusplot()}} -- returns a ggplot of the matrix.
+\item \code{\link[=janusplot_data]{janusplot_data()}} -- returns the raw GAM fits + per-cell metrics
 (for custom plotting or downstream analysis).
-\item \code{\link[=janusplot_direction_test]{janusplot_direction_test()}} — runs the residual-independence test
+\item \code{\link[=janusplot_direction_test]{janusplot_direction_test()}} -- runs the residual-independence test
 that licenses a directional reading of a pair's asymmetry, and
 abstains where the additive noise model cannot decide.
 }
@@ -56,6 +56,11 @@ Useful links:
 }
 \author{
 \strong{Maintainer}: Max Moldovan \email{max.moldovan@adelaide.edu.au} (\href{https://orcid.org/0000-0001-9680-8474}{ORCID}) [copyright holder]
+
+Authors:
+\itemize{
+  \item Max Moldovan \email{max.moldovan@adelaide.edu.au} (\href{https://orcid.org/0000-0001-9680-8474}{ORCID}) [copyright holder]
+}
 
 }
 \keyword{internal}

@@ -27,9 +27,9 @@ head(janusplot_shape_sensitivity_summary(shape_sensitivity_demo,
                                          level = "archetype"))
 }
 \seealso{
-Other shape-sensitivity: 
-\code{\link{janusplot_shape_sensitivity}()},
-\code{\link{janusplot_shape_sensitivity_plot}()},
-\code{\link{janusplot_shape_sensitivity_shapes}()}
+Other shape-sensitivity:
+\code{\link[=janusplot_shape_sensitivity]{janusplot_shape_sensitivity()}},
+\code{\link[=janusplot_shape_sensitivity_plot]{janusplot_shape_sensitivity_plot()}},
+\code{\link[=janusplot_shape_sensitivity_shapes]{janusplot_shape_sensitivity_shapes()}}
 }
 \concept{shape-sensitivity}

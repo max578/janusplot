@@ -39,7 +39,7 @@ A named list with components:
 sign changes of \verb{f'}. Equals the number of interior extrema.}
 \item{\code{n_inflections}}{Integer count of lobe-mass-weighted
 sign changes of \verb{f''}.}
-\item{\code{flat_range_ratio}}{\code{range(f) / sd(y)} — small values
+\item{\code{flat_range_ratio}}{\code{range(f) / sd(y)} -- small values
 indicate a degenerate flat smooth.}
 \item{\code{shape_category}}{One of 24 labels from
 \code{\link[=janusplot_shape_hierarchy]{janusplot_shape_hierarchy()}} dispatched on
@@ -92,8 +92,8 @@ janusplot_shape_metrics(fit, x_name = "x", newdata = d)
 \seealso{
 \code{\link[=janusplot_shape_cutoffs]{janusplot_shape_cutoffs()}}, \code{\link[=janusplot]{janusplot()}}, \code{\link[=janusplot_data]{janusplot_data()}}.
 
-Other shape-metrics: 
-\code{\link{janusplot_shape_cutoffs}()},
-\code{\link{janusplot_shape_hierarchy}()}
+Other shape-metrics:
+\code{\link[=janusplot_shape_cutoffs]{janusplot_shape_cutoffs()}},
+\code{\link[=janusplot_shape_hierarchy]{janusplot_shape_hierarchy()}}
 }
 \concept{shape-metrics}

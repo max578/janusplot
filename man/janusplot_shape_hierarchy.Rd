@@ -19,12 +19,12 @@ hierarchy columns plus presentation fields. The taxonomy is the
 single source of truth consumed by the classifier, the cell
 renderer, the legend plate, and the \code{janusplot_data()} output.
 
-Hierarchy columns (finest → coarsest):
+Hierarchy columns (finest -> coarsest):
 \describe{
 \item{\code{category}}{24-way fine label (\code{linear_up}, \code{skewed_peak},
-\code{bimodal}, …). Computed per cell by \code{\link[=janusplot]{janusplot()}}.}
+\code{bimodal}, ...). Computed per cell by \code{\link[=janusplot]{janusplot()}}.}
 \item{\code{code}}{Unique two-letter ASCII shorthand (safe on any
-font or typesetting pipeline) — e.g. \code{lu} for \code{linear_up}.}
+font or typesetting pipeline) -- e.g. \code{lu} for \code{linear_up}.}
 \item{\code{archetype}}{Seven-family grouping: \code{monotone_linear},
 \code{monotone_curved}, \code{unimodal}, \code{wave}, \code{multimodal},
 \code{chaotic}, \code{degenerate}.}
@@ -51,19 +51,19 @@ table(tax$archetype)
 \references{
 Calabrese, E. J. (2008). Hormesis: why it is important to
 toxicology and toxicologists. \emph{Environmental Toxicology and
-Chemistry}, \strong{27}(7), 1451–1474.
+Chemistry}, \strong{27}(7), 1451-1474.
 
 Meyer, M. C. (2008). Inference using shape-restricted regression
-splines. \emph{Annals of Applied Statistics}, \strong{2}(3), 1013–1033.
+splines. \emph{Annals of Applied Statistics}, \strong{2}(3), 1013-1033.
 
 Milnor, J. (1963). \emph{Morse Theory}. Princeton University Press.
 
 Pya, N., & Wood, S. N. (2015). Shape constrained additive models.
-\emph{Statistics and Computing}, \strong{25}(3), 543–559.
+\emph{Statistics and Computing}, \strong{25}(3), 543-559.
 }
 \seealso{
-Other shape-metrics: 
-\code{\link{janusplot_shape_cutoffs}()},
-\code{\link{janusplot_shape_metrics}()}
+Other shape-metrics:
+\code{\link[=janusplot_shape_cutoffs]{janusplot_shape_cutoffs()}},
+\code{\link[=janusplot_shape_metrics]{janusplot_shape_metrics()}}
 }
 \concept{shape-metrics}

@@ -17,7 +17,7 @@ janusplot_shape_sensitivity(
 }
 \arguments{
 \item{shapes}{Character vector of ground-truth names from
-\code{\link[=janusplot_shape_sensitivity_shapes]{janusplot_shape_sensitivity_shapes()}}. Default \code{NULL} → all 14.}
+\code{\link[=janusplot_shape_sensitivity_shapes]{janusplot_shape_sensitivity_shapes()}}. Default \code{NULL} -> all 14.}
 
 \item{n_grid}{Integer vector of sample sizes. Default
 \code{c(50L, 100L, 200L, 500L)}.}
@@ -34,7 +34,7 @@ y-range). Default \code{c(0.02, 0.05, 0.10, 0.20, 0.40)}.}
 dispatch replicates in parallel. The caller is responsible for
 configuring \code{future::plan()} (e.g. \code{future::plan(future::multisession)}).}
 
-\item{seed}{Integer. Base seed — each fit uses \code{seed + row_index}
+\item{seed}{Integer. Base seed -- each fit uses \code{seed + row_index}
 so results are reproducible and cell-permutation-invariant.}
 
 \item{verbose}{Logical. Print progress messages to the console.
@@ -48,10 +48,10 @@ A data frame with one row per fit. Columns:
 \item{\code{sigma}}{Noise level for this fit.}
 \item{\code{seed}}{RNG seed used.}
 \item{\code{predicted}}{Classifier output at the fine (24-category) level.}
-\item{\code{correct}}{Logical — does \code{predicted == truth}?}
+\item{\code{correct}}{Logical -- does \code{predicted == truth}?}
 \item{\code{archetype_truth}}{Expected archetype for \code{truth}.}
 \item{\code{archetype_pred}}{Archetype of \code{predicted}.}
-\item{\code{archetype_correct}}{Logical — archetype-level correctness.}
+\item{\code{archetype_correct}}{Logical -- archetype-level correctness.}
 \item{\code{monotonicity_index}}{Monotonicity index \code{M} (see
 \code{\link[=janusplot_shape_metrics]{janusplot_shape_metrics()}}).}
 \item{\code{convexity_index}}{Convexity index \code{C} (see
@@ -100,9 +100,9 @@ janusplot_shape_sensitivity_summary(res, level = "archetype")
 \code{\link[=janusplot_shape_sensitivity_plot]{janusplot_shape_sensitivity_plot()}},
 \code{\link[=janusplot_shape_sensitivity_shapes]{janusplot_shape_sensitivity_shapes()}}, \link{shape_sensitivity_demo}.
 
-Other shape-sensitivity: 
-\code{\link{janusplot_shape_sensitivity_plot}()},
-\code{\link{janusplot_shape_sensitivity_shapes}()},
-\code{\link{janusplot_shape_sensitivity_summary}()}
+Other shape-sensitivity:
+\code{\link[=janusplot_shape_sensitivity_plot]{janusplot_shape_sensitivity_plot()}},
+\code{\link[=janusplot_shape_sensitivity_shapes]{janusplot_shape_sensitivity_shapes()}},
+\code{\link[=janusplot_shape_sensitivity_summary]{janusplot_shape_sensitivity_summary()}}
 }
 \concept{shape-sensitivity}

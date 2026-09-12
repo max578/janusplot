@@ -7,7 +7,7 @@
 janusplot_shape_sensitivity_shapes()
 }
 \value{
-Character vector of length 14 — the generator names.
+Character vector of length 14 -- the generator names.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
@@ -24,9 +24,9 @@ janusplot_shape_sensitivity_shapes()
 \seealso{
 \code{\link[=janusplot_shape_sensitivity]{janusplot_shape_sensitivity()}}, \code{\link[=janusplot_shape_hierarchy]{janusplot_shape_hierarchy()}}.
 
-Other shape-sensitivity: 
-\code{\link{janusplot_shape_sensitivity}()},
-\code{\link{janusplot_shape_sensitivity_plot}()},
-\code{\link{janusplot_shape_sensitivity_summary}()}
+Other shape-sensitivity:
+\code{\link[=janusplot_shape_sensitivity]{janusplot_shape_sensitivity()}},
+\code{\link[=janusplot_shape_sensitivity_plot]{janusplot_shape_sensitivity_plot()}},
+\code{\link[=janusplot_shape_sensitivity_summary]{janusplot_shape_sensitivity_summary()}}
 }
 \concept{shape-sensitivity}

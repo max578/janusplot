@@ -26,7 +26,7 @@ Produce one of four diagnostic plots from the raw data frame returned
 by \code{\link[=janusplot_shape_sensitivity]{janusplot_shape_sensitivity()}}:
 \describe{
 \item{\code{"confusion_fine"}}{24 x (|shapes|) confusion matrix at the
-fine category level — rows = ground truth, columns = predicted,
+fine category level -- rows = ground truth, columns = predicted,
 cells coloured by \code{P(pred | truth)}.}
 \item{\code{"confusion_archetype"}}{7 x 7 confusion matrix at the
 archetype level.}
@@ -42,9 +42,9 @@ janusplot_shape_sensitivity_plot(shape_sensitivity_demo,
                                  "recovery_curves")
 }
 \seealso{
-Other shape-sensitivity: 
-\code{\link{janusplot_shape_sensitivity}()},
-\code{\link{janusplot_shape_sensitivity_shapes}()},
-\code{\link{janusplot_shape_sensitivity_summary}()}
+Other shape-sensitivity:
+\code{\link[=janusplot_shape_sensitivity]{janusplot_shape_sensitivity()}},
+\code{\link[=janusplot_shape_sensitivity_shapes]{janusplot_shape_sensitivity_shapes()}},
+\code{\link[=janusplot_shape_sensitivity_summary]{janusplot_shape_sensitivity_summary()}}
 }
 \concept{shape-sensitivity}

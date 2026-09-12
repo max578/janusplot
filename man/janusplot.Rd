@@ -86,7 +86,7 @@ Basis dimension for \code{s()}. Default \code{-1L} (mgcv's automatic choice).}
 \item{engine}{One of \code{"bam"} (default, \strong{new in v0.1.1}) or
 \code{"gam"}. Selects mgcv's fitting backend:
 \itemize{
-\item \code{"bam"} — \code{\link[mgcv:bam]{mgcv::bam()}}. Block-Lanczos solve + fREML
+\item \code{"bam"} -- \code{\link[mgcv:bam]{mgcv::bam()}}. Block-Lanczos solve + fREML
 estimation + lower memory. ~3-10x speedup at janusplot's
 scale (k = 15-25 vars, 600+ pairwise fits per call). The
 \strong{default}, and the one non-byte-identical change in
@@ -94,7 +94,7 @@ v0.1.1: fREML differs from REML by ~1-3\% in EDF on
 identical data, so the asymmetry index may shift by
 similar amounts vs v0.1.0 output. Recoverable verbatim
 via \code{engine = "gam"}.
-\item \code{"gam"} — \code{\link[mgcv:gam]{mgcv::gam()}}. The v0.1.0 backend. Use for
+\item \code{"gam"} -- \code{\link[mgcv:gam]{mgcv::gam()}}. The v0.1.0 backend. Use for
 backward-compat reproduction, very small n (< 200) where
 bam's setup overhead exceeds its solve gain, or
 methodologically sensitive contexts that require REML
@@ -129,12 +129,12 @@ derivative panels is controlled separately by \code{derivative_ci}.}
 Selects which single quantity is rendered in every
 off-diagonal cell of the matrix.
 \itemize{
-\item \code{"fit"} — the fitted smooth \eqn{\hat f(x)}; default,
+\item \code{"fit"} -- the fitted smooth \eqn{\hat f(x)}; default,
 behaviour identical to the pre-derivative release.
-\item \code{"d1"} — the first derivative \eqn{\hat f'(x)} of the
+\item \code{"d1"} -- the first derivative \eqn{\hat f'(x)} of the
 fitted smooth. Zero crossings localise turning points of
 \eqn{\hat f}.
-\item \code{"d2"} — the second derivative \eqn{\hat f''(x)}. Zero
+\item \code{"d2"} -- the second derivative \eqn{\hat f''(x)}. Zero
 crossings localise inflection points of \eqn{\hat f}.
 }
 
@@ -145,38 +145,38 @@ count. To compare fit against derivative, render two or three
 \code{with_data = TRUE} summary table tagged with the \code{display}
 column.
 
-Orders \eqn{k \ge 3} are not exposed — higher-order derivatives
+Orders \eqn{k \ge 3} are not exposed -- higher-order derivatives
 of penalised regression splines amplify noise and rarely carry
 usable signal at realistic sample sizes. See
 \code{vignette("janusplot")} for the theoretical justification and
 applied use-cases.}
 
 \item{derivative_ci}{One of \code{"none"} (default), \code{"pointwise"}, or
-\code{"simultaneous"}. Controls whether — and how — a 95\%
+\code{"simultaneous"}. Controls whether -- and how -- a 95\%
 confidence ribbon is drawn underneath the derivative curve when
 \code{display \%in\% c("d1", "d2")}. Ignored when \code{display = "fit"}.
 \itemize{
-\item \code{"none"} — no ribbon. The curve and the zero reference line
+\item \code{"none"} -- no ribbon. The curve and the zero reference line
 are all you see. Default, because pointwise ribbons overshoot
 nominal coverage as a joint region and can invite
 over-reading of local features.
-\item \code{"pointwise"} — 95\% pointwise ribbon from
-\eqn{\sqrt{\mathrm{diag}(D V_p D^\top)}} (Wood 2017 §7.2.4).
+\item \code{"pointwise"} -- 95\% pointwise ribbon from
+\eqn{\sqrt{\mathrm{diag}(D V_p D^\top)}} (Wood 2017 section 7.2.4).
 Valid marginally; not a simultaneous statement.
-\item \code{"simultaneous"} — 95\% simultaneous band via the Monte Carlo
+\item \code{"simultaneous"} -- 95\% simultaneous band via the Monte Carlo
 construction of Ruppert, Wand & Carroll (2003) popularised for
 GAMs by Simpson (2018, \emph{Frontiers Ecol. Evol.} 6:149): draw
 \eqn{B} samples \eqn{\tilde{\boldsymbol\beta} \sim
-    \mathcal{N}(\hat{\boldsymbol\beta}, V_p)}, compute
+  \mathcal{N}(\hat{\boldsymbol\beta}, V_p)}, compute
 \eqn{\max_x |D_i(\tilde{\boldsymbol\beta} -
-    \hat{\boldsymbol\beta})| / \mathrm{se}_i}, and use the
+  \hat{\boldsymbol\beta})| / \mathrm{se}_i}, and use the
 \eqn{(1-\alpha)} quantile as a critical multiplier on the
 pointwise SE. Valid for feature localisation ("where is
 \eqn{\hat f'(x)} significantly non-zero").
 }}
 
 \item{derivative_ci_nsim}{Integer. Number of Monte Carlo samples
-used when \code{derivative_ci = "simultaneous"}. Default \code{1000L} —
+used when \code{derivative_ci = "simultaneous"}. Default \code{1000L} --
 a compromise between coverage accuracy (Simpson 2018 uses
 10000) and CPU budget across every pair in a medium-sized
 matrix. Ignored for any other \code{derivative_ci}.}
@@ -217,10 +217,10 @@ diverging palette.}
 \code{c("edf", "A", "shape", "code")}. Controls which corner
 annotations appear on each off-diagonal cell:
 \itemize{
-\item \code{"code"} — 2-letter ASCII shape code, \strong{top-left} corner.
-\item \code{"A"} and \code{"edf"} — asymmetry index and effective degrees of
+\item \code{"code"} -- 2-letter ASCII shape code, \strong{top-left} corner.
+\item \code{"A"} and \code{"edf"} -- asymmetry index and effective degrees of
 freedom, stacked \strong{bottom-left}.
-\item \code{"shape"} — shape glyph (Unicode or ASCII per \code{glyph_style}),
+\item \code{"shape"} -- shape glyph (Unicode or ASCII per \code{glyph_style}),
 \strong{bottom-right} corner.
 }
 
@@ -246,23 +246,23 @@ the target font is known to cover the curve glyph set.}
 \item{labels}{One of \code{"border"} (default), \code{"diagonal"}, or
 \code{"none"}. Controls where variable names are rendered:
 \itemize{
-\item \code{"border"} — names along the top (rotated per \code{label_srt}) and
+\item \code{"border"} -- names along the top (rotated per \code{label_srt}) and
 left margins of the matrix; diagonal cells are left blank.
 Mirrors \code{corrplot}'s \code{tl.pos = "lt"} convention.
-\item \code{"diagonal"} — names centred on the diagonal cells (the
+\item \code{"diagonal"} -- names centred on the diagonal cells (the
 pre-0.1 layout).
-\item \code{"none"} — labels suppressed entirely; diagonal cells blank.
+\item \code{"none"} -- labels suppressed entirely; diagonal cells blank.
 }}
 
 \item{diagonal}{One of \code{"auto"} (default), \code{"blank"}, \code{"name"},
 or \code{"density"}. Controls what is rendered in the diagonal
 cells of the matrix.
 \itemize{
-\item \code{"auto"} — preserves the historical behaviour: variable name
+\item \code{"auto"} -- preserves the historical behaviour: variable name
 when \code{labels = "diagonal"}, blank otherwise.
-\item \code{"blank"} — empty bordered panel (uniform grid reading).
-\item \code{"name"} — variable name centred in the cell, bold.
-\item \code{"density"} — kernel density of the variable filled in
+\item \code{"blank"} -- empty bordered panel (uniform grid reading).
+\item \code{"name"} -- variable name centred in the cell, bold.
+\item \code{"density"} -- kernel density of the variable filled in
 translucent grey, with a rug of raw values along the bottom
 edge. Mirrors the \code{GGally::ggpairs} convention; surfaces
 tail weight, bimodality, and support clipping that the
@@ -279,7 +279,7 @@ this mode is on.
 font size. Default \code{1}. Ignored when \code{labels = "none"}.}
 
 \item{signif_glyph}{Logical. If \code{TRUE} (default), annotate cells
-with \verb{·} / \code{*} / \verb{**} reflecting the smooth's F-test p-value.}
+with \code{-} / \code{*} / \verb{**} reflecting the smooth's F-test p-value.}
 
 \item{show_asymmetry}{Deprecated. Use \code{annotations} instead
 (\code{"A" \%in\% annotations}). When supplied, a soft deprecation
@@ -296,8 +296,8 @@ user-configured \code{future::plan()}. Default \code{FALSE}.}
 \item{with_data}{Logical. If \code{TRUE}, return a two-element list
 \code{list(plot, data)} where \code{data} is a flat per-cell summary
 (one row per off-diagonal cell) of everything the plot displays.
-The \code{data} element is always a plain \code{data.frame} (base R — no
-\code{data.table} dependency). Default \code{FALSE} — in which case only
+The \code{data} element is always a plain \code{data.frame} (base R -- no
+\code{data.table} dependency). Default \code{FALSE} -- in which case only
 the ggplot is returned.}
 
 \item{text_scale_diag}{Positive numeric multiplier applied to the
@@ -326,13 +326,13 @@ diagnostics. Required entries: \code{edf_ratio} (Wood's
 too close to its basis cap), \code{k_index} (residual-difference
 variance ratio below which the basis appears underspecified), and
 \code{p} (the simulation p-value below which the basis-deficiency
-signal is significant). Defaults — \code{edf_ratio = 0.9}, \code{k_index = 1.0},
-\code{p = 0.05} — track \code{mgcv::gam.check()} and Wood (2017) §5.9.}
+signal is significant). Defaults -- \code{edf_ratio = 0.9}, \code{k_index = 1.0},
+\code{p = 0.05} -- track \code{mgcv::gam.check()} and Wood (2017) section 5.9.}
 
 \item{auto_refit_k}{Logical. If \code{TRUE}, every cell whose Wood
 trifecta flags an underfit is refit with a doubling-k loop until
 either the flag clears, the per-cell unique-x cap is reached, or
-\code{k_max_iter} iterations have passed. Default \code{FALSE} — the
+\code{k_max_iter} iterations have passed. Default \code{FALSE} -- the
 diagnostic (\code{k_check_status}, \code{k_flag}, \code{k_prime}, \code{k_index},
 \code{k_p}) is always computed and surfaced regardless of this flag,
 but the refit is opt-in because it can multiply wall time on
@@ -347,21 +347,21 @@ limit). Ignored when \code{auto_refit_k = FALSE}.}
 \item{compact}{One of \code{"auto"} (default), \code{"always"}, or \code{"never"}.
 Controls scale-aware content suppression per cell:
 \itemize{
-\item \code{"auto"} — tier 0 at \code{n_var < compact_threshold} (the v0.1.0
+\item \code{"auto"} -- tier 0 at \code{n_var < compact_threshold} (the v0.1.0
 behaviour); progressively suppresses scatter, then CI, then
 annotations, then the spline itself as \code{n_var} crosses the
 \code{compact_levels} ladder. The matrix remains readable as
-\code{k} grows toward 25–30 by trading detail for legibility.
-\item \code{"always"} — force at least tier 1 regardless of \code{n_var}.
+\code{k} grows toward 25-30 by trading detail for legibility.
+\item \code{"always"} -- force at least tier 1 regardless of \code{n_var}.
 Useful for very dense fixed-size renders.
-\item \code{"never"} — force tier 0 regardless of \code{n_var}. Useful for
+\item \code{"never"} -- force tier 0 regardless of \code{n_var}. Useful for
 reproducing v0.1.0 figures on large matrices.
 }}
 
 \item{compact_threshold}{Integer. The \code{n_var} value at which
 tier 1 (drop scatter) auto-activates under \code{compact = "auto"}.
-Default \code{12L}, anchored on the 150 × 150 px-per-cell pixel
-budget at typical 6"×6" 300 DPI R Journal figures.}
+Default \code{12L}, anchored on the 150 x 150 px-per-cell pixel
+budget at typical 6"x6" 300 DPI R Journal figures.}
 
 \item{compact_levels}{Optional named list with entries \code{t1}, \code{t2},
 \code{t3} overriding the auto-tier ladder. Defaults derive from
@@ -369,12 +369,12 @@ budget at typical 6"×6" 300 DPI R Journal figures.}
 \code{t2 = compact_threshold + 6}, \code{t3 = compact_threshold + 13}.
 \code{NULL} (default) uses these derived defaults.}
 
-\item{focus_by}{One of \code{NA} (default — no filter), \code{"asymmetry"},
+\item{focus_by}{One of \code{NA} (default -- no filter), \code{"asymmetry"},
 \code{"edf"}, \code{"k_flag"}, or \code{"non_linearity"} (defined as \code{edf - 1}).
 When set, cells whose chosen metric falls below \code{focus_threshold}
 are rendered in \code{grey85} at alpha \code{focus_dim_alpha}; the matrix
 shape is preserved so attention drains visually to high-metric
-cells. This is a \strong{visual filter, not a statistical one} —
+cells. This is a \strong{visual filter, not a statistical one} --
 the underlying fits are unchanged and the \code{with_data} table
 carries every cell.}
 
@@ -388,7 +388,7 @@ cells in the matrix. Ignored when \code{focus_by = NA}.}
 \code{focus_by = NA}.}
 
 \item{axes}{One of \code{"original"} (default), \code{"standardised"},
-\code{"centred"}, or \code{"rank"}. \strong{Rendering-only knob} — the
+\code{"centred"}, or \code{"rank"}. \strong{Rendering-only knob} -- the
 underlying \code{mgcv::gam} fits are byte-identical across all four
 modes (verifiable via \code{digest::digest()} on the fit list); the
 transformation lives entirely inside the cell renderer and
@@ -396,24 +396,24 @@ propagates to (a) the raw scatter, (b) the spline prediction
 grid, (c) the CI ribbon, and (d) the variable label on the
 matrix border. Use:
 \itemize{
-\item \code{"original"} — raw units. Maximum interpretability per cell.
+\item \code{"original"} -- raw units. Maximum interpretability per cell.
 v0.1.0 behaviour.
-\item \code{"standardised"} — \code{(x - mean(x)) / sd(x)} per variable.
+\item \code{"standardised"} -- \code{(x - mean(x)) / sd(x)} per variable.
 Border label becomes e.g. \code{"mpg (z)"}. Pairs scaled into a
 comparable visual range; useful at \code{k >= 15} when raw-unit
 panels look disparate.
-\item \code{"centred"} — \code{x - mean(x)} per variable. Border label
+\item \code{"centred"} -- \code{x - mean(x)} per variable. Border label
 becomes e.g. \code{"mpg (centred)"}. Preserves units while
 anchoring the origin.
-\item \code{"rank"} — empirical-CDF-based rank, scaled to \verb{[0, n]} per
+\item \code{"rank"} -- empirical-CDF-based rank, scaled to \verb{[0, n]} per
 variable. Border label becomes \code{"rank(mpg)"}. Sanity-check
 view: collapses outliers; if the smooth changes shape vs
 \code{"original"} the relationship is monotone-but-not-linear.
 }
 
 At compact tier 3 (\code{n_var >= 25} under \code{compact = "auto"}),
-the cells render only colour fill + shape-class glyph — no
-curve, no scatter — so \code{axes} becomes a \strong{documented no-op}
+the cells render only colour fill + shape-class glyph -- no
+curve, no scatter -- so \code{axes} becomes a \strong{documented no-op}
 (the border labels still pick up the mode suffix).}
 
 \item{save_as}{Optional file path with extension. When set,
@@ -422,7 +422,7 @@ the final assembled plot is written to this path via
 extension. Supported extensions: \code{.png}, \code{.pdf}, \code{.svg},
 \code{.jpg} / \code{.jpeg}, \code{.tif} / \code{.tiff}, \code{.eps}, \code{.ps}, \code{.bmp}.
 Default \code{NULL} (no file written; \code{janusplot()} still
-returns the ggplot). Width / height default to \code{pmax(6, 0.65 * k_n)} inches each — square aspect, scaling with
+returns the ggplot). Width / height default to \code{pmax(6, 0.65 * k_n)} inches each -- square aspect, scaling with
 matrix dimension.}
 
 \item{save_width}{Numeric. Override width (inches) for
@@ -453,7 +453,7 @@ ggplot) and \code{data} (a tidy table with columns \code{var_x}, \code{var_y},
 column tags which quantity the call rendered, so separate
 calls for fit / d1 / d2 yield comparable, stackable tables.
 Derivative \emph{curves} themselves (grid of \eqn{x}, fitted
-\eqn{\hat f^{(k)}}, SE) live on \code{janusplot_data()} — see there.
+\eqn{\hat f^{(k)}}, SE) live on \code{janusplot_data()} -- see there.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
@@ -468,12 +468,12 @@ spline from \code{\link[mgcv:gam]{mgcv::gam()}}:
 or a variable-name label when \code{labels = "diagonal"}.
 }
 
-The two triangles intentionally differ — the asymmetry reveals
+The two triangles intentionally differ -- the asymmetry reveals
 heteroscedasticity, leverage, and directional non-linearity that a
 single scalar correlation hides.
 }
 \examples{
-# Minimal runnable example — 3 variables, 6 asymmetric pairwise GAM fits.
+# Minimal runnable example -- 3 variables, 6 asymmetric pairwise GAM fits.
 janusplot(mtcars[, c("mpg", "hp", "wt")])
 
 \donttest{
@@ -506,7 +506,7 @@ janusplot(df, display = "d1", derivative_ci = "simultaneous")
 \seealso{
 \code{\link[=janusplot_data]{janusplot_data()}} for the raw per-cell fits + metrics.
 
-Other smooth-associations: 
-\code{\link{janusplot_data}()}
+Other smooth-associations:
+\code{\link[=janusplot_data]{janusplot_data()}}
 }
 \concept{smooth-associations}

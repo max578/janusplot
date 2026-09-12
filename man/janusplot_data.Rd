@@ -63,40 +63,40 @@ user-configured \code{future::plan()}. Default \code{FALSE}.}
 
 \item{keep_fits}{Logical. If \code{TRUE}, retain full \code{\link[mgcv:gam]{mgcv::gam()}} model
 objects in the return (large memory footprint for \code{k} above ~15).
-Default \code{FALSE} — retains summary metrics and prediction grids only.}
+Default \code{FALSE} -- retains summary metrics and prediction grids only.}
 
 \item{derivatives}{Integer vector of derivative orders to compute
-on every pair (subset of \code{1:2}). Default \code{integer()} — no
+on every pair (subset of \code{1:2}). Default \code{integer()} -- no
 derivatives. Unlike \code{janusplot()}, the data companion can
 return multiple orders from a single call for programmatic
 analysis; pass \code{c(1L, 2L)} to surface both.}
 
 \item{derivative_ci}{One of \code{"none"} (default), \code{"pointwise"}, or
-\code{"simultaneous"}. Controls whether — and how — a 95\%
+\code{"simultaneous"}. Controls whether -- and how -- a 95\%
 confidence ribbon is drawn underneath the derivative curve when
 \code{display \%in\% c("d1", "d2")}. Ignored when \code{display = "fit"}.
 \itemize{
-\item \code{"none"} — no ribbon. The curve and the zero reference line
+\item \code{"none"} -- no ribbon. The curve and the zero reference line
 are all you see. Default, because pointwise ribbons overshoot
 nominal coverage as a joint region and can invite
 over-reading of local features.
-\item \code{"pointwise"} — 95\% pointwise ribbon from
-\eqn{\sqrt{\mathrm{diag}(D V_p D^\top)}} (Wood 2017 §7.2.4).
+\item \code{"pointwise"} -- 95\% pointwise ribbon from
+\eqn{\sqrt{\mathrm{diag}(D V_p D^\top)}} (Wood 2017 section 7.2.4).
 Valid marginally; not a simultaneous statement.
-\item \code{"simultaneous"} — 95\% simultaneous band via the Monte Carlo
+\item \code{"simultaneous"} -- 95\% simultaneous band via the Monte Carlo
 construction of Ruppert, Wand & Carroll (2003) popularised for
 GAMs by Simpson (2018, \emph{Frontiers Ecol. Evol.} 6:149): draw
 \eqn{B} samples \eqn{\tilde{\boldsymbol\beta} \sim
-    \mathcal{N}(\hat{\boldsymbol\beta}, V_p)}, compute
+  \mathcal{N}(\hat{\boldsymbol\beta}, V_p)}, compute
 \eqn{\max_x |D_i(\tilde{\boldsymbol\beta} -
-    \hat{\boldsymbol\beta})| / \mathrm{se}_i}, and use the
+  \hat{\boldsymbol\beta})| / \mathrm{se}_i}, and use the
 \eqn{(1-\alpha)} quantile as a critical multiplier on the
 pointwise SE. Valid for feature localisation ("where is
 \eqn{\hat f'(x)} significantly non-zero").
 }}
 
 \item{derivative_ci_nsim}{Integer. Number of Monte Carlo samples
-used when \code{derivative_ci = "simultaneous"}. Default \code{1000L} —
+used when \code{derivative_ci = "simultaneous"}. Default \code{1000L} --
 a compromise between coverage accuracy (Simpson 2018 uses
 10000) and CPU budget across every pair in a medium-sized
 matrix. Ignored for any other \code{derivative_ci}.}
@@ -125,13 +125,13 @@ diagnostics. Required entries: \code{edf_ratio} (Wood's
 too close to its basis cap), \code{k_index} (residual-difference
 variance ratio below which the basis appears underspecified), and
 \code{p} (the simulation p-value below which the basis-deficiency
-signal is significant). Defaults — \code{edf_ratio = 0.9}, \code{k_index = 1.0},
-\code{p = 0.05} — track \code{mgcv::gam.check()} and Wood (2017) §5.9.}
+signal is significant). Defaults -- \code{edf_ratio = 0.9}, \code{k_index = 1.0},
+\code{p = 0.05} -- track \code{mgcv::gam.check()} and Wood (2017) section 5.9.}
 
 \item{auto_refit_k}{Logical. If \code{TRUE}, every cell whose Wood
 trifecta flags an underfit is refit with a doubling-k loop until
 either the flag clears, the per-cell unique-x cap is reached, or
-\code{k_max_iter} iterations have passed. Default \code{FALSE} — the
+\code{k_max_iter} iterations have passed. Default \code{FALSE} -- the
 diagnostic (\code{k_check_status}, \code{k_flag}, \code{k_prime}, \code{k_index},
 \code{k_p}) is always computed and surfaced regardless of this flag,
 but the refit is opt-in because it can multiply wall time on
@@ -146,7 +146,7 @@ limit). Ignored when \code{auto_refit_k = FALSE}.}
 \item{engine}{One of \code{"bam"} (default, \strong{new in v0.1.1}) or
 \code{"gam"}. Selects mgcv's fitting backend:
 \itemize{
-\item \code{"bam"} — \code{\link[mgcv:bam]{mgcv::bam()}}. Block-Lanczos solve + fREML
+\item \code{"bam"} -- \code{\link[mgcv:bam]{mgcv::bam()}}. Block-Lanczos solve + fREML
 estimation + lower memory. ~3-10x speedup at janusplot's
 scale (k = 15-25 vars, 600+ pairwise fits per call). The
 \strong{default}, and the one non-byte-identical change in
@@ -154,7 +154,7 @@ v0.1.1: fREML differs from REML by ~1-3\% in EDF on
 identical data, so the asymmetry index may shift by
 similar amounts vs v0.1.0 output. Recoverable verbatim
 via \code{engine = "gam"}.
-\item \code{"gam"} — \code{\link[mgcv:gam]{mgcv::gam()}}. The v0.1.0 backend. Use for
+\item \code{"gam"} -- \code{\link[mgcv:gam]{mgcv::gam()}}. The v0.1.0 backend. Use for
 backward-compat reproduction, very small n (< 200) where
 bam's setup overhead exceeds its solve gain, or
 methodologically sensitive contexts that require REML
@@ -226,7 +226,7 @@ out$pairs[[1L]]$shape_yx
 \code{\link[=janusplot]{janusplot()}} for the ggplot front-end,
 \code{\link[=janusplot_shape_metrics]{janusplot_shape_metrics()}} for the shape-metric primitives.
 
-Other smooth-associations: 
-\code{\link{janusplot}()}
+Other smooth-associations:
+\code{\link[=janusplot]{janusplot()}}
 }
 \concept{smooth-associations}
