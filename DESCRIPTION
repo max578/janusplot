@@ -46,6 +46,8 @@ Suggests:
     testthat (>= 3.0.0),
     vdiffr (>= 1.0.0),
     withr
+Remotes:
+    max578/kernR
 VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE, roclets = c("rd", "namespace", "collate"))
 Config/testthat/edition: 3
