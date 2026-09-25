@@ -182,6 +182,13 @@ local-environmental NOTEs only). Comprehensive `testthat` suite
 including `vdiffr` visual-regression snapshots; coverage tracked via the
 Codecov badge above.
 
+## Contributing
+
+Bug reports and suggestions are welcome through the [GitHub
+issues](https://github.com/max578/janusplot/issues). See
+[`CONTRIBUTING.md`](https://max578.github.io/janusplot/CONTRIBUTING.md)
+for how to propose a change.
+
 ## Citation
 
 ``` r
@@ -205,6 +212,16 @@ Render an asymmetric smoothed-association matrix.
 - [`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md)
   **\[experimental\]** : Raw GAM fits and per-cell metrics for a
   smoothed-association matrix
+
+## Directional licensing
+
+The residual-independence test that turns a pair’s fit asymmetry into a
+directional claim, and abstains where the additive noise model cannot
+decide.
+
+- [`janusplot_direction_test()`](https://max578.github.io/janusplot/reference/janusplot_direction_test.md)
+  **\[experimental\]** : Test whether the residual-independence
+  condition licenses a direction
 
 ## Shape taxonomy
 

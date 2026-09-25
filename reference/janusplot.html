@@ -9,7 +9,7 @@ Diagonal: blank panel when labels live on the border (default),
 or a variable-name label when labels = "diagonal".
 
 
-The two triangles intentionally differ — the asymmetry reveals
+The two triangles intentionally differ – the asymmetry reveals
 heteroscedasticity, leverage, and directional non-linearity that a
 single scalar correlation hides.'><meta property="og:description" content='
 Render a pairwise, asymmetric matrix of smoothed associations between
@@ -21,7 +21,7 @@ Diagonal: blank panel when labels live on the border (default),
 or a variable-name label when labels = "diagonal".
 
 
-The two triangles intentionally differ — the asymmetry reveals
+The two triangles intentionally differ – the asymmetry reveals
 heteroscedasticity, leverage, and directional non-linearity that a
 single scalar correlation hides.'><meta property="og:image" content="https://max578.github.io/janusplot/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -31,7 +31,7 @@ single scalar correlation hides.'><meta property="og:image" content="https://max
 
     <a class="navbar-brand me-2" href="../index.html">janusplot</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,7 +71,7 @@ spline from <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="externa
 <li><p>Lower triangle (<code>i &gt; j</code>): <code>gam(x_i ~ s(x_j) + &lt;adjust&gt;)</code>.</p></li>
 <li><p>Diagonal: blank panel when labels live on the border (default),
 or a variable-name label when <code>labels = "diagonal"</code>.</p></li>
-</ul><p>The two triangles intentionally differ — the asymmetry reveals
+</ul><p>The two triangles intentionally differ – the asymmetry reveals
 heteroscedasticity, leverage, and directional non-linearity that a
 single scalar correlation hides.</p>
     </div>
@@ -175,7 +175,7 @@ Basis dimension for <code>s()</code>. Default <code>-1L</code> (mgcv's automatic
 
 <dt id="arg-engine">engine<a class="anchor" aria-label="anchor" href="#arg-engine"></a></dt>
 <dd><p>One of <code>"bam"</code> (default, <strong>new in v0.1.1</strong>) or
-<code>"gam"</code>. Selects mgcv's fitting backend:</p><ul><li><p><code>"bam"</code> — <code><a href="https://rdrr.io/pkg/mgcv/man/bam.html" class="external-link">mgcv::bam()</a></code>. Block-Lanczos solve + fREML
+<code>"gam"</code>. Selects mgcv's fitting backend:</p><ul><li><p><code>"bam"</code> – <code><a href="https://rdrr.io/pkg/mgcv/man/bam.html" class="external-link">mgcv::bam()</a></code>. Block-Lanczos solve + fREML
 estimation + lower memory. ~3-10x speedup at janusplot's
 scale (k = 15-25 vars, 600+ pairwise fits per call). The
 <strong>default</strong>, and the one non-byte-identical change in
@@ -183,7 +183,7 @@ v0.1.1: fREML differs from REML by ~1-3% in EDF on
 identical data, so the asymmetry index may shift by
 similar amounts vs v0.1.0 output. Recoverable verbatim
 via <code>engine = "gam"</code>.</p></li>
-<li><p><code>"gam"</code> — <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code>. The v0.1.0 backend. Use for
+<li><p><code>"gam"</code> – <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code>. The v0.1.0 backend. Use for
 backward-compat reproduction, very small n (&lt; 200) where
 bam's setup overhead exceeds its solve gain, or
 methodologically sensitive contexts that require REML
@@ -228,12 +228,12 @@ derivative panels is controlled separately by <code>derivative_ci</code>.</p></d
 <dt id="arg-display">display<a class="anchor" aria-label="anchor" href="#arg-display"></a></dt>
 <dd><p>One of <code>"fit"</code> (default), <code>"d1"</code>, or <code>"d2"</code>.
 Selects which single quantity is rendered in every
-off-diagonal cell of the matrix.</p><ul><li><p><code>"fit"</code> — the fitted smooth \(\hat f(x)\); default,
+off-diagonal cell of the matrix.</p><ul><li><p><code>"fit"</code> – the fitted smooth \(\hat f(x)\); default,
 behaviour identical to the pre-derivative release.</p></li>
-<li><p><code>"d1"</code> — the first derivative \(\hat f'(x)\) of the
+<li><p><code>"d1"</code> – the first derivative \(\hat f'(x)\) of the
 fitted smooth. Zero crossings localise turning points of
 \(\hat f\).</p></li>
-<li><p><code>"d2"</code> — the second derivative \(\hat f''(x)\). Zero
+<li><p><code>"d2"</code> – the second derivative \(\hat f''(x)\). Zero
 crossings localise inflection points of \(\hat f\).</p></li>
 </ul><p>A single matrix shows a single quantity by design: stacked
 multi-panel cells crowd the matrix at any realistic variable
@@ -241,7 +241,7 @@ count. To compare fit against derivative, render two or three
 <code>janusplot()</code> calls side-by-side; each call keeps its own
 <code>with_data = TRUE</code> summary table tagged with the <code>display</code>
 column.</p>
-<p>Orders \(k \ge 3\) are not exposed — higher-order derivatives
+<p>Orders \(k \ge 3\) are not exposed – higher-order derivatives
 of penalised regression splines amplify noise and rarely carry
 usable signal at realistic sample sizes. See
 <code><a href="../articles/janusplot.html">vignette("janusplot")</a></code> for the theoretical justification and
@@ -250,22 +250,22 @@ applied use-cases.</p></dd>
 
 <dt id="arg-derivative-ci">derivative_ci<a class="anchor" aria-label="anchor" href="#arg-derivative-ci"></a></dt>
 <dd><p>One of <code>"none"</code> (default), <code>"pointwise"</code>, or
-<code>"simultaneous"</code>. Controls whether — and how — a 95%
+<code>"simultaneous"</code>. Controls whether – and how – a 95%
 confidence ribbon is drawn underneath the derivative curve when
-<code>display %in% c("d1", "d2")</code>. Ignored when <code>display = "fit"</code>.</p><ul><li><p><code>"none"</code> — no ribbon. The curve and the zero reference line
+<code>display %in% c("d1", "d2")</code>. Ignored when <code>display = "fit"</code>.</p><ul><li><p><code>"none"</code> – no ribbon. The curve and the zero reference line
 are all you see. Default, because pointwise ribbons overshoot
 nominal coverage as a joint region and can invite
 over-reading of local features.</p></li>
-<li><p><code>"pointwise"</code> — 95% pointwise ribbon from
-\(\sqrt{\mathrm{diag}(D V_p D^\top)}\) (Wood 2017 §7.2.4).
+<li><p><code>"pointwise"</code> – 95% pointwise ribbon from
+\(\sqrt{\mathrm{diag}(D V_p D^\top)}\) (Wood 2017 section 7.2.4).
 Valid marginally; not a simultaneous statement.</p></li>
-<li><p><code>"simultaneous"</code> — 95% simultaneous band via the Monte Carlo
+<li><p><code>"simultaneous"</code> – 95% simultaneous band via the Monte Carlo
 construction of Ruppert, Wand &amp; Carroll (2003) popularised for
 GAMs by Simpson (2018, <em>Frontiers Ecol. Evol.</em> 6:149): draw
 \(B\) samples \(\tilde{\boldsymbol\beta} \sim
-    \mathcal{N}(\hat{\boldsymbol\beta}, V_p)\), compute
+  \mathcal{N}(\hat{\boldsymbol\beta}, V_p)\), compute
 \(\max_x |D_i(\tilde{\boldsymbol\beta} -
-    \hat{\boldsymbol\beta})| / \mathrm{se}_i\), and use the
+  \hat{\boldsymbol\beta})| / \mathrm{se}_i\), and use the
 \((1-\alpha)\) quantile as a critical multiplier on the
 pointwise SE. Valid for feature localisation ("where is
 \(\hat f'(x)\) significantly non-zero").</p></li>
@@ -274,7 +274,7 @@ pointwise SE. Valid for feature localisation ("where is
 
 <dt id="arg-derivative-ci-nsim">derivative_ci_nsim<a class="anchor" aria-label="anchor" href="#arg-derivative-ci-nsim"></a></dt>
 <dd><p>Integer. Number of Monte Carlo samples
-used when <code>derivative_ci = "simultaneous"</code>. Default <code>1000L</code> —
+used when <code>derivative_ci = "simultaneous"</code>. Default <code>1000L</code> –
 a compromise between coverage accuracy (Simpson 2018 uses
 10000) and CPU budget across every pair in a medium-sized
 matrix. Ignored for any other <code>derivative_ci</code>.</p></dd>
@@ -323,10 +323,10 @@ diverging palette.</p></dd>
 <dt id="arg-annotations">annotations<a class="anchor" aria-label="anchor" href="#arg-annotations"></a></dt>
 <dd><p>Character vector, a subset of
 <code>c("edf", "A", "shape", "code")</code>. Controls which corner
-annotations appear on each off-diagonal cell:</p><ul><li><p><code>"code"</code> — 2-letter ASCII shape code, <strong>top-left</strong> corner.</p></li>
-<li><p><code>"A"</code> and <code>"edf"</code> — asymmetry index and effective degrees of
+annotations appear on each off-diagonal cell:</p><ul><li><p><code>"code"</code> – 2-letter ASCII shape code, <strong>top-left</strong> corner.</p></li>
+<li><p><code>"A"</code> and <code>"edf"</code> – asymmetry index and effective degrees of
 freedom, stacked <strong>bottom-left</strong>.</p></li>
-<li><p><code>"shape"</code> — shape glyph (Unicode or ASCII per <code>glyph_style</code>),
+<li><p><code>"shape"</code> – shape glyph (Unicode or ASCII per <code>glyph_style</code>),
 <strong>bottom-right</strong> corner.</p></li>
 </ul><p>Default <code>c("edf", "A")</code>. <code>"code"</code> and <code>"shape"</code> occupy distinct
 corners so both can be requested together. See
@@ -356,23 +356,23 @@ the target font is known to cover the curve glyph set.</p></dd>
 
 <dt id="arg-labels">labels<a class="anchor" aria-label="anchor" href="#arg-labels"></a></dt>
 <dd><p>One of <code>"border"</code> (default), <code>"diagonal"</code>, or
-<code>"none"</code>. Controls where variable names are rendered:</p><ul><li><p><code>"border"</code> — names along the top (rotated per <code>label_srt</code>) and
+<code>"none"</code>. Controls where variable names are rendered:</p><ul><li><p><code>"border"</code> – names along the top (rotated per <code>label_srt</code>) and
 left margins of the matrix; diagonal cells are left blank.
 Mirrors <code>corrplot</code>'s <code>tl.pos = "lt"</code> convention.</p></li>
-<li><p><code>"diagonal"</code> — names centred on the diagonal cells (the
+<li><p><code>"diagonal"</code> – names centred on the diagonal cells (the
 pre-0.1 layout).</p></li>
-<li><p><code>"none"</code> — labels suppressed entirely; diagonal cells blank.</p></li>
+<li><p><code>"none"</code> – labels suppressed entirely; diagonal cells blank.</p></li>
 </ul></dd>
 
 
 <dt id="arg-diagonal">diagonal<a class="anchor" aria-label="anchor" href="#arg-diagonal"></a></dt>
 <dd><p>One of <code>"auto"</code> (default), <code>"blank"</code>, <code>"name"</code>,
 or <code>"density"</code>. Controls what is rendered in the diagonal
-cells of the matrix.</p><ul><li><p><code>"auto"</code> — preserves the historical behaviour: variable name
+cells of the matrix.</p><ul><li><p><code>"auto"</code> – preserves the historical behaviour: variable name
 when <code>labels = "diagonal"</code>, blank otherwise.</p></li>
-<li><p><code>"blank"</code> — empty bordered panel (uniform grid reading).</p></li>
-<li><p><code>"name"</code> — variable name centred in the cell, bold.</p></li>
-<li><p><code>"density"</code> — kernel density of the variable filled in
+<li><p><code>"blank"</code> – empty bordered panel (uniform grid reading).</p></li>
+<li><p><code>"name"</code> – variable name centred in the cell, bold.</p></li>
+<li><p><code>"density"</code> – kernel density of the variable filled in
 translucent grey, with a rug of raw values along the bottom
 edge. Mirrors the <code>GGally::ggpairs</code> convention; surfaces
 tail weight, bimodality, and support clipping that the
@@ -395,7 +395,7 @@ font size. Default <code>1</code>. Ignored when <code>labels = "none"</code>.</p
 
 <dt id="arg-signif-glyph">signif_glyph<a class="anchor" aria-label="anchor" href="#arg-signif-glyph"></a></dt>
 <dd><p>Logical. If <code>TRUE</code> (default), annotate cells
-with <code>·</code> / <code>*</code> / <code>**</code> reflecting the smooth's F-test p-value.</p></dd>
+with <code>-</code> / <code>*</code> / <code>**</code> reflecting the smooth's F-test p-value.</p></dd>
 
 
 <dt id="arg-show-asymmetry">show_asymmetry<a class="anchor" aria-label="anchor" href="#arg-show-asymmetry"></a></dt>
@@ -420,8 +420,8 @@ user-configured <code><a href="https://future.futureverse.org/reference/plan.htm
 <dd><p>Logical. If <code>TRUE</code>, return a two-element list
 <code>list(plot, data)</code> where <code>data</code> is a flat per-cell summary
 (one row per off-diagonal cell) of everything the plot displays.
-The <code>data</code> element is always a plain <code>data.frame</code> (base R — no
-<code>data.table</code> dependency). Default <code>FALSE</code> — in which case only
+The <code>data</code> element is always a plain <code>data.frame</code> (base R – no
+<code>data.table</code> dependency). Default <code>FALSE</code> – in which case only
 the ggplot is returned.</p></dd>
 
 
@@ -460,15 +460,15 @@ diagnostics. Required entries: <code>edf_ratio</code> (Wood's
 too close to its basis cap), <code>k_index</code> (residual-difference
 variance ratio below which the basis appears underspecified), and
 <code>p</code> (the simulation p-value below which the basis-deficiency
-signal is significant). Defaults — <code>edf_ratio = 0.9</code>, <code>k_index = 1.0</code>,
-<code>p = 0.05</code> — track <code><a href="https://rdrr.io/pkg/mgcv/man/gam.check.html" class="external-link">mgcv::gam.check()</a></code> and Wood (2017) §5.9.</p></dd>
+signal is significant). Defaults – <code>edf_ratio = 0.9</code>, <code>k_index = 1.0</code>,
+<code>p = 0.05</code> – track <code><a href="https://rdrr.io/pkg/mgcv/man/gam.check.html" class="external-link">mgcv::gam.check()</a></code> and Wood (2017) section 5.9.</p></dd>
 
 
 <dt id="arg-auto-refit-k">auto_refit_k<a class="anchor" aria-label="anchor" href="#arg-auto-refit-k"></a></dt>
 <dd><p>Logical. If <code>TRUE</code>, every cell whose Wood
 trifecta flags an underfit is refit with a doubling-k loop until
 either the flag clears, the per-cell unique-x cap is reached, or
-<code>k_max_iter</code> iterations have passed. Default <code>FALSE</code> — the
+<code>k_max_iter</code> iterations have passed. Default <code>FALSE</code> – the
 diagnostic (<code>k_check_status</code>, <code>k_flag</code>, <code>k_prime</code>, <code>k_index</code>,
 <code>k_p</code>) is always computed and surfaced regardless of this flag,
 but the refit is opt-in because it can multiply wall time on
@@ -485,14 +485,14 @@ limit). Ignored when <code>auto_refit_k = FALSE</code>.</p></dd>
 
 <dt id="arg-compact">compact<a class="anchor" aria-label="anchor" href="#arg-compact"></a></dt>
 <dd><p>One of <code>"auto"</code> (default), <code>"always"</code>, or <code>"never"</code>.
-Controls scale-aware content suppression per cell:</p><ul><li><p><code>"auto"</code> — tier 0 at <code>n_var &lt; compact_threshold</code> (the v0.1.0
+Controls scale-aware content suppression per cell:</p><ul><li><p><code>"auto"</code> – tier 0 at <code>n_var &lt; compact_threshold</code> (the v0.1.0
 behaviour); progressively suppresses scatter, then CI, then
 annotations, then the spline itself as <code>n_var</code> crosses the
 <code>compact_levels</code> ladder. The matrix remains readable as
-<code>k</code> grows toward 25–30 by trading detail for legibility.</p></li>
-<li><p><code>"always"</code> — force at least tier 1 regardless of <code>n_var</code>.
+<code>k</code> grows toward 25-30 by trading detail for legibility.</p></li>
+<li><p><code>"always"</code> – force at least tier 1 regardless of <code>n_var</code>.
 Useful for very dense fixed-size renders.</p></li>
-<li><p><code>"never"</code> — force tier 0 regardless of <code>n_var</code>. Useful for
+<li><p><code>"never"</code> – force tier 0 regardless of <code>n_var</code>. Useful for
 reproducing v0.1.0 figures on large matrices.</p></li>
 </ul></dd>
 
@@ -500,8 +500,8 @@ reproducing v0.1.0 figures on large matrices.</p></li>
 <dt id="arg-compact-threshold">compact_threshold<a class="anchor" aria-label="anchor" href="#arg-compact-threshold"></a></dt>
 <dd><p>Integer. The <code>n_var</code> value at which
 tier 1 (drop scatter) auto-activates under <code>compact = "auto"</code>.
-Default <code>12L</code>, anchored on the 150 × 150 px-per-cell pixel
-budget at typical 6"×6" 300 DPI R Journal figures.</p></dd>
+Default <code>12L</code>, anchored on the 150 x 150 px-per-cell pixel
+budget at typical 6"x6" 300 DPI R Journal figures.</p></dd>
 
 
 <dt id="arg-compact-levels">compact_levels<a class="anchor" aria-label="anchor" href="#arg-compact-levels"></a></dt>
@@ -513,12 +513,12 @@ budget at typical 6"×6" 300 DPI R Journal figures.</p></dd>
 
 
 <dt id="arg-focus-by">focus_by<a class="anchor" aria-label="anchor" href="#arg-focus-by"></a></dt>
-<dd><p>One of <code>NA</code> (default — no filter), <code>"asymmetry"</code>,
+<dd><p>One of <code>NA</code> (default – no filter), <code>"asymmetry"</code>,
 <code>"edf"</code>, <code>"k_flag"</code>, or <code>"non_linearity"</code> (defined as <code>edf - 1</code>).
 When set, cells whose chosen metric falls below <code>focus_threshold</code>
 are rendered in <code>grey85</code> at alpha <code>focus_dim_alpha</code>; the matrix
 shape is preserved so attention drains visually to high-metric
-cells. This is a <strong>visual filter, not a statistical one</strong> —
+cells. This is a <strong>visual filter, not a statistical one</strong> –
 the underlying fits are unchanged and the <code>with_data</code> table
 carries every cell.</p></dd>
 
@@ -538,28 +538,28 @@ cells in the matrix. Ignored when <code>focus_by = NA</code>.</p></dd>
 
 <dt id="arg-axes">axes<a class="anchor" aria-label="anchor" href="#arg-axes"></a></dt>
 <dd><p>One of <code>"original"</code> (default), <code>"standardised"</code>,
-<code>"centred"</code>, or <code>"rank"</code>. <strong>Rendering-only knob</strong> — the
+<code>"centred"</code>, or <code>"rank"</code>. <strong>Rendering-only knob</strong> – the
 underlying <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam</a></code> fits are byte-identical across all four
 modes (verifiable via <code><a href="https://eddelbuettel.github.io/digest/man/digest.html" class="external-link">digest::digest()</a></code> on the fit list); the
 transformation lives entirely inside the cell renderer and
 propagates to (a) the raw scatter, (b) the spline prediction
 grid, (c) the CI ribbon, and (d) the variable label on the
-matrix border. Use:</p><ul><li><p><code>"original"</code> — raw units. Maximum interpretability per cell.
+matrix border. Use:</p><ul><li><p><code>"original"</code> – raw units. Maximum interpretability per cell.
 v0.1.0 behaviour.</p></li>
-<li><p><code>"standardised"</code> — <code>(x - mean(x)) / sd(x)</code> per variable.
+<li><p><code>"standardised"</code> – <code>(x - mean(x)) / sd(x)</code> per variable.
 Border label becomes e.g. <code>"mpg (z)"</code>. Pairs scaled into a
 comparable visual range; useful at <code>k &gt;= 15</code> when raw-unit
 panels look disparate.</p></li>
-<li><p><code>"centred"</code> — <code>x - mean(x)</code> per variable. Border label
+<li><p><code>"centred"</code> – <code>x - mean(x)</code> per variable. Border label
 becomes e.g. <code>"mpg (centred)"</code>. Preserves units while
 anchoring the origin.</p></li>
-<li><p><code>"rank"</code> — empirical-CDF-based rank, scaled to <code>[0, n]</code> per
+<li><p><code>"rank"</code> – empirical-CDF-based rank, scaled to <code>[0, n]</code> per
 variable. Border label becomes <code>"rank(mpg)"</code>. Sanity-check
 view: collapses outliers; if the smooth changes shape vs
 <code>"original"</code> the relationship is monotone-but-not-linear.</p></li>
 </ul><p>At compact tier 3 (<code>n_var &gt;= 25</code> under <code>compact = "auto"</code>),
-the cells render only colour fill + shape-class glyph — no
-curve, no scatter — so <code>axes</code> becomes a <strong>documented no-op</strong>
+the cells render only colour fill + shape-class glyph – no
+curve, no scatter – so <code>axes</code> becomes a <strong>documented no-op</strong>
 (the border labels still pick up the mode suffix).</p></dd>
 
 
@@ -570,7 +570,7 @@ the final assembled plot is written to this path via
 extension. Supported extensions: <code>.png</code>, <code>.pdf</code>, <code>.svg</code>,
 <code>.jpg</code> / <code>.jpeg</code>, <code>.tif</code> / <code>.tiff</code>, <code>.eps</code>, <code>.ps</code>, <code>.bmp</code>.
 Default <code>NULL</code> (no file written; <code>janusplot()</code> still
-returns the ggplot). Width / height default to <code>pmax(6, 0.65 * k_n)</code> inches each — square aspect, scaling with
+returns the ggplot). Width / height default to <code>pmax(6, 0.65 * k_n)</code> inches each – square aspect, scaling with
 matrix dimension.</p></dd>
 
 
@@ -611,7 +611,7 @@ ggplot) and <code>data</code> (a tidy table with columns <code>var_x</code>, <co
 column tags which quantity the call rendered, so separate
 calls for fit / d1 / d2 yield comparable, stackable tables.
 Derivative <em>curves</em> themselves (grid of \(x\), fitted
-\(\hat f^{(k)}\), SE) live on <code><a href="janusplot_data.html">janusplot_data()</a></code> — see there.</p>
+\(\hat f^{(k)}\), SE) live on <code><a href="janusplot_data.html">janusplot_data()</a></code> – see there.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -622,7 +622,7 @@ Derivative <em>curves</em> themselves (grid of \(x\), fitted
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Minimal runnable example — 3 variables, 6 asymmetric pairwise GAM fits.</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Minimal runnable example -- 3 variables, 6 asymmetric pairwise GAM fits.</span></span></span>
 <span class="r-in"><span><span class="fu">janusplot</span><span class="op">(</span><span class="va">mtcars</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mpg"</span>, <span class="st">"hp"</span>, <span class="st">"wt"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="janusplot-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>

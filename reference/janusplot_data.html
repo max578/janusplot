@@ -15,7 +15,7 @@ the ggplot. Useful for custom rendering or downstream analysis."><meta property=
 
     <a class="navbar-brand me-2" href="../index.html">janusplot</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -137,12 +137,12 @@ user-configured <code><a href="https://future.futureverse.org/reference/plan.htm
 <dt id="arg-keep-fits">keep_fits<a class="anchor" aria-label="anchor" href="#arg-keep-fits"></a></dt>
 <dd><p>Logical. If <code>TRUE</code>, retain full <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code> model
 objects in the return (large memory footprint for <code>k</code> above ~15).
-Default <code>FALSE</code> — retains summary metrics and prediction grids only.</p></dd>
+Default <code>FALSE</code> – retains summary metrics and prediction grids only.</p></dd>
 
 
 <dt id="arg-derivatives">derivatives<a class="anchor" aria-label="anchor" href="#arg-derivatives"></a></dt>
 <dd><p>Integer vector of derivative orders to compute
-on every pair (subset of <code>1:2</code>). Default <code><a href="https://rdrr.io/r/base/integer.html" class="external-link">integer()</a></code> — no
+on every pair (subset of <code>1:2</code>). Default <code><a href="https://rdrr.io/r/base/integer.html" class="external-link">integer()</a></code> – no
 derivatives. Unlike <code><a href="janusplot.html">janusplot()</a></code>, the data companion can
 return multiple orders from a single call for programmatic
 analysis; pass <code>c(1L, 2L)</code> to surface both.</p></dd>
@@ -150,22 +150,22 @@ analysis; pass <code>c(1L, 2L)</code> to surface both.</p></dd>
 
 <dt id="arg-derivative-ci">derivative_ci<a class="anchor" aria-label="anchor" href="#arg-derivative-ci"></a></dt>
 <dd><p>One of <code>"none"</code> (default), <code>"pointwise"</code>, or
-<code>"simultaneous"</code>. Controls whether — and how — a 95%
+<code>"simultaneous"</code>. Controls whether – and how – a 95%
 confidence ribbon is drawn underneath the derivative curve when
-<code>display %in% c("d1", "d2")</code>. Ignored when <code>display = "fit"</code>.</p><ul><li><p><code>"none"</code> — no ribbon. The curve and the zero reference line
+<code>display %in% c("d1", "d2")</code>. Ignored when <code>display = "fit"</code>.</p><ul><li><p><code>"none"</code> – no ribbon. The curve and the zero reference line
 are all you see. Default, because pointwise ribbons overshoot
 nominal coverage as a joint region and can invite
 over-reading of local features.</p></li>
-<li><p><code>"pointwise"</code> — 95% pointwise ribbon from
-\(\sqrt{\mathrm{diag}(D V_p D^\top)}\) (Wood 2017 §7.2.4).
+<li><p><code>"pointwise"</code> – 95% pointwise ribbon from
+\(\sqrt{\mathrm{diag}(D V_p D^\top)}\) (Wood 2017 section 7.2.4).
 Valid marginally; not a simultaneous statement.</p></li>
-<li><p><code>"simultaneous"</code> — 95% simultaneous band via the Monte Carlo
+<li><p><code>"simultaneous"</code> – 95% simultaneous band via the Monte Carlo
 construction of Ruppert, Wand &amp; Carroll (2003) popularised for
 GAMs by Simpson (2018, <em>Frontiers Ecol. Evol.</em> 6:149): draw
 \(B\) samples \(\tilde{\boldsymbol\beta} \sim
-    \mathcal{N}(\hat{\boldsymbol\beta}, V_p)\), compute
+  \mathcal{N}(\hat{\boldsymbol\beta}, V_p)\), compute
 \(\max_x |D_i(\tilde{\boldsymbol\beta} -
-    \hat{\boldsymbol\beta})| / \mathrm{se}_i\), and use the
+  \hat{\boldsymbol\beta})| / \mathrm{se}_i\), and use the
 \((1-\alpha)\) quantile as a critical multiplier on the
 pointwise SE. Valid for feature localisation ("where is
 \(\hat f'(x)\) significantly non-zero").</p></li>
@@ -174,7 +174,7 @@ pointwise SE. Valid for feature localisation ("where is
 
 <dt id="arg-derivative-ci-nsim">derivative_ci_nsim<a class="anchor" aria-label="anchor" href="#arg-derivative-ci-nsim"></a></dt>
 <dd><p>Integer. Number of Monte Carlo samples
-used when <code>derivative_ci = "simultaneous"</code>. Default <code>1000L</code> —
+used when <code>derivative_ci = "simultaneous"</code>. Default <code>1000L</code> –
 a compromise between coverage accuracy (Simpson 2018 uses
 10000) and CPU budget across every pair in a medium-sized
 matrix. Ignored for any other <code>derivative_ci</code>.</p></dd>
@@ -209,15 +209,15 @@ diagnostics. Required entries: <code>edf_ratio</code> (Wood's
 too close to its basis cap), <code>k_index</code> (residual-difference
 variance ratio below which the basis appears underspecified), and
 <code>p</code> (the simulation p-value below which the basis-deficiency
-signal is significant). Defaults — <code>edf_ratio = 0.9</code>, <code>k_index = 1.0</code>,
-<code>p = 0.05</code> — track <code><a href="https://rdrr.io/pkg/mgcv/man/gam.check.html" class="external-link">mgcv::gam.check()</a></code> and Wood (2017) §5.9.</p></dd>
+signal is significant). Defaults – <code>edf_ratio = 0.9</code>, <code>k_index = 1.0</code>,
+<code>p = 0.05</code> – track <code><a href="https://rdrr.io/pkg/mgcv/man/gam.check.html" class="external-link">mgcv::gam.check()</a></code> and Wood (2017) section 5.9.</p></dd>
 
 
 <dt id="arg-auto-refit-k">auto_refit_k<a class="anchor" aria-label="anchor" href="#arg-auto-refit-k"></a></dt>
 <dd><p>Logical. If <code>TRUE</code>, every cell whose Wood
 trifecta flags an underfit is refit with a doubling-k loop until
 either the flag clears, the per-cell unique-x cap is reached, or
-<code>k_max_iter</code> iterations have passed. Default <code>FALSE</code> — the
+<code>k_max_iter</code> iterations have passed. Default <code>FALSE</code> – the
 diagnostic (<code>k_check_status</code>, <code>k_flag</code>, <code>k_prime</code>, <code>k_index</code>,
 <code>k_p</code>) is always computed and surfaced regardless of this flag,
 but the refit is opt-in because it can multiply wall time on
@@ -234,7 +234,7 @@ limit). Ignored when <code>auto_refit_k = FALSE</code>.</p></dd>
 
 <dt id="arg-engine">engine<a class="anchor" aria-label="anchor" href="#arg-engine"></a></dt>
 <dd><p>One of <code>"bam"</code> (default, <strong>new in v0.1.1</strong>) or
-<code>"gam"</code>. Selects mgcv's fitting backend:</p><ul><li><p><code>"bam"</code> — <code><a href="https://rdrr.io/pkg/mgcv/man/bam.html" class="external-link">mgcv::bam()</a></code>. Block-Lanczos solve + fREML
+<code>"gam"</code>. Selects mgcv's fitting backend:</p><ul><li><p><code>"bam"</code> – <code><a href="https://rdrr.io/pkg/mgcv/man/bam.html" class="external-link">mgcv::bam()</a></code>. Block-Lanczos solve + fREML
 estimation + lower memory. ~3-10x speedup at janusplot's
 scale (k = 15-25 vars, 600+ pairwise fits per call). The
 <strong>default</strong>, and the one non-byte-identical change in
@@ -242,7 +242,7 @@ v0.1.1: fREML differs from REML by ~1-3% in EDF on
 identical data, so the asymmetry index may shift by
 similar amounts vs v0.1.0 output. Recoverable verbatim
 via <code>engine = "gam"</code>.</p></li>
-<li><p><code>"gam"</code> — <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code>. The v0.1.0 backend. Use for
+<li><p><code>"gam"</code> – <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code>. The v0.1.0 backend. Use for
 backward-compat reproduction, very small n (&lt; 200) where
 bam's setup overhead exceeds its solve gain, or
 methodologically sensitive contexts that require REML

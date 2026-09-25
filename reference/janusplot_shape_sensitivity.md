@@ -46,7 +46,7 @@ janusplot_shape_sensitivity(
 
   Character vector of ground-truth names from
   [`janusplot_shape_sensitivity_shapes()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_shapes.md).
-  Default `NULL` → all 14.
+  Default `NULL` -\> all 14.
 
 - n_grid:
 
@@ -75,7 +75,7 @@ janusplot_shape_sensitivity(
 
 - seed:
 
-  Integer. Base seed — each fit uses `seed + row_index` so results are
+  Integer. Base seed – each fit uses `seed + row_index` so results are
   reproducible and cell-permutation-invariant.
 
 - verbose:
@@ -109,7 +109,7 @@ A data frame with one row per fit. Columns:
 
 - `correct`:
 
-  Logical — does `predicted == truth`?
+  Logical – does `predicted == truth`?
 
 - `archetype_truth`:
 
@@ -121,7 +121,7 @@ A data frame with one row per fit. Columns:
 
 - `archetype_correct`:
 
-  Logical — archetype-level correctness.
+  Logical – archetype-level correctness.
 
 - `monotonicity_index`:
 

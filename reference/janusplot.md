@@ -13,7 +13,7 @@ spline from [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html):
 - Diagonal: blank panel when labels live on the border (default), or a
   variable-name label when `labels = "diagonal"`.
 
-The two triangles intentionally differ — the asymmetry reveals
+The two triangles intentionally differ – the asymmetry reveals
 heteroscedasticity, leverage, and directional non-linearity that a
 single scalar correlation hides.
 
@@ -117,7 +117,7 @@ janusplot(
   One of `"bam"` (default, **new in v0.1.1**) or `"gam"`. Selects mgcv's
   fitting backend:
 
-  - `"bam"` — [`mgcv::bam()`](https://rdrr.io/pkg/mgcv/man/bam.html).
+  - `"bam"` – [`mgcv::bam()`](https://rdrr.io/pkg/mgcv/man/bam.html).
     Block-Lanczos solve + fREML estimation + lower memory. ~3-10x
     speedup at janusplot's scale (k = 15-25 vars, 600+ pairwise fits per
     call). The **default**, and the one non-byte-identical change in
@@ -125,7 +125,7 @@ janusplot(
     so the asymmetry index may shift by similar amounts vs v0.1.0
     output. Recoverable verbatim via `engine = "gam"`.
 
-  - `"gam"` — [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html).
+  - `"gam"` – [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html).
     The v0.1.0 backend. Use for backward-compat reproduction, very small
     n (\< 200) where bam's setup overhead exceeds its solve gain, or
     methodologically sensitive contexts that require REML rather than
@@ -169,13 +169,13 @@ janusplot(
   One of `"fit"` (default), `"d1"`, or `"d2"`. Selects which single
   quantity is rendered in every off-diagonal cell of the matrix.
 
-  - `"fit"` — the fitted smooth \\\hat f(x)\\; default, behaviour
+  - `"fit"` – the fitted smooth \\\hat f(x)\\; default, behaviour
     identical to the pre-derivative release.
 
-  - `"d1"` — the first derivative \\\hat f'(x)\\ of the fitted smooth.
+  - `"d1"` – the first derivative \\\hat f'(x)\\ of the fitted smooth.
     Zero crossings localise turning points of \\\hat f\\.
 
-  - `"d2"` — the second derivative \\\hat f''(x)\\. Zero crossings
+  - `"d2"` – the second derivative \\\hat f''(x)\\. Zero crossings
     localise inflection points of \\\hat f\\.
 
   A single matrix shows a single quantity by design: stacked multi-panel
@@ -184,7 +184,7 @@ janusplot(
   side-by-side; each call keeps its own `with_data = TRUE` summary table
   tagged with the `display` column.
 
-  Orders \\k \ge 3\\ are not exposed — higher-order derivatives of
+  Orders \\k \ge 3\\ are not exposed – higher-order derivatives of
   penalised regression splines amplify noise and rarely carry usable
   signal at realistic sample sizes. See
   [`vignette("janusplot")`](https://max578.github.io/janusplot/articles/janusplot.md)
@@ -193,20 +193,20 @@ janusplot(
 - derivative_ci:
 
   One of `"none"` (default), `"pointwise"`, or `"simultaneous"`.
-  Controls whether — and how — a 95% confidence ribbon is drawn
+  Controls whether – and how – a 95% confidence ribbon is drawn
   underneath the derivative curve when `display %in% c("d1", "d2")`.
   Ignored when `display = "fit"`.
 
-  - `"none"` — no ribbon. The curve and the zero reference line are all
+  - `"none"` – no ribbon. The curve and the zero reference line are all
     you see. Default, because pointwise ribbons overshoot nominal
     coverage as a joint region and can invite over-reading of local
     features.
 
-  - `"pointwise"` — 95% pointwise ribbon from \\\sqrt{\mathrm{diag}(D
-    V_p D^\top)}\\ (Wood 2017 §7.2.4). Valid marginally; not a
+  - `"pointwise"` – 95% pointwise ribbon from \\\sqrt{\mathrm{diag}(D
+    V_p D^\top)}\\ (Wood 2017 section 7.2.4). Valid marginally; not a
     simultaneous statement.
 
-  - `"simultaneous"` — 95% simultaneous band via the Monte Carlo
+  - `"simultaneous"` – 95% simultaneous band via the Monte Carlo
     construction of Ruppert, Wand & Carroll (2003) popularised for GAMs
     by Simpson (2018, *Frontiers Ecol. Evol.* 6:149): draw \\B\\ samples
     \\\tilde{\boldsymbol\beta} \sim \mathcal{N}(\hat{\boldsymbol\beta},
@@ -219,7 +219,7 @@ janusplot(
 - derivative_ci_nsim:
 
   Integer. Number of Monte Carlo samples used when
-  `derivative_ci = "simultaneous"`. Default `1000L` — a compromise
+  `derivative_ci = "simultaneous"`. Default `1000L` – a compromise
   between coverage accuracy (Simpson 2018 uses 10000) and CPU budget
   across every pair in a medium-sized matrix. Ignored for any other
   `derivative_ci`.
@@ -266,12 +266,12 @@ janusplot(
   Character vector, a subset of `c("edf", "A", "shape", "code")`.
   Controls which corner annotations appear on each off-diagonal cell:
 
-  - `"code"` — 2-letter ASCII shape code, **top-left** corner.
+  - `"code"` – 2-letter ASCII shape code, **top-left** corner.
 
-  - `"A"` and `"edf"` — asymmetry index and effective degrees of
+  - `"A"` and `"edf"` – asymmetry index and effective degrees of
     freedom, stacked **bottom-left**.
 
-  - `"shape"` — shape glyph (Unicode or ASCII per `glyph_style`),
+  - `"shape"` – shape glyph (Unicode or ASCII per `glyph_style`),
     **bottom-right** corner.
 
   Default `c("edf", "A")`. `"code"` and `"shape"` occupy distinct
@@ -304,28 +304,28 @@ janusplot(
   One of `"border"` (default), `"diagonal"`, or `"none"`. Controls where
   variable names are rendered:
 
-  - `"border"` — names along the top (rotated per `label_srt`) and left
+  - `"border"` – names along the top (rotated per `label_srt`) and left
     margins of the matrix; diagonal cells are left blank. Mirrors
     `corrplot`'s `tl.pos = "lt"` convention.
 
-  - `"diagonal"` — names centred on the diagonal cells (the pre-0.1
+  - `"diagonal"` – names centred on the diagonal cells (the pre-0.1
     layout).
 
-  - `"none"` — labels suppressed entirely; diagonal cells blank.
+  - `"none"` – labels suppressed entirely; diagonal cells blank.
 
 - diagonal:
 
   One of `"auto"` (default), `"blank"`, `"name"`, or `"density"`.
   Controls what is rendered in the diagonal cells of the matrix.
 
-  - `"auto"` — preserves the historical behaviour: variable name when
+  - `"auto"` – preserves the historical behaviour: variable name when
     `labels = "diagonal"`, blank otherwise.
 
-  - `"blank"` — empty bordered panel (uniform grid reading).
+  - `"blank"` – empty bordered panel (uniform grid reading).
 
-  - `"name"` — variable name centred in the cell, bold.
+  - `"name"` – variable name centred in the cell, bold.
 
-  - `"density"` — kernel density of the variable filled in translucent
+  - `"density"` – kernel density of the variable filled in translucent
     grey, with a rug of raw values along the bottom edge. Mirrors the
     `GGally::ggpairs` convention; surfaces tail weight, bimodality, and
     support clipping that the pairwise smooths alone cannot reveal.
@@ -345,7 +345,7 @@ janusplot(
 
 - signif_glyph:
 
-  Logical. If `TRUE` (default), annotate cells with `·` / `*` / `**`
+  Logical. If `TRUE` (default), annotate cells with `-` / `*` / `**`
   reflecting the smooth's F-test p-value.
 
 - show_asymmetry:
@@ -373,7 +373,7 @@ janusplot(
   Logical. If `TRUE`, return a two-element list `list(plot, data)` where
   `data` is a flat per-cell summary (one row per off-diagonal cell) of
   everything the plot displays. The `data` element is always a plain
-  `data.frame` (base R — no `data.table` dependency). Default `FALSE` —
+  `data.frame` (base R – no `data.table` dependency). Default `FALSE` –
   in which case only the ggplot is returned.
 
 - text_scale_diag:
@@ -411,16 +411,16 @@ janusplot(
   close to its basis cap), `k_index` (residual-difference variance ratio
   below which the basis appears underspecified), and `p` (the simulation
   p-value below which the basis-deficiency signal is significant).
-  Defaults — `edf_ratio = 0.9`, `k_index = 1.0`, `p = 0.05` — track
+  Defaults – `edf_ratio = 0.9`, `k_index = 1.0`, `p = 0.05` – track
   [`mgcv::gam.check()`](https://rdrr.io/pkg/mgcv/man/gam.check.html) and
-  Wood (2017) §5.9.
+  Wood (2017) section 5.9.
 
 - auto_refit_k:
 
   Logical. If `TRUE`, every cell whose Wood trifecta flags an underfit
   is refit with a doubling-k loop until either the flag clears, the
   per-cell unique-x cap is reached, or `k_max_iter` iterations have
-  passed. Default `FALSE` — the diagnostic (`k_check_status`, `k_flag`,
+  passed. Default `FALSE` – the diagnostic (`k_check_status`, `k_flag`,
   `k_prime`, `k_index`, `k_p`) is always computed and surfaced
   regardless of this flag, but the refit is opt-in because it can
   multiply wall time on pathological data.
@@ -438,23 +438,23 @@ janusplot(
   One of `"auto"` (default), `"always"`, or `"never"`. Controls
   scale-aware content suppression per cell:
 
-  - `"auto"` — tier 0 at `n_var < compact_threshold` (the v0.1.0
+  - `"auto"` – tier 0 at `n_var < compact_threshold` (the v0.1.0
     behaviour); progressively suppresses scatter, then CI, then
     annotations, then the spline itself as `n_var` crosses the
     `compact_levels` ladder. The matrix remains readable as `k` grows
-    toward 25–30 by trading detail for legibility.
+    toward 25-30 by trading detail for legibility.
 
-  - `"always"` — force at least tier 1 regardless of `n_var`. Useful for
+  - `"always"` – force at least tier 1 regardless of `n_var`. Useful for
     very dense fixed-size renders.
 
-  - `"never"` — force tier 0 regardless of `n_var`. Useful for
+  - `"never"` – force tier 0 regardless of `n_var`. Useful for
     reproducing v0.1.0 figures on large matrices.
 
 - compact_threshold:
 
   Integer. The `n_var` value at which tier 1 (drop scatter)
   auto-activates under `compact = "auto"`. Default `12L`, anchored on
-  the 150 × 150 px-per-cell pixel budget at typical 6"×6" 300 DPI R
+  the 150 x 150 px-per-cell pixel budget at typical 6"x6" 300 DPI R
   Journal figures.
 
 - compact_levels:
@@ -467,12 +467,12 @@ janusplot(
 
 - focus_by:
 
-  One of `NA` (default — no filter), `"asymmetry"`, `"edf"`, `"k_flag"`,
+  One of `NA` (default – no filter), `"asymmetry"`, `"edf"`, `"k_flag"`,
   or `"non_linearity"` (defined as `edf - 1`). When set, cells whose
   chosen metric falls below `focus_threshold` are rendered in `grey85`
   at alpha `focus_dim_alpha`; the matrix shape is preserved so attention
   drains visually to high-metric cells. This is a **visual filter, not a
-  statistical one** — the underlying fits are unchanged and the
+  statistical one** – the underlying fits are unchanged and the
   `with_data` table carries every cell.
 
 - focus_threshold:
@@ -490,7 +490,7 @@ janusplot(
 - axes:
 
   One of `"original"` (default), `"standardised"`, `"centred"`, or
-  `"rank"`. **Rendering-only knob** — the underlying
+  `"rank"`. **Rendering-only knob** – the underlying
   [`mgcv::gam`](https://rdrr.io/pkg/mgcv/man/gam.html) fits are
   byte-identical across all four modes (verifiable via
   [`digest::digest()`](https://eddelbuettel.github.io/digest/man/digest.html)
@@ -499,24 +499,24 @@ janusplot(
   prediction grid, (c) the CI ribbon, and (d) the variable label on the
   matrix border. Use:
 
-  - `"original"` — raw units. Maximum interpretability per cell. v0.1.0
+  - `"original"` – raw units. Maximum interpretability per cell. v0.1.0
     behaviour.
 
-  - `"standardised"` — `(x - mean(x)) / sd(x)` per variable. Border
+  - `"standardised"` – `(x - mean(x)) / sd(x)` per variable. Border
     label becomes e.g. `"mpg (z)"`. Pairs scaled into a comparable
     visual range; useful at `k >= 15` when raw-unit panels look
     disparate.
 
-  - `"centred"` — `x - mean(x)` per variable. Border label becomes e.g.
+  - `"centred"` – `x - mean(x)` per variable. Border label becomes e.g.
     `"mpg (centred)"`. Preserves units while anchoring the origin.
 
-  - `"rank"` — empirical-CDF-based rank, scaled to `[0, n]` per
+  - `"rank"` – empirical-CDF-based rank, scaled to `[0, n]` per
     variable. Border label becomes `"rank(mpg)"`. Sanity-check view:
     collapses outliers; if the smooth changes shape vs `"original"` the
     relationship is monotone-but-not-linear.
 
   At compact tier 3 (`n_var >= 25` under `compact = "auto"`), the cells
-  render only colour fill + shape-class glyph — no curve, no scatter —
+  render only colour fill + shape-class glyph – no curve, no scatter –
   so `axes` becomes a **documented no-op** (the border labels still pick
   up the mode suffix).
 
@@ -529,7 +529,7 @@ janusplot(
   `.png`, `.pdf`, `.svg`, `.jpg` / `.jpeg`, `.tif` / `.tiff`, `.eps`,
   `.ps`, `.bmp`. Default `NULL` (no file written; `janusplot()` still
   returns the ggplot). Width / height default to `pmax(6, 0.65 * k_n)`
-  inches each — square aspect, scaling with matrix dimension.
+  inches each – square aspect, scaling with matrix dimension.
 
 - save_width:
 
@@ -570,7 +570,7 @@ which quantity the call rendered, so separate calls for fit / d1 / d2
 yield comparable, stackable tables. Derivative *curves* themselves (grid
 of \\x\\, fitted \\\hat f^{(k)}\\, SE) live on
 [`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md)
-— see there.
+– see there.
 
 ## See also
 
@@ -583,7 +583,7 @@ Other smooth-associations:
 ## Examples
 
 ``` r
-# Minimal runnable example — 3 variables, 6 asymmetric pairwise GAM fits.
+# Minimal runnable example -- 3 variables, 6 asymmetric pairwise GAM fits.
 janusplot(mtcars[, c("mpg", "hp", "wt")])
 
 

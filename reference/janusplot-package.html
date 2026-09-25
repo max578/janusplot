@@ -21,7 +21,7 @@ non-linearity become visually evident."><meta property="og:image" content="https
 
     <a class="navbar-brand me-2" href="../index.html">janusplot</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -68,9 +68,12 @@ non-linearity become visually evident.</p>
     <div class="section level2">
     <h2 id="main-functions">Main functions<a class="anchor" aria-label="anchor" href="#main-functions"></a></h2>
 
-<ul><li><p><code><a href="janusplot.html">janusplot()</a></code> — returns a ggplot of the matrix.</p></li>
-<li><p><code><a href="janusplot_data.html">janusplot_data()</a></code> — returns the raw GAM fits + per-cell metrics
+<ul><li><p><code><a href="janusplot.html">janusplot()</a></code> – returns a ggplot of the matrix.</p></li>
+<li><p><code><a href="janusplot_data.html">janusplot_data()</a></code> – returns the raw GAM fits + per-cell metrics
 (for custom plotting or downstream analysis).</p></li>
+<li><p><code><a href="janusplot_direction_test.html">janusplot_direction_test()</a></code> – runs the residual-independence test
+that licenses a directional reading of a pair's asymmetry, and
+abstains where the additive noise model cannot decide.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="asymmetry-index">Asymmetry index<a class="anchor" aria-label="anchor" href="#asymmetry-index"></a></h2>
@@ -85,7 +88,10 @@ The asymmetry index is offered here as a <em>visual pre-discovery
 diagnostic</em> rather than a causal inference procedure; see the
 package vignette and accompanying paper for full scope and
 limitations (in particular the failure modes under
-heteroscedasticity, confounding, and Gaussian-linear DGPs).</p>
+heteroscedasticity, confounding, and Gaussian-linear DGPs).
+<code><a href="janusplot_direction_test.html">janusplot_direction_test()</a></code> supplies the missing half of that
+procedure: the residual-independence test whose one-sided outcome
+is what actually licenses a directional claim.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -97,7 +103,8 @@ heteroscedasticity, confounding, and Gaussian-linear DGPs).</p>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
     <p><strong>Maintainer</strong>: Max Moldovan <a href="mailto:max.moldovan@adelaide.edu.au">max.moldovan@adelaide.edu.au</a> (<a href="https://orcid.org/0000-0001-9680-8474" class="external-link">ORCID</a>) [copyright holder]</p>
-    </div>
+<p>Authors:</p><ul><li><p>Max Moldovan <a href="mailto:max.moldovan@adelaide.edu.au">max.moldovan@adelaide.edu.au</a> (<a href="https://orcid.org/0000-0001-9680-8474" class="external-link">ORCID</a>) [copyright holder]</p></li>
+</ul></div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

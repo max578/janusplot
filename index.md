@@ -182,6 +182,13 @@ local-environmental NOTEs only). Comprehensive `testthat` suite
 including `vdiffr` visual-regression snapshots; coverage tracked via the
 Codecov badge above.
 
+## Contributing
+
+Bug reports and suggestions are welcome through the [GitHub
+issues](https://github.com/max578/janusplot/issues). See
+[`CONTRIBUTING.md`](https://max578.github.io/janusplot/CONTRIBUTING.md)
+for how to propose a change.
+
 ## Citation
 
 ``` r

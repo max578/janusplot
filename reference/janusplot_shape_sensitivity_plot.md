@@ -7,7 +7,7 @@ Produce one of four diagnostic plots from the raw data frame returned by
 
 - `"confusion_fine"`:
 
-  24 x (\|shapes\|) confusion matrix at the fine category level — rows =
+  24 x (\|shapes\|) confusion matrix at the fine category level – rows =
   ground truth, columns = predicted, cells coloured by
   `P(pred | truth)`.
 

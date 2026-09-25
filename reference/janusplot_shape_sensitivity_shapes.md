@@ -17,7 +17,7 @@ janusplot_shape_sensitivity_shapes()
 
 ## Value
 
-Character vector of length 14 — the generator names.
+Character vector of length 14 – the generator names.
 
 ## See also
 

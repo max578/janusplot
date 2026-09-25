@@ -93,13 +93,13 @@ janusplot_data(
   Logical. If `TRUE`, retain full
   [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html) model objects
   in the return (large memory footprint for `k` above ~15). Default
-  `FALSE` — retains summary metrics and prediction grids only.
+  `FALSE` – retains summary metrics and prediction grids only.
 
 - derivatives:
 
   Integer vector of derivative orders to compute on every pair (subset
   of `1:2`). Default [`integer()`](https://rdrr.io/r/base/integer.html)
-  — no derivatives. Unlike
+  – no derivatives. Unlike
   [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md),
   the data companion can return multiple orders from a single call for
   programmatic analysis; pass `c(1L, 2L)` to surface both.
@@ -107,20 +107,20 @@ janusplot_data(
 - derivative_ci:
 
   One of `"none"` (default), `"pointwise"`, or `"simultaneous"`.
-  Controls whether — and how — a 95% confidence ribbon is drawn
+  Controls whether – and how – a 95% confidence ribbon is drawn
   underneath the derivative curve when `display %in% c("d1", "d2")`.
   Ignored when `display = "fit"`.
 
-  - `"none"` — no ribbon. The curve and the zero reference line are all
+  - `"none"` – no ribbon. The curve and the zero reference line are all
     you see. Default, because pointwise ribbons overshoot nominal
     coverage as a joint region and can invite over-reading of local
     features.
 
-  - `"pointwise"` — 95% pointwise ribbon from \\\sqrt{\mathrm{diag}(D
-    V_p D^\top)}\\ (Wood 2017 §7.2.4). Valid marginally; not a
+  - `"pointwise"` – 95% pointwise ribbon from \\\sqrt{\mathrm{diag}(D
+    V_p D^\top)}\\ (Wood 2017 section 7.2.4). Valid marginally; not a
     simultaneous statement.
 
-  - `"simultaneous"` — 95% simultaneous band via the Monte Carlo
+  - `"simultaneous"` – 95% simultaneous band via the Monte Carlo
     construction of Ruppert, Wand & Carroll (2003) popularised for GAMs
     by Simpson (2018, *Frontiers Ecol. Evol.* 6:149): draw \\B\\ samples
     \\\tilde{\boldsymbol\beta} \sim \mathcal{N}(\hat{\boldsymbol\beta},
@@ -133,7 +133,7 @@ janusplot_data(
 - derivative_ci_nsim:
 
   Integer. Number of Monte Carlo samples used when
-  `derivative_ci = "simultaneous"`. Default `1000L` — a compromise
+  `derivative_ci = "simultaneous"`. Default `1000L` – a compromise
   between coverage accuracy (Simpson 2018 uses 10000) and CPU budget
   across every pair in a medium-sized matrix. Ignored for any other
   `derivative_ci`.
@@ -167,16 +167,16 @@ janusplot_data(
   close to its basis cap), `k_index` (residual-difference variance ratio
   below which the basis appears underspecified), and `p` (the simulation
   p-value below which the basis-deficiency signal is significant).
-  Defaults — `edf_ratio = 0.9`, `k_index = 1.0`, `p = 0.05` — track
+  Defaults – `edf_ratio = 0.9`, `k_index = 1.0`, `p = 0.05` – track
   [`mgcv::gam.check()`](https://rdrr.io/pkg/mgcv/man/gam.check.html) and
-  Wood (2017) §5.9.
+  Wood (2017) section 5.9.
 
 - auto_refit_k:
 
   Logical. If `TRUE`, every cell whose Wood trifecta flags an underfit
   is refit with a doubling-k loop until either the flag clears, the
   per-cell unique-x cap is reached, or `k_max_iter` iterations have
-  passed. Default `FALSE` — the diagnostic (`k_check_status`, `k_flag`,
+  passed. Default `FALSE` – the diagnostic (`k_check_status`, `k_flag`,
   `k_prime`, `k_index`, `k_p`) is always computed and surfaced
   regardless of this flag, but the refit is opt-in because it can
   multiply wall time on pathological data.
@@ -194,7 +194,7 @@ janusplot_data(
   One of `"bam"` (default, **new in v0.1.1**) or `"gam"`. Selects mgcv's
   fitting backend:
 
-  - `"bam"` — [`mgcv::bam()`](https://rdrr.io/pkg/mgcv/man/bam.html).
+  - `"bam"` – [`mgcv::bam()`](https://rdrr.io/pkg/mgcv/man/bam.html).
     Block-Lanczos solve + fREML estimation + lower memory. ~3-10x
     speedup at janusplot's scale (k = 15-25 vars, 600+ pairwise fits per
     call). The **default**, and the one non-byte-identical change in
@@ -202,7 +202,7 @@ janusplot_data(
     so the asymmetry index may shift by similar amounts vs v0.1.0
     output. Recoverable verbatim via `engine = "gam"`.
 
-  - `"gam"` — [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html).
+  - `"gam"` – [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html).
     The v0.1.0 backend. Use for backward-compat reproduction, very small
     n (\< 200) where bam's setup overhead exceeds its solve gain, or
     methodologically sensitive contexts that require REML rather than

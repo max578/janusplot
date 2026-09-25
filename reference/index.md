@@ -10,6 +10,16 @@ Render an asymmetric smoothed-association matrix.
   **\[experimental\]** : Raw GAM fits and per-cell metrics for a
   smoothed-association matrix
 
+## Directional licensing
+
+The residual-independence test that turns a pair’s fit asymmetry into a
+directional claim, and abstains where the additive noise model cannot
+decide.
+
+- [`janusplot_direction_test()`](https://max578.github.io/janusplot/reference/janusplot_direction_test.md)
+  **\[experimental\]** : Test whether the residual-independence
+  condition licenses a direction
+
 ## Shape taxonomy
 
 The 24-category objective shape descriptor. Public helpers for computing

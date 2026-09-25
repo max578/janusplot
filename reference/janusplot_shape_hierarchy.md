@@ -9,18 +9,18 @@ legend plate, and the
 [`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md)
 output.
 
-Hierarchy columns (finest → coarsest):
+Hierarchy columns (finest -\> coarsest):
 
 - `category`:
 
-  24-way fine label (`linear_up`, `skewed_peak`, `bimodal`, …). Computed
-  per cell by
+  24-way fine label (`linear_up`, `skewed_peak`, `bimodal`, ...).
+  Computed per cell by
   [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md).
 
 - `code`:
 
   Unique two-letter ASCII shorthand (safe on any font or typesetting
-  pipeline) — e.g. `lu` for `linear_up`.
+  pipeline) – e.g. `lu` for `linear_up`.
 
 - `archetype`:
 
@@ -58,15 +58,15 @@ A data frame with 24 rows and columns `category`, `code`, `archetype`,
 
 Calabrese, E. J. (2008). Hormesis: why it is important to toxicology and
 toxicologists. *Environmental Toxicology and Chemistry*, **27**(7),
-1451–1474.
+1451-1474.
 
 Meyer, M. C. (2008). Inference using shape-restricted regression
-splines. *Annals of Applied Statistics*, **2**(3), 1013–1033.
+splines. *Annals of Applied Statistics*, **2**(3), 1013-1033.
 
 Milnor, J. (1963). *Morse Theory*. Princeton University Press.
 
 Pya, N., & Wood, S. N. (2015). Shape constrained additive models.
-*Statistics and Computing*, **25**(3), 543–559.
+*Statistics and Computing*, **25**(3), 543-559.
 
 ## See also
 

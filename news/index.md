@@ -1,6 +1,23 @@
 # Changelog
 
-## janusplot (development version)
+## janusplot 0.1.1.9000 (development version)
+
+- The test covering the `parallel = TRUE` diagnostic now installs a
+  sequential `future` plan for its duration and restores the previous
+  plan afterwards, instead of setting the `future.plan` option. `future`
+  consults that option only while initialising its own plan, so on a
+  machine whose R startup profile has already called
+  `future::plan("multisession")` the option changed nothing: two workers
+  stayed active,
+  [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
+  rightly stayed quiet about falling back to sequential dispatch, and
+  the test recorded a failure against correct behaviour. The same suite
+  came back clean under `R CMD check`, where such startup profiles
+  conventionally stand aside, and reported one failure in 504 when run
+  from `Rscript` – a difference in the machine, not in the package. The
+  suite-wide setup file carried the identical inert option and now
+  installs the sequential plan directly, so the intent to keep test runs
+  single-worker is actually met.
 
 - Relicensed from GPL (\>= 3) to MIT (orchestra-wide licence
   unification, 2026-09-02). No code change.
@@ -12,6 +29,27 @@
   `n_used = NA` rather than the row count offered to a fit that never
   completed, and raises one warning per matrix summarising the failed
   cells.
+
+- New
+  [`janusplot_direction_test()`](https://max578.github.io/janusplot/reference/janusplot_direction_test.md).
+  The package could already show that a pair’s two directions of fit
+  differ, and that asymmetry is what invites a directional reading of
+  the matrix; what it could not do was check the condition that licenses
+  such a reading. Under the additive noise model a direction is
+  supported only when the residuals of the fit in that direction are
+  independent of the putative cause, and the residuals of the fit the
+  other way round are not. The new function fits both directions, tests
+  each residual set against its putative cause with the kernel (HSIC)
+  permutation test in `kernR`, and returns a verdict of `forward`,
+  `reverse` or `undecided` alongside both p-values and both test
+  statistics. It abstains rather than ranking the two p-values: when
+  both directions admit an additive noise model, when neither does, and
+  in the linear-Gaussian case – where a linear model with Gaussian noise
+  reproduces the joint distribution equally well read either way, so no
+  direction is identifiable at all – the verdict is `undecided`, and the
+  reason returned with it says which of those situations produced it.
+  `kernR` is a suggested dependency; where it is absent the function
+  says so instead of falling back to a weaker rule.
 
 - [`janusplot_shape_metrics()`](https://max578.github.io/janusplot/reference/janusplot_shape_metrics.md)’s
   insufficient-data decline (fewer than 3 finite predictor values) now
@@ -285,9 +323,11 @@ User-visible changes:
 - **`data.table` dependency removed.**
   `janusplot(..., with_data = TRUE)$data` and any other tabular returns
   are now always a plain `data.frame` — no runtime or documented
-  fallback to `data.table::as.data.table()`. The package charter bans
-  `data.table` as a dependency (plotting function, overhead unearned).
-  `data.table` is no longer listed in `Suggests:`.
+  fallback to
+  [`data.table::as.data.table()`](https://rdrr.io/pkg/data.table/man/as.data.table.html).
+  The package charter bans `data.table` as a dependency (plotting
+  function, overhead unearned). `data.table` is no longer listed in
+  `Suggests:`.
 - **Documentation example cleanup.** The
   [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
   example no longer passes `show_asymmetry = TRUE` (which has been

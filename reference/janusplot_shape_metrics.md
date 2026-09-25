@@ -99,7 +99,7 @@ A named list with components:
 
 - `flat_range_ratio`:
 
-  `range(f) / sd(y)` — small values indicate a degenerate flat smooth.
+  `range(f) / sd(y)` – small values indicate a degenerate flat smooth.
 
 - `shape_category`:
 

@@ -14,11 +14,16 @@ non-linearity become visually evident.
 ## Main functions
 
 - [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
-  — returns a ggplot of the matrix.
+  – returns a ggplot of the matrix.
 
 - [`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md)
-  — returns the raw GAM fits + per-cell metrics (for custom plotting or
+  – returns the raw GAM fits + per-cell metrics (for custom plotting or
   downstream analysis).
+
+- [`janusplot_direction_test()`](https://max578.github.io/janusplot/reference/janusplot_direction_test.md)
+  – runs the residual-independence test that licenses a directional
+  reading of a pair's asymmetry, and abstains where the additive noise
+  model cannot decide.
 
 ## Asymmetry index
 
@@ -35,6 +40,10 @@ here as a *visual pre-discovery diagnostic* rather than a causal
 inference procedure; see the package vignette and accompanying paper for
 full scope and limitations (in particular the failure modes under
 heteroscedasticity, confounding, and Gaussian-linear DGPs).
+[`janusplot_direction_test()`](https://max578.github.io/janusplot/reference/janusplot_direction_test.md)
+supplies the missing half of that procedure: the residual-independence
+test whose one-sided outcome is what actually licenses a directional
+claim.
 
 ## See also
 
@@ -50,3 +59,8 @@ Useful links:
 
 **Maintainer**: Max Moldovan <max.moldovan@adelaide.edu.au>
 ([ORCID](https://orcid.org/0000-0001-9680-8474)) \[copyright holder\]
+
+Authors:
+
+- Max Moldovan <max.moldovan@adelaide.edu.au>
+  ([ORCID](https://orcid.org/0000-0001-9680-8474)) \[copyright holder\]
