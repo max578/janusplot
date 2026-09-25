@@ -33,3 +33,6 @@
 ^rpkg_quality\.yml$
 ^report$
 ^tests/testthat/Rplots\.pdf$
+^\.claude$
+^\.positai$
+^\.cursor$

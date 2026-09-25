@@ -195,6 +195,12 @@ accompanying paper for scope and explicit non-claims.
 NOTEs only). Comprehensive `testthat` suite including `vdiffr` visual-regression
 snapshots; coverage tracked via the Codecov badge above.
 
+## Contributing
+
+Bug reports and suggestions are welcome through the
+[GitHub issues](https://github.com/max578/janusplot/issues). See
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for how to propose a change.
+
 ## Citation
 
 ```r
@@ -203,4 +209,4 @@ citation("janusplot")
 
 ## License
 
-GPL (>= 3). See <https://www.gnu.org/licenses/gpl-3.0.html> for the full text.
+MIT. See [`LICENSE.md`](LICENSE.md) for the full text.

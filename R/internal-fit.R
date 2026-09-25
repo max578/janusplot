@@ -891,7 +891,10 @@
   cli::cli_warn(c(
     "!" = "{n_failed} of {n_cells} cell{?s} failed to fit and carry no result.",
     "i" = "First failure: {first_msg}",
-    "i" = "Inspect {.code n_used}/{.code error} in the returned table -- a failed cell reports {.code n_used = NA} and {.code edf = NA}, never a completed fit."
+    "i" = paste0(
+      "Inspect {.code n_used}/{.code error} in the returned table -- a failed cell ",
+      "reports {.code n_used = NA} and {.code edf = NA}, never a completed fit."
+    )
   ))
   invisible(NULL)
 }
