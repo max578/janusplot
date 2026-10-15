@@ -39,6 +39,22 @@ Two novelties, paired with the asymmetry story:
     dose-response pharmacology (Calabrese 2008), and Morse critical-
     point classification (Milnor 1963).
 
+## Related packages
+
+- [corrplot](https://CRAN.R-project.org/package=corrplot) draws a
+  correlation matrix and can reorder the variables to bring out
+  patterns.
+- [GGally](https://CRAN.R-project.org/package=GGally) extends ggplot2
+  with a pairwise plot matrix, among other plots.
+- [XICOR](https://CRAN.R-project.org/package=XICOR) computes
+  Chatterjee’s xi correlation, an association measure that does not
+  assume a linear relationship.
+
+corrplot and XICOR give one number per pair, and a GGally plot matrix
+shows each pair’s data. janusplot fits a smooth in each direction for
+every pair, draws both fits in the matrix, and reports how much the two
+directions differ and what shape each curve takes.
+
 ## Install
 
 ``` r
@@ -186,8 +202,8 @@ Codecov badge above.
 
 ## Contributing
 
-Bug reports and suggestions are welcome through the
-[GitHub issues](https://github.com/max578/janusplot/issues). See
+Bug reports and suggestions are welcome through the [GitHub
+issues](https://github.com/max578/janusplot/issues). See
 [`CONTRIBUTING.md`](CONTRIBUTING.md) for how to propose a change.
 
 ## Citation
@@ -198,5 +214,4 @@ citation("janusplot")
 
 ## License
 
-MIT. See [`LICENSE.md`](LICENSE.md) for the
-full text.
+MIT. See [`LICENSE.md`](LICENSE.md) for the full text.

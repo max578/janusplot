@@ -1,5 +1,7 @@
 # janusplot 0.1.1.9000 (development version)
 
+* README lists related packages.
+
 * The test covering the `parallel = TRUE` diagnostic now installs a
   sequential `future` plan for its duration and restores the previous
   plan afterwards, instead of setting the `future.plan` option. `future`
