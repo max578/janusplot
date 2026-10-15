@@ -20,7 +20,7 @@ exceptional joint distributions. So a direction is supported when
 - the residuals of the fit in the opposite direction are not.
 
 Independence is assessed with the kernel (HSIC) permutation test in
-[`kernR::hsic_test()`](https://rdrr.io/pkg/kernR/man/hsic_test.html).
+[`kernR::hsic_test()`](https://max578.github.io/kernR/reference/hsic_test.html).
 Anything other than the clean one-sided pattern – both directions
 admitting an additive-noise model, neither doing so, or the known
 non-identifiable linear-Gaussian case – returns `"undecided"`. The

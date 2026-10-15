@@ -82,6 +82,19 @@
 <strong>24-category shape taxonomy</strong> — each fitted smooth is classified into one of 24 named shapes (<code>linear_up</code>, <code>skewed_peak</code>, <code>bimodal</code>, <code>bi_wave</code>, <code>rippled_monotone</code>, …) via a <code>(T, I)</code> dispatch on turning-point and inflection counts, with monotonicity/convexity indices for disambiguation. The taxonomy rolls up through three broader tiers: <code>archetype</code> (7), <code>monotonic</code> (3), <code>linear</code> (2) — grounded in shape-constrained regression (Pya &amp; Wood 2015), dose-response pharmacology (Calabrese 2008), and Morse critical- point classification (Milnor 1963).</li>
 </ol>
 <div class="section level2">
+<h2 id="related-packages">Related packages<a class="anchor" aria-label="anchor" href="#related-packages"></a>
+</h2>
+<ul>
+<li>
+<a href="https://CRAN.R-project.org/package=corrplot" class="external-link">corrplot</a> draws a correlation matrix and can reorder the variables to bring out patterns.</li>
+<li>
+<a href="https://CRAN.R-project.org/package=GGally" class="external-link">GGally</a> extends ggplot2 with a pairwise plot matrix, among other plots.</li>
+<li>
+<a href="https://CRAN.R-project.org/package=XICOR" class="external-link">XICOR</a> computes Chatterjee’s xi correlation, an association measure that does not assume a linear relationship.</li>
+</ul>
+<p>corrplot and XICOR give one number per pair, and a GGally plot matrix shows each pair’s data. janusplot fits a smooth in each direction for every pair, draws both fits in the matrix, and reports how much the two directions differ and what shape each curve takes.</p>
+</div>
+<div class="section level2">
 <h2 id="install">Install<a class="anchor" aria-label="anchor" href="#install"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
