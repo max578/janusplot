@@ -46,8 +46,8 @@ jobs:
           # Kept non-fatal until CODECOV_TOKEN is configured on the repo;
           # once wired up, flip to `true` on push events.
           fail_ci_if_error: false
-          file: ./cobertura.xml
-          plugin: noop
+          files: ./cobertura.xml
+          plugins: noop
           disable_search: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
