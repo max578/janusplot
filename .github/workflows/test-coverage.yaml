@@ -35,6 +35,10 @@ jobs:
             install_path = file.path(normalizePath(Sys.getenv("RUNNER_TEMP"), winslash = "/"), "package")
           )
           covr::to_cobertura(cov)
+          # The total is printed so it can be read from the job log when
+          # the Codecov upload has no token.
+          print(cov)
+          cat(sprintf("janusplot TOTAL COVERAGE: %.2f%%\n", covr::percent_coverage(cov)))
         shell: Rscript {0}
 
       - uses: codecov/codecov-action@v6
