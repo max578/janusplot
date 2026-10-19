@@ -1,4 +1,7 @@
-# janusplot 0.1.1.9000 (development version)
+# janusplot 0.2.0
+
+* janusplot is now released under the MIT licence. Versions up to 0.1.1
+  were released under GPL (>= 3).
 
 * README lists related packages.
 
@@ -17,7 +20,6 @@
   inert option and now installs the sequential plan directly, so the
   intent to keep test runs single-worker is actually met.
 
-* Relicensed from GPL (>= 3) to MIT (orchestra-wide licence unification, 2026-09-02). No code change.
 
 * A per-cell GAM fit that errors (e.g. a constant predictor) now carries
   its error message into both public returns (`janusplot(with_data =
@@ -80,9 +82,13 @@
   and vignette) now states "6 shapes across 5 archetypes", correcting
   "one per non-degenerate archetype" (`u_shape` and `inverted_u` are
   both `unimodal`).
-* README: added a one-line purpose statement ahead of the badges, and
-  corrected the installation note's claim that "the CRAN release ships
-  prebuilt vignettes" -- janusplot is not yet on CRAN.
+* README: added a one-line purpose statement ahead of the badges. The
+  installation section now gives the CRAN install first.
+* `kernR`, a suggested dependency, is installable from
+  <https://max578.r-universe.dev> (`Additional_repositories`).
+* The insufficient-data refusal of `janusplot_shape_metrics()` now names
+  the predictor in its message; it previously printed the unexpanded
+  template.
 
 # janusplot 0.1.1
 

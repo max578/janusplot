@@ -741,7 +741,7 @@ janusplot_shape_metrics <- function(fit,
     # caller can recognise the decline via is_orchestra_decline()
     # (janusplot never produces a partial shape-metrics result, so
     # this is a refusal, not a typed abstention object).
-    rlang::abort(
+    cli::cli_abort(
       "Need at least 3 finite values of {.val {x_name}} to characterise its shape.",
       class = c("janusplot_refusal", "orchestra_refusal")
     )

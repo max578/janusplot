@@ -238,4 +238,5 @@ test_that("janusplot_shape_metrics() declines with a classed refusal on too few 
   expect_true("janusplot_refusal" %in% class(cond))
   expect_true(grepl("_refusal$", class(cond)[1L]))
   expect_true(any(grepl("_(refusal|abstention)$", class(cond))))
+  expect_match(conditionMessage(cond), "wt", fixed = TRUE)
 })

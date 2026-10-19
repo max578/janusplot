@@ -1,7 +1,7 @@
 Package: janusplot
 Type: Package
 Title: Asymmetric Smoothed-Association Matrices via GAM Fits
-Version: 0.1.1.9000
+Version: 0.2.0
 Authors@R: c(
     person("Max", "Moldovan", , "max.moldovan@adelaide.edu.au",
            role = c("aut", "cre", "cph"),
@@ -46,8 +46,7 @@ Suggests:
     testthat (>= 3.0.0),
     vdiffr (>= 1.0.0),
     withr
-Remotes:
-    max578/kernR
+Additional_repositories: https://max578.r-universe.dev
 VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE, roclets = c("rd", "namespace", "collate"))
 Config/testthat/edition: 3

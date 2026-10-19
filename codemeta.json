@@ -6,8 +6,8 @@
   "name": "janusplot: Asymmetric Smoothed-Association Matrices via GAM Fits",
   "codeRepository": "https://github.com/max578/janusplot",
   "issueTracker": "https://github.com/max578/janusplot/issues",
-  "license": "https://spdx.org/licenses/GPL-3.0-or-later",
-  "version": "0.1.1.9000",
+  "license": "https://spdx.org/licenses/MIT",
+  "version": "0.2.0",
   "programmingLanguage": {
     "@type": "ComputerLanguage",
     "name": "R",

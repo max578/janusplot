@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use janusplot in research, please cite it as below."
 title: "janusplot: Asymmetric Smoothed-Association Matrices via GAM Fits"
 type: software
-version: 0.1.1.9000
+version: 0.2.0
 date-released: 2026-06-26
 authors:
   - given-names: Max
@@ -12,7 +12,7 @@ authors:
     orcid: "https://orcid.org/0000-0001-9680-8474"
 repository-code: "https://github.com/max578/janusplot"
 url: "https://max578.github.io/janusplot/"
-license: GPL-3.0-or-later
+license: MIT
 keywords:
   - R
   - visualisation
