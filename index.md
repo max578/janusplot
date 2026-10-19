@@ -46,28 +46,17 @@ directions differ and what shape each curve takes.
 
 ``` r
 
-# development version from GitHub (fast; no vignettes)
-pak::pak("max578/janusplot")
+# released version from CRAN
+install.packages("janusplot")
 
-# or, with vignettes built locally (recommended — enables
-# browseVignettes("janusplot") and vignette("janusplot")):
-# install.packages("remotes")
-remotes::install_github(
-  "max578/janusplot",
-  build_vignettes = TRUE,
-  dependencies    = TRUE
-)
+# development version from GitHub
+pak::pak("max578/janusplot")
 ```
 
-Note: neither [`pak::pak()`](https://pak.r-lib.org/reference/pak.html)
-nor `devtools::install_github()` / `remotes::install_github()` build
-vignettes by default when installing from a source repository. The
-`build_vignettes = TRUE` flag above is required for
-[`browseVignettes()`](https://rdrr.io/r/utils/browseVignettes.html) to
-find them. janusplot is not yet on CRAN (submitted 2026-07-01; not yet
-accepted) – once a CRAN release exists it will ship prebuilt vignettes
-and need no extra flag, but until then always install with
-`build_vignettes = TRUE`.
+Installing from GitHub does not build the vignettes. To read them
+locally from a GitHub install, use
+`remotes::install_github("max578/janusplot", build_vignettes = TRUE, dependencies = TRUE)`.
+The CRAN release ships them built.
 
 ## Quick start
 
