@@ -1,7 +1,7 @@
 # Shape metrics for janusplot cells.
 # Two continuous indices (monotonicity M, convexity C), two discrete
 # counts (turning points, inflections), one ratio (flat range), and a
-# rule-based classifier into 24 shape categories. All weights are the
+# rule-based classifier into 27 shape categories. All weights are the
 # empirical density of x on the prediction grid, so the metrics describe
 # the smooth *where the data actually live*, not the extrapolated tails.
 #
@@ -29,14 +29,17 @@
 #' \describe{
 #'   \item{`mono_strong`}{`|M|` threshold for a strictly monotone smooth (default `0.9`).}
 #'   \item{`mono_mod`}{`|M|` threshold for a curved-but-monotone smooth (default `0.5`).}
-#'   \item{`mono_nonmono`}{`|M|` below this is considered non-monotone (default `0.3`).}
-#'   \item{`mono_s`}{`|M|` threshold for labelling an S-shape (default `0.5`).}
 #'   \item{`curv_low`}{`|C|` below this is considered near-linear curvature (default `0.2`).}
 #'   \item{`curv_mod`}{`|C|` threshold for a clearly curved monotone (default `0.5`).}
-#'   \item{`curv_strong`}{`|C|` threshold for a U-shape / inverted-U shape
-#'     (default `0.5`).}
 #'   \item{`flat`}{`range(fit) / sd(y)` below this is called `flat` (default `0.05`).}
 #' }
+#'
+#' The cutoffs `mono_nonmono`, `mono_s` and `curv_strong` are
+#' deprecated. The classifier never read them: non-monotone and
+#' S-shaped curves are identified from the turning-point and
+#' inflection counts, and peak against trough from the type of the
+#' extremum. Passing them raises a deprecation warning and they are
+#' dropped from the returned list.
 #'
 #' @examples
 #' janusplot_shape_cutoffs()
@@ -47,14 +50,21 @@ janusplot_shape_cutoffs <- function(...) {
   defaults <- list(
     mono_strong  = 0.9,
     mono_mod     = 0.5,
-    mono_nonmono = 0.3,
-    mono_s       = 0.5,
     curv_low     = 0.2,
     curv_mod     = 0.5,
-    curv_strong  = 0.5,
     flat         = 0.05
   )
   overrides <- list(...)
+  deprecated <- intersect(names(overrides),
+                          c("mono_nonmono", "mono_s", "curv_strong"))
+  for (nm in deprecated) {
+    lifecycle::deprecate_warn(
+      when    = "0.2.1",
+      what    = I(paste0("The `", nm, "` cutoff")),
+      details = "The shape classifier never used it; it is ignored."
+    )
+  }
+  overrides <- overrides[setdiff(names(overrides), deprecated)]
   if (length(overrides)) {
     unknown <- setdiff(names(overrides), names(defaults))
     if (length(unknown)) {
@@ -82,11 +92,12 @@ janusplot_shape_cutoffs <- function(...) {
 
 .shape_taxonomy <- function() {
   # Order within the data frame drives legend layout (top-left to
-  # bottom-right, row-major). Group monotone shapes, then peaks,
-  # then waves, then multi-peak, with flat / indeterminate last.
+  # bottom-right, row-major). Group monotone shapes, then peaks and
+  # their reflected troughs, then waves, then multi-peak, with
+  # flat / indeterminate last.
   #
   # Four hierarchy columns layered from finest to coarsest:
-  #   category  -- 24-way fine label (primary dispatch)
+  #   category  -- 27-way fine label (primary dispatch)
   #   code      -- unique 2-letter ASCII shorthand (cell-safe)
   #   archetype -- 7-family grouping (SCAM / dose-response inspired)
   #   monotonic -- monotone / non_monotone / degenerate
@@ -99,6 +110,7 @@ janusplot_shape_cutoffs <- function(...) {
       "s_shape", "rippled_monotone",
       "u_shape", "inverted_u",
       "skewed_peak", "broad_peak", "rippled_peak",
+      "skewed_trough", "broad_trough", "rippled_trough",
       "wave", "warped_wave", "rippled_wave", "complex_wave",
       "bimodal", "bimodal_ripple",
       "bi_wave", "bi_wave_ripple",
@@ -111,6 +123,7 @@ janusplot_shape_cutoffs <- function(...) {
       "ss", "rm",
       "us", "iu",
       "sp", "bp", "rp",
+      "st", "bt", "rt",
       "wv", "ww", "rw", "cw",
       "bm", "mr",
       "bw", "wr",
@@ -124,6 +137,7 @@ janusplot_shape_cutoffs <- function(...) {
       "monotone_curved", "monotone_curved",
       "unimodal", "unimodal",
       "unimodal", "unimodal", "unimodal",
+      "unimodal", "unimodal", "unimodal",
       "wave", "wave", "wave", "wave",
       "multimodal", "multimodal",
       "multimodal", "multimodal",
@@ -135,6 +149,7 @@ janusplot_shape_cutoffs <- function(...) {
       "monotone", "monotone", "monotone", "monotone",
       "monotone", "monotone",
       "non_monotone", "non_monotone",
+      "non_monotone", "non_monotone", "non_monotone",
       "non_monotone", "non_monotone", "non_monotone",
       "non_monotone", "non_monotone", "non_monotone", "non_monotone",
       "non_monotone", "non_monotone",
@@ -148,6 +163,7 @@ janusplot_shape_cutoffs <- function(...) {
       "non_linear", "non_linear",
       "non_linear", "non_linear",
       "non_linear", "non_linear", "non_linear",
+      "non_linear", "non_linear", "non_linear",
       "non_linear", "non_linear", "non_linear", "non_linear",
       "non_linear", "non_linear",
       "non_linear", "non_linear",
@@ -160,6 +176,7 @@ janusplot_shape_cutoffs <- function(...) {
       "\u222b", "\u2248",
       "\u222a", "\u2229",
       "\u22cf", "\u2293", "\u223f",
+      "\u22ce", "\u2294", "\u224b",
       "\u223f", "\u219d", "\u2307", "\u2307",
       "MM", "MM", "MN", "MN", "X",
       "\u2014", "?"
@@ -170,6 +187,7 @@ janusplot_shape_cutoffs <- function(...) {
       "S", "~",
       "U", "^",
       "P", "#", "P",
+      "v", "=", "v",
       "~", "~", "~", "~",
       "M", "M", "N", "N", "X",
       "-", "?"
@@ -181,6 +199,7 @@ janusplot_shape_cutoffs <- function(...) {
       "S-shape", "rippled monotone",
       "U-shape", "inverted U",
       "skewed peak", "broad peak", "rippled peak",
+      "skewed trough", "broad trough", "rippled trough",
       "wave", "warped wave", "rippled wave", "complex wave",
       "bimodal", "bimodal + ripple",
       "bi-wave", "bi-wave + ripple", "complex",
@@ -197,9 +216,12 @@ janusplot_shape_cutoffs <- function(...) {
       "monotone with multiple curvature flips",
       "non-monotone bowl (single minimum)",
       "non-monotone dome (single maximum)",
-      "asymmetric single extremum, one inflection",
-      "single extremum with shoulders, two inflections",
-      "single extremum with ripples",
+      "asymmetric single maximum, one inflection",
+      "single maximum with shoulders, two inflections",
+      "single maximum with ripples (three or more inflections)",
+      "asymmetric single minimum, one inflection",
+      "single minimum with shoulders, two inflections",
+      "single minimum with ripples (three or more inflections)",
       "one full oscillation (sine-like)",
       "wave with asymmetric curvature",
       "wave with extra inflection",
@@ -237,7 +259,7 @@ janusplot_shape_cutoffs <- function(...) {
 #'
 #' Hierarchy columns (finest -> coarsest):
 #' \describe{
-#'   \item{`category`}{24-way fine label (`linear_up`, `skewed_peak`,
+#'   \item{`category`}{27-way fine label (`linear_up`, `skewed_peak`,
 #'     `bimodal`, ...). Computed per cell by [janusplot()].}
 #'   \item{`code`}{Unique two-letter ASCII shorthand (safe on any
 #'     font or typesetting pipeline) -- e.g. `lu` for `linear_up`.}
@@ -258,7 +280,18 @@ janusplot_shape_cutoffs <- function(...) {
 #' underlying each fine category is a coarsened Morse-theoretic
 #' critical-point classification (Milnor 1963).
 #'
-#' @returns A data frame with 24 rows and columns `category`,
+#' Curves with a single turning point are split by the type of that
+#' extremum, read from the sign of the first derivative on either
+#' side of it (negative then positive is a minimum, positive then
+#' negative a maximum), and then by the inflection count: a maximum
+#' gives `inverted_u`, `skewed_peak`, `broad_peak` or `rippled_peak`
+#' for 0, 1, 2 or 3+ inflections; a minimum gives `u_shape`,
+#' `skewed_trough`, `broad_trough` or `rippled_trough`. The taxonomy
+#' is closed under reflecting `y` (replacing `y` with `-y` maps every
+#' single-extremum category onto its mirror), which is why each peak
+#' category has a trough counterpart.
+#'
+#' @returns A data frame with 27 rows and columns `category`,
 #'   `code`, `archetype`, `monotonic`, `linear`, `glyph`, `ascii`,
 #'   `label`, `gloss`.
 #'
@@ -303,10 +336,12 @@ janusplot_shape_hierarchy <- function() {
     rippled_monotone = x + 0.08 * sin(8 * pi * x),
     u_shape          = 4 * (x - 0.5)^2,
     inverted_u       = 1 - 4 * (x - 0.5)^2,
-    skewed_peak      = (x * exp(1 - 3 * x)) * (3 * exp(1)) / exp(2),
-    broad_peak       = exp(-((x - 0.5) * 3)^4),
-    rippled_peak     = exp(-((x - 0.5) * 3)^2) +
-                         0.08 * sin(12 * pi * x),
+    skewed_peak      = .thumb_skewed_peak(x),
+    broad_peak       = .thumb_broad_peak(x),
+    rippled_peak     = .thumb_rippled_peak(x),
+    skewed_trough    = 1 - .thumb_skewed_peak(x),
+    broad_trough     = 1 - .thumb_broad_peak(x),
+    rippled_trough   = 1 - .thumb_rippled_peak(x),
     wave             = 0.5 + 0.5 * sin(2 * pi * x - pi / 2),
     warped_wave      = 0.5 + 0.5 * sin(2 * pi * (x^1.4) - pi / 2),
     rippled_wave     = 0.5 + 0.5 * sin(2 * pi * x - pi / 2) +
@@ -329,6 +364,17 @@ janusplot_shape_hierarchy <- function() {
   )
   data.frame(x = x, y = y, category = category,
              stringsAsFactors = FALSE)
+}
+
+# Peak thumbnails, shared with their reflected trough counterparts.
+# Each one classifies as its own category on the thumbnail grid:
+# one maximum with 1 (skewed), 2 (broad) or 3+ (rippled, a terraced
+# rise and fall) counted inflections.
+.thumb_skewed_peak <- function(x) sin(pi * x^2)
+.thumb_broad_peak <- function(x) exp(-((x - 0.5) * 3)^4)
+.thumb_rippled_peak <- function(x) {
+  stats::plogis((x - 0.15) * 25) + stats::plogis((x - 0.4) * 25) -
+    stats::plogis((x - 0.65) * 25) - stats::plogis((x - 0.85) * 25)
 }
 
 # Glyph lookup (Unicode by default; "ascii" overrides for
@@ -363,9 +409,15 @@ janusplot_shape_hierarchy <- function() {
 }
 
 # Primary classifier: dispatch on (T, I) = (n_turning_points,
-# n_inflections). (M, C) only disambiguates the `(0, 0)` and `(1, 0)`
-# cells. See .shape_taxonomy() for the category list + glosses.
-.classify_shape <- function(M, C, n_turn, n_inflect, flat_ratio, cutoffs) {
+# n_inflections). (M, C) only disambiguates the monotone `(0, 0)`
+# cell. Single-extremum curves (T = 1) are split by `extremum`
+# ("minimum" / "maximum", from the sign of f' either side of the
+# turning point) into the trough and peak families, so the taxonomy
+# is closed under reflecting y. When `extremum` is unavailable (NA)
+# the sign of C stands in for it (C > 0 -> minimum). See
+# .shape_taxonomy() for the category list + glosses.
+.classify_shape <- function(M, C, n_turn, n_inflect, flat_ratio, cutoffs,
+                            extremum = NA_character_) {
   if (is.na(M) || is.na(C)) return("indeterminate")
   if (!is.na(flat_ratio) && flat_ratio < cutoffs$flat) return("flat")
   n_T <- if (is.na(n_turn))    0L else as.integer(n_turn)
@@ -378,7 +430,19 @@ janusplot_shape_hierarchy <- function() {
     return("rippled_monotone")        # n_I >= 2
   }
   if (n_T == 1L) {
-    if (n_I == 0L) return(if (C > 0) "u_shape" else "inverted_u")
+    is_min <- if (!is.null(extremum) && length(extremum) == 1L &&
+                  !is.na(extremum)) {
+      identical(extremum, "minimum")
+    } else {
+      C > 0
+    }
+    if (is_min) {
+      if (n_I == 0L) return("u_shape")
+      if (n_I == 1L) return("skewed_trough")
+      if (n_I == 2L) return("broad_trough")
+      return("rippled_trough")         # n_I >= 3
+    }
+    if (n_I == 0L) return("inverted_u")
     if (n_I == 1L) return("skewed_peak")
     if (n_I == 2L) return("broad_peak")
     return("rippled_peak")             # n_I >= 3
@@ -423,13 +487,24 @@ janusplot_shape_hierarchy <- function() {
 # inflection / turning-point counts for spline-smoothed saturating
 # curves and similar shapes.
 .n_sign_changes <- function(v, min_lobe_frac = 0.1, rel_tol = 1e-2) {
+  .sign_change_info(v, min_lobe_frac = min_lobe_frac,
+                    rel_tol = rel_tol)$n
+}
+
+# Same lobe rule as .n_sign_changes(), also returning the sign of v
+# immediately before and after each counted crossing (`before`,
+# `after`, one entry per counted crossing). For v = f', a counted
+# crossing with before = -1, after = +1 is a minimum; +1 then -1 is a
+# maximum.
+.sign_change_info <- function(v, min_lobe_frac = 0.1, rel_tol = 1e-2) {
+  none <- list(n = 0L, before = numeric(), after = numeric())
   v <- v[is.finite(v)]
   n <- length(v)
-  if (n < 2L) return(0L)
+  if (n < 2L) return(none)
   scale_v <- max(abs(v))
-  if (!is.finite(scale_v) || scale_v == 0) return(0L)
+  if (!is.finite(scale_v) || scale_v == 0) return(none)
   total <- sum(abs(v))
-  if (!is.finite(total) || total == 0) return(0L)
+  if (!is.finite(total) || total == 0) return(none)
 
   # Suppress noise floor before sign extraction.
   v_clean <- ifelse(abs(v) < rel_tol * scale_v, 0, v)
@@ -440,10 +515,10 @@ janusplot_shape_hierarchy <- function() {
   for (i in seq_along(s)) {
     if (s[i] == 0) s[i] <- prev else prev <- s[i]
   }
-  if (all(s == 0)) return(0L)
+  if (all(s == 0)) return(none)
 
   change_idx <- which(diff(s) != 0) + 1L
-  if (!length(change_idx)) return(0L)
+  if (!length(change_idx)) return(none)
 
   # Integrate |v| between consecutive change boundaries.
   boundaries <- c(0L, change_idx - 1L, n)
@@ -458,14 +533,13 @@ janusplot_shape_hierarchy <- function() {
 
   # Count only crossings where BOTH adjacent lobes carry substantial
   # mass.
-  real <- 0L
+  keep <- logical(length(change_idx))
   for (j in seq_along(change_idx)) {
-    if (lobe_frac[j] >= min_lobe_frac &&
-        lobe_frac[j + 1L] >= min_lobe_frac) {
-      real <- real + 1L
-    }
+    keep[j] <- lobe_frac[j] >= min_lobe_frac &&
+      lobe_frac[j + 1L] >= min_lobe_frac
   }
-  real
+  kept <- change_idx[keep]
+  list(n = length(kept), before = s[kept - 1L], after = s[kept])
 }
 
 # Empirical x-density evaluated on the prediction grid. Trapezoidal
@@ -510,7 +584,8 @@ janusplot_shape_hierarchy <- function() {
     convexity_index    = NA_real_,
     n_turning_points   = NA_integer_,
     n_inflections      = NA_integer_,
-    flat_range_ratio   = NA_real_
+    flat_range_ratio   = NA_real_,
+    extremum_type      = NA_character_
   )
 }
 
@@ -580,10 +655,19 @@ janusplot_shape_hierarchy <- function() {
   # Count sign changes only when the underlying derivative carries
   # meaningful signal; otherwise noise-driven sign flips inflate
   # counts and mis-classify linear / flat smooths as `complex`.
-  n_turn <- if (is.finite(slope_signal) && slope_signal < 1e-3) {
-    0L
+  turn_info <- if (is.finite(slope_signal) && slope_signal < 1e-3) {
+    list(n = 0L, before = numeric(), after = numeric())
   } else {
-    .n_sign_changes(d1)
+    .sign_change_info(d1)
+  }
+  n_turn <- turn_info$n
+  # Type of the single extremum: f' negative then positive is a
+  # minimum, positive then negative a maximum. Only defined when
+  # exactly one turning point is counted.
+  extremum_type <- if (n_turn == 1L) {
+    if (turn_info$before < 0 && turn_info$after > 0) "minimum" else "maximum"
+  } else {
+    NA_character_
   }
   n_inflect <- if (is.finite(curv_signal) && curv_signal < 1e-3) {
     0L
@@ -609,7 +693,8 @@ janusplot_shape_hierarchy <- function() {
     convexity_index    = unname(C),
     n_turning_points   = as.integer(n_turn),
     n_inflections      = as.integer(n_inflect),
-    flat_range_ratio   = unname(flat_ratio)
+    flat_range_ratio   = unname(flat_ratio),
+    extremum_type      = extremum_type
   )
 }
 
@@ -620,7 +705,8 @@ janusplot_shape_hierarchy <- function() {
   raw$shape_category <- .classify_shape(
     raw$monotonicity_index, raw$convexity_index,
     raw$n_turning_points, raw$n_inflections,
-    raw$flat_range_ratio, cutoffs
+    raw$flat_range_ratio, cutoffs,
+    extremum = raw$extremum_type
   )
   raw
 }
@@ -685,11 +771,19 @@ janusplot_shape_hierarchy <- function() {
 #'       sign changes of `f''`.}
 #'     \item{`flat_range_ratio`}{`range(f) / sd(y)` -- small values
 #'       indicate a degenerate flat smooth.}
-#'     \item{`shape_category`}{One of 24 labels from
+#'     \item{`extremum_type`}{`"minimum"` or `"maximum"` when exactly
+#'       one turning point is counted (sign of `f'` negative then
+#'       positive, or positive then negative, across it); `NA`
+#'       otherwise.}
+#'     \item{`shape_category`}{One of 27 labels from
 #'       [janusplot_shape_hierarchy()] dispatched on
-#'       `(n_turning_points, n_inflections)` with
+#'       `(n_turning_points, n_inflections)`, with
 #'       `(monotonicity_index, convexity_index)` disambiguation for
-#'       the monotone case.}
+#'       the monotone case and `extremum_type` separating the peak
+#'       family (`inverted_u`, `skewed_peak`, `broad_peak`,
+#'       `rippled_peak`) from the trough family (`u_shape`,
+#'       `skewed_trough`, `broad_trough`, `rippled_trough`) for a
+#'       single turning point.}
 #'   }
 #'
 #' @seealso [janusplot_shape_cutoffs()], [janusplot()], [janusplot_data()].

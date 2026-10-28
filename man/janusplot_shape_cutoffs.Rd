@@ -14,14 +14,17 @@ A named list with numeric thresholds:
 \describe{
 \item{\code{mono_strong}}{\verb{|M|} threshold for a strictly monotone smooth (default \code{0.9}).}
 \item{\code{mono_mod}}{\verb{|M|} threshold for a curved-but-monotone smooth (default \code{0.5}).}
-\item{\code{mono_nonmono}}{\verb{|M|} below this is considered non-monotone (default \code{0.3}).}
-\item{\code{mono_s}}{\verb{|M|} threshold for labelling an S-shape (default \code{0.5}).}
 \item{\code{curv_low}}{\verb{|C|} below this is considered near-linear curvature (default \code{0.2}).}
 \item{\code{curv_mod}}{\verb{|C|} threshold for a clearly curved monotone (default \code{0.5}).}
-\item{\code{curv_strong}}{\verb{|C|} threshold for a U-shape / inverted-U shape
-(default \code{0.5}).}
 \item{\code{flat}}{\code{range(fit) / sd(y)} below this is called \code{flat} (default \code{0.05}).}
 }
+
+The cutoffs \code{mono_nonmono}, \code{mono_s} and \code{curv_strong} are
+deprecated. The classifier never read them: non-monotone and
+S-shaped curves are identified from the turning-point and
+inflection counts, and peak against trough from the type of the
+extremum. Passing them raises a deprecation warning and they are
+dropped from the returned list.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}

@@ -7,7 +7,7 @@
 janusplot_shape_hierarchy()
 }
 \value{
-A data frame with 24 rows and columns \code{category},
+A data frame with 27 rows and columns \code{category},
 \code{code}, \code{archetype}, \code{monotonic}, \code{linear}, \code{glyph}, \code{ascii},
 \code{label}, \code{gloss}.
 }
@@ -21,7 +21,7 @@ renderer, the legend plate, and the \code{janusplot_data()} output.
 
 Hierarchy columns (finest -> coarsest):
 \describe{
-\item{\code{category}}{24-way fine label (\code{linear_up}, \code{skewed_peak},
+\item{\code{category}}{27-way fine label (\code{linear_up}, \code{skewed_peak},
 \code{bimodal}, ...). Computed per cell by \code{\link[=janusplot]{janusplot()}}.}
 \item{\code{code}}{Unique two-letter ASCII shorthand (safe on any
 font or typesetting pipeline) -- e.g. \code{lu} for \code{linear_up}.}
@@ -41,6 +41,17 @@ Meyer 2008) and to dose-response shape categories (Calabrese
 2008; Calabrese & Baldwin 2001). The \verb{(T, I)} dispatch
 underlying each fine category is a coarsened Morse-theoretic
 critical-point classification (Milnor 1963).
+
+Curves with a single turning point are split by the type of that
+extremum, read from the sign of the first derivative on either
+side of it (negative then positive is a minimum, positive then
+negative a maximum), and then by the inflection count: a maximum
+gives \code{inverted_u}, \code{skewed_peak}, \code{broad_peak} or \code{rippled_peak}
+for 0, 1, 2 or 3+ inflections; a minimum gives \code{u_shape},
+\code{skewed_trough}, \code{broad_trough} or \code{rippled_trough}. The taxonomy
+is closed under reflecting \code{y} (replacing \code{y} with \code{-y} maps every
+single-extremum category onto its mirror), which is why each peak
+category has a trough counterpart.
 }
 \examples{
 tax <- janusplot_shape_hierarchy()

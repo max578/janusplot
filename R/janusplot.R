@@ -865,7 +865,8 @@ janusplot <- function(
     shape_cat <- .classify_shape(
       f$shape$monotonicity_index, f$shape$convexity_index,
       f$shape$n_turning_points, f$shape$n_inflections,
-      f$shape$flat_range_ratio, shape_cutoffs
+      f$shape$flat_range_ratio, shape_cutoffs,
+      extremum = f$shape$extremum_type
     )
     kc <- f$k_check %||% list(
       k_prime = NA_real_, k_index = NA_real_, k_p = NA_real_,
@@ -1230,12 +1231,14 @@ janusplot_data <- function(
       shape_yx <- .classify_shape(
         f_yx$shape$monotonicity_index, f_yx$shape$convexity_index,
         f_yx$shape$n_turning_points, f_yx$shape$n_inflections,
-        f_yx$shape$flat_range_ratio, shape_cutoffs
+        f_yx$shape$flat_range_ratio, shape_cutoffs,
+        extremum = f_yx$shape$extremum_type
       )
       shape_xy <- .classify_shape(
         f_xy$shape$monotonicity_index, f_xy$shape$convexity_index,
         f_xy$shape$n_turning_points, f_xy$shape$n_inflections,
-        f_xy$shape$flat_range_ratio, shape_cutoffs
+        f_xy$shape$flat_range_ratio, shape_cutoffs,
+        extremum = f_xy$shape$extremum_type
       )
       corr <- f_yx$corr %||% f_xy$corr
       pairs_out[[length(pairs_out) + 1L]] <- list(

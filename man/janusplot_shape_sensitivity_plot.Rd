@@ -25,7 +25,7 @@ A \link[ggplot2:ggplot]{ggplot2::ggplot} object.
 Produce one of four diagnostic plots from the raw data frame returned
 by \code{\link[=janusplot_shape_sensitivity]{janusplot_shape_sensitivity()}}:
 \describe{
-\item{\code{"confusion_fine"}}{24 x (|shapes|) confusion matrix at the
+\item{\code{"confusion_fine"}}{27 x (|shapes|) confusion matrix at the
 fine category level -- rows = ground truth, columns = predicted,
 cells coloured by \code{P(pred | truth)}.}
 \item{\code{"confusion_archetype"}}{7 x 7 confusion matrix at the

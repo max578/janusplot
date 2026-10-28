@@ -257,7 +257,7 @@ out$pairs[[1L]]$asymmetry_index
 ## Shape metrics explained
 
 Every fitted smooth is summarised by two continuous indices and two
-discrete counts. These drive the 24-category classifier and appear
+discrete counts. These drive the 27-category classifier and appear
 as columns in `janusplot(..., with_data = TRUE)$data` and as fields
 on each entry of `janusplot_data()$pairs`.
 
@@ -296,8 +296,15 @@ monotone-decreasing off `-y`, as it should.
 
 Together the pair `(n_turning_points, n_inflections)` drives the
 primary `shape_category` dispatch; `(monotonicity_index,
-convexity_index)` disambiguate within the monotone `(0, 0)` and
-single-extremum `(1, 0)` cells. The full taxonomy with 2-letter
+convexity_index)` disambiguate within the monotone `(0, 0)` cell.
+A curve with one turning point is split by the type of that
+extremum, read from the sign of `f'` on either side of it: a
+maximum gives `inverted_u`, `skewed_peak`, `broad_peak` or
+`rippled_peak` for 0, 1, 2 or 3+ inflections, and a minimum gives
+the reflected `u_shape`, `skewed_trough`, `broad_trough` or
+`rippled_trough`. Replacing `y` with `-y` therefore maps each
+single-extremum category onto its mirror, so the taxonomy is closed
+under reflection. The full taxonomy with 2-letter
 codes, archetypes, and thumbnail curves is available from
 `janusplot_shape_hierarchy()` and is rendered as the standing legend
 below every `janusplot()` call.
