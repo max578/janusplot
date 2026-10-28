@@ -177,6 +177,109 @@
 }
 
 # ---------------------------------------------------------------
+# Internal aliasing for non-syntactic column names
+# ---------------------------------------------------------------
+#
+# Formulas are assembled by pasting column names, and mgcv cannot parse
+# s() on a name such as "grain yield (t/ha)" even when backticked. The
+# fit layer therefore works on make.names() aliases of every column it
+# uses (the vars plus every variable of `adjust`) and restores the
+# original names in everything user-visible afterwards. When every used
+# name is already syntactic the data, vars and adjust are returned
+# untouched, so the common path is a no-op.
+
+.alias_columns <- function(data, vars, adjust) {
+  cols <- intersect(unique(c(vars, .adjust_vars(adjust))), names(data))
+  aliases <- make.names(cols, unique = TRUE)
+  if (identical(aliases, cols)) {
+    return(list(data = data, vars = vars, adjust = adjust,
+                aliased = FALSE, map = NULL))
+  }
+  work <- data[, cols, drop = FALSE]
+  names(work) <- aliases
+  lookup <- stats::setNames(aliases, cols)
+  if (!is.null(adjust)) {
+    adjust[[2L]] <- .rename_symbols(adjust[[2L]], lookup)
+  }
+  list(
+    data    = work,
+    vars    = unname(lookup[vars]),
+    adjust  = adjust,
+    aliased = TRUE,
+    map     = stats::setNames(cols, aliases)
+  )
+}
+
+# Replace every symbol named in `lookup` (original -> alias) inside a
+# call, leaving function heads and constants alone.
+.rename_symbols <- function(expr, lookup) {
+  if (is.name(expr)) {
+    nm <- as.character(expr)
+    if (nzchar(nm) && nm %in% names(lookup)) {
+      return(as.name(lookup[[nm]]))
+    }
+    return(expr)
+  }
+  if (is.call(expr) && length(expr) > 1L) {
+    for (i in 2:length(expr)) {
+      if (!identical(expr[[i]], quote(expr = ))) {
+        expr[[i]] <- .rename_symbols(expr[[i]], lookup)
+      }
+    }
+  }
+  expr
+}
+
+# Per-variable k lists are keyed by original names; re-key them onto
+# the aliases so .resolve_k() finds them.
+.alias_k <- function(k, map) {
+  if (!is.list(k) || is.null(map) || is.null(names(k))) return(k)
+  rev_map <- stats::setNames(names(map), map)
+  hit <- names(k) %in% names(rev_map)
+  names(k)[hit] <- rev_map[names(k)[hit]]
+  k
+}
+
+# Rewrite aliases back to original names inside free text (mgcv error
+# and warning messages). Matches whole alias tokens only, in a single
+# pass, so an alias that equals another column's original name (e.g.
+# "a.b" standing for "a b" while "a.b" itself became "a.b.1") is never
+# rewritten twice.
+.restore_names_in_text <- function(txt, map) {
+  if (is.null(map) || !length(txt)) return(txt)
+  changed <- map[names(map) != map]
+  if (!length(changed)) return(txt)
+  keys <- names(changed)[order(nchar(names(changed)), decreasing = TRUE)]
+  esc <- gsub("([.\\\\])", "\\\\\\1", keys)
+  pattern <- paste0("(?<![A-Za-z0-9._])(", paste(esc, collapse = "|"),
+                    ")(?![A-Za-z0-9._])")
+  vapply(txt, function(t) {
+    if (is.na(t)) return(t)
+    m <- gregexpr(pattern, t, perl = TRUE)
+    hits <- regmatches(t, m)[[1L]]
+    if (!length(hits)) return(t)
+    regmatches(t, m) <- list(unname(changed[hits]))
+    t
+  }, character(1L), USE.NAMES = FALSE)
+}
+
+# Put the original names back on a fitted cell.
+.restore_fit_names <- function(f, map) {
+  f$x_name <- map[[f$x_name]]
+  f$y_name <- map[[f$y_name]]
+  if (is.data.frame(f$raw) && ncol(f$raw) > 0L) {
+    nm <- names(f$raw)
+    hit <- nm %in% names(map)
+    nm[hit] <- map[nm[hit]]
+    names(f$raw) <- nm
+  }
+  if (!is.null(f$error) && !is.na(f$error)) {
+    f$error <- .restore_names_in_text(f$error, map)
+  }
+  f
+}
+
+# ---------------------------------------------------------------
 # Build the pairwise GAM formula
 # ---------------------------------------------------------------
 
@@ -720,6 +823,11 @@
                            discrete = FALSE,
                            nthreads = 1L, ...) {
   .check_parallel_plan(parallel)
+  aliasing <- .alias_columns(data, vars, adjust)
+  data   <- aliasing$data
+  vars   <- aliasing$vars
+  adjust <- aliasing$adjust
+  k      <- .alias_k(k, aliasing$map)
   if (na_action == "complete") {
     data <- data[stats::complete.cases(
       data[, unique(c(vars, .adjust_vars(adjust))), drop = FALSE]
@@ -746,13 +854,33 @@
     )
   }
 
-  if (isTRUE(parallel) && rlang::is_installed("future.apply")) {
-    fits <- future.apply::future_mapply(
-      fit_one, grid$i, grid$j, SIMPLIFY = FALSE,
-      future.seed = TRUE
+  run_fits <- function() {
+    if (isTRUE(parallel) && rlang::is_installed("future.apply")) {
+      future.apply::future_mapply(
+        fit_one, grid$i, grid$j, SIMPLIFY = FALSE,
+        future.seed = TRUE
+      )
+    } else {
+      mapply(fit_one, grid$i, grid$j, SIMPLIFY = FALSE)
+    }
+  }
+  if (isTRUE(aliasing$aliased)) {
+    # Warnings raised by mgcv name the aliases; re-signal them with the
+    # original column names restored.
+    fits <- withCallingHandlers(
+      run_fits(),
+      warning = function(w) {
+        msg <- conditionMessage(w)
+        restored <- .restore_names_in_text(msg, aliasing$map)
+        if (!identical(restored, msg)) {
+          warning(restored, call. = FALSE)
+          invokeRestart("muffleWarning")
+        }
+      }
     )
+    fits <- lapply(fits, .restore_fit_names, map = aliasing$map)
   } else {
-    fits <- mapply(fit_one, grid$i, grid$j, SIMPLIFY = FALSE)
+    fits <- run_fits()
   }
   names(fits) <- sprintf("%d_%d", grid$i, grid$j)
   fits

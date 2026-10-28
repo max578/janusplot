@@ -29,7 +29,11 @@ janusplot_data(
 )
 }
 \arguments{
-\item{data}{A data frame with numeric columns to include.}
+\item{data}{A data frame with numeric columns to include. Column
+names need not be syntactic: names such as \code{"grain yield (t/ha)"}
+or \code{"2019_yield"} are fitted under internal \code{\link[=make.names]{make.names()}} aliases
+and reported under their original names in labels, returned
+tables and messages.}
 
 \item{vars}{Character vector of column names to use. \code{NULL} (default)
 uses all numeric columns in \code{data}. Non-numeric columns trigger an
@@ -39,7 +43,9 @@ error listing offenders.}
 and/or random effects to include in every pairwise GAM. For example,
 \code{adjust = ~ s(age) + s(site, bs = "re")} fits
 \code{gam(y ~ s(x) + s(age) + s(site, bs = "re"))} for each pair.
-Default \code{NULL} fits unadjusted pairwise smooths.}
+Default \code{NULL} fits unadjusted pairwise smooths. Non-syntactic
+column names are referenced with backticks, e.g.
+\code{adjust = ~ s(`site name`, bs = "re")}.}
 
 \item{method}{Smoothing-parameter estimation method passed to
 the chosen fitting backend. Default \code{NULL} resolves

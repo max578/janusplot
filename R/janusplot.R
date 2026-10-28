@@ -15,7 +15,11 @@
 #' heteroscedasticity, leverage, and directional non-linearity that a
 #' single scalar correlation hides.
 #'
-#' @param data A data frame with numeric columns to include.
+#' @param data A data frame with numeric columns to include. Column
+#'   names need not be syntactic: names such as `"grain yield (t/ha)"`
+#'   or `"2019_yield"` are fitted under internal [make.names()] aliases
+#'   and reported under their original names in labels, returned
+#'   tables and messages.
 #' @param vars Character vector of column names to use. `NULL` (default)
 #'   uses all numeric columns in `data`. Non-numeric columns trigger an
 #'   error listing offenders.
@@ -23,7 +27,9 @@
 #'   and/or random effects to include in every pairwise GAM. For example,
 #'   `adjust = ~ s(age) + s(site, bs = "re")` fits
 #'   `gam(y ~ s(x) + s(age) + s(site, bs = "re"))` for each pair.
-#'   Default `NULL` fits unadjusted pairwise smooths.
+#'   Default `NULL` fits unadjusted pairwise smooths. Non-syntactic
+#'   column names are referenced with backticks, e.g.
+#'   ``adjust = ~ s(`site name`, bs = "re")``.
 #' @param method Smoothing-parameter estimation method passed to
 #'   the chosen fitting backend. Default `NULL` resolves
 #'   per-engine: `"fREML"` for `engine = "bam"` (mgcv's
