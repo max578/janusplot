@@ -46,7 +46,9 @@ smooths \code{bs = "fs"}) are excluded from prediction, numeric
 covariates are held at their mean over the rows used by the pair,
 and fixed factors at their most frequent level.
 \code{\link[=janusplot_data]{janusplot_data()}} records these values per pair as
-\code{prediction_reference_yx} / \code{prediction_reference_xy}.}
+\code{prediction_reference_yx} / \code{prediction_reference_xy}, where
+\verb{_yx} is the upper-triangle fit \code{vars[j] ~ s(vars[i])} (\code{i < j})
+and \verb{_xy} the lower-triangle fit \code{vars[i] ~ s(vars[j])}.}
 
 \item{method}{Smoothing-parameter estimation method passed to
 the chosen fitting backend. Default \code{NULL} resolves
@@ -186,7 +188,12 @@ double-book CPUs). Raise above 1 only when \code{parallel = FALSE}. Ignored when
 A list with components:
 \describe{
 \item{\code{vars}}{Character vector of variables used, in plotted order.}
-\item{\code{pairs}}{List of per-pair results. Each element has \code{i}, \code{j},
+\item{\code{pairs}}{List of per-pair results, one per unordered pair
+\code{i < j}. Suffixes name the direction of fit: \verb{_yx} is the fit
+\code{vars[j] ~ s(vars[i])} (\code{var_j} regressed on \code{var_i}), drawn in
+the upper triangle at row \code{i}, column \code{j}; \verb{_xy} is the fit
+\code{vars[i] ~ s(vars[j])}, drawn in the lower triangle at row \code{j},
+column \code{i}. Each element has \code{i}, \code{j},
 \code{var_i}, \code{var_j}, \code{fit_yx}, \code{fit_xy} (NULL if \code{keep_fits = FALSE}),
 \code{pred_yx}, \code{pred_xy} (data frames with \code{x}, \code{fit}, \code{se}, \code{lo},
 \code{hi}), \code{edf_yx}, \code{edf_xy}, \code{pvalue_yx}, \code{pvalue_xy}, \code{dev_exp_yx},

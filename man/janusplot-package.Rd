@@ -27,7 +27,9 @@ abstains where the additive noise model cannot decide.
 }
 
 \section{Asymmetry index}{
-For each pair, the asymmetry index \verb{A_ij = |EDF_yx - EDF_xy| / (EDF_yx + EDF_xy)} is bounded in [0, 1]. Values near 0 indicate
+For each pair, the asymmetry index \verb{A_ij = |EDF_yx - EDF_xy| / (EDF_yx + EDF_xy)} is bounded in [0, 1], where \code{EDF_yx} is the EDF
+of \code{x_j ~ s(x_i)} (upper triangle, \code{i < j}) and \code{EDF_xy} that of
+\code{x_i ~ s(x_j)} (lower triangle). Values near 0 indicate
 symmetric complexity; values near 1 indicate the two directional
 fits differ sharply in effective degrees of freedom.
 

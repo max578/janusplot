@@ -30,7 +30,9 @@
 #'   covariates are held at their mean over the rows used by the pair,
 #'   and fixed factors at their most frequent level.
 #'   [janusplot_data()] records these values per pair as
-#'   `prediction_reference_yx` / `prediction_reference_xy`.
+#'   `prediction_reference_yx` / `prediction_reference_xy`, where
+#'   `_yx` is the upper-triangle fit `vars[j] ~ s(vars[i])` (`i < j`)
+#'   and `_xy` the lower-triangle fit `vars[i] ~ s(vars[j])`.
 #' @param method Smoothing-parameter estimation method passed to
 #'   the chosen fitting backend. Default `NULL` resolves
 #'   per-engine: `"fREML"` for `engine = "bam"` (mgcv's
@@ -1021,7 +1023,12 @@ janusplot <- function(
 #' @returns A list with components:
 #' \describe{
 #'   \item{`vars`}{Character vector of variables used, in plotted order.}
-#'   \item{`pairs`}{List of per-pair results. Each element has `i`, `j`,
+#'   \item{`pairs`}{List of per-pair results, one per unordered pair
+#'     `i < j`. Suffixes name the direction of fit: `_yx` is the fit
+#'     `vars[j] ~ s(vars[i])` (`var_j` regressed on `var_i`), drawn in
+#'     the upper triangle at row `i`, column `j`; `_xy` is the fit
+#'     `vars[i] ~ s(vars[j])`, drawn in the lower triangle at row `j`,
+#'     column `i`. Each element has `i`, `j`,
 #'     `var_i`, `var_j`, `fit_yx`, `fit_xy` (NULL if `keep_fits = FALSE`),
 #'     `pred_yx`, `pred_xy` (data frames with `x`, `fit`, `se`, `lo`,
 #'     `hi`), `edf_yx`, `edf_xy`, `pvalue_yx`, `pvalue_xy`, `dev_exp_yx`,

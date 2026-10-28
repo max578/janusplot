@@ -76,7 +76,9 @@ smooths \code{bs = "fs"}) are excluded from prediction, numeric
 covariates are held at their mean over the rows used by the pair,
 and fixed factors at their most frequent level.
 \code{\link[=janusplot_data]{janusplot_data()}} records these values per pair as
-\code{prediction_reference_yx} / \code{prediction_reference_xy}.}
+\code{prediction_reference_yx} / \code{prediction_reference_xy}, where
+\verb{_yx} is the upper-triangle fit \code{vars[j] ~ s(vars[i])} (\code{i < j})
+and \verb{_xy} the lower-triangle fit \code{vars[i] ~ s(vars[j])}.}
 
 \item{method}{Smoothing-parameter estimation method passed to
 the chosen fitting backend. Default \code{NULL} resolves
