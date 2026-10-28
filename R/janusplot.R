@@ -213,6 +213,9 @@
 #'   observations) or `"complete"` (listwise; all cells use the same
 #'   rows). Infinite values (`Inf`, `-Inf`) count as missing, and a
 #'   warning gives the number removed per column.
+#'   A pair sharing fewer than 5 complete rows is drawn as an empty
+#'   "n < 5" cell, keeps its shared-row count in `n_used` and is listed
+#'   in a warning; an error is raised only when no pair reaches 5 rows.
 #' @param compact One of `"auto"` (default), `"always"`, or `"never"`.
 #'   Controls scale-aware content suppression per cell:
 #'   * `"auto"` -- tier 0 at `n_var < compact_threshold` (the v0.1.0

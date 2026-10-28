@@ -872,6 +872,8 @@
   grid <- expand.grid(i = seq_along(vars), j = seq_along(vars),
                       KEEP.OUT.ATTRS = FALSE)
   grid <- grid[grid$i != grid$j, , drop = FALSE]
+  .check_any_pair_fittable(data, vars, adjust, na_action, aliasing$map,
+                           call = rlang::caller_env())
 
   fit_one <- function(i, j) {
     .fit_pair(
@@ -920,6 +922,28 @@
   }
   names(fits) <- sprintf("%d_%d", grid$i, grid$j)
   fits
+}
+
+# A single sparse pair never stops the matrix, but a matrix in which no
+# pair reaches 5 shared rows has nothing to show.
+.check_any_pair_fittable <- function(data, vars, adjust, na_action,
+                                     map = NULL,
+                                     call = rlang::caller_env()) {
+  adj <- intersect(.adjust_vars(adjust), names(data))
+  n_shared <- if (na_action == "complete") {
+    nrow(data)
+  } else {
+    pairs <- utils::combn(vars, 2L, simplify = FALSE)
+    vapply(pairs, function(p) {
+      sum(stats::complete.cases(data[, unique(c(p, adj)), drop = FALSE]))
+    }, integer(1L))
+  }
+  if (any(n_shared >= 5L)) return(invisible(NULL))
+  max_shared <- max(n_shared)                                 # nolint: object_usage_linter.
+  cli::cli_abort(c(
+    "Every pair of {.arg vars} shares fewer than 5 complete rows.",
+    i = "The largest shared count is {max_shared}; no cell can be fitted."
+  ), call = call)
 }
 
 # ---------------------------------------------------------------
@@ -1048,18 +1072,49 @@
     err <- f$error
     !is.null(err) && !is.na(err) && nzchar(err)
   }, logical(1L))
+  # Cells that never reached mgcv because the pair shares < 5 rows.
+  sparse <- !failed & vapply(fits, function(f) {
+    n <- f$n_used
+    !is.null(n) && !is.na(n) && n < 5L && is.null(f$fit)
+  }, logical(1L))
   n_failed <- sum(failed)                                    # nolint: object_usage_linter.
-  if (n_failed == 0L) return(invisible(NULL))
+  if (n_failed == 0L && !any(sparse)) return(invisible(NULL))
   n_cells <- length(fits)                                     # nolint: object_usage_linter.
-  first_msg <- fits[[which(failed)[1L]]]$error                # nolint: object_usage_linter.
-  cli::cli_warn(c(
-    "!" = "{n_failed} of {n_cells} cell{?s} failed to fit and carry no result.",
-    "i" = "First failure: {first_msg}",
-    "i" = paste0(
-      "Inspect {.code n_used}/{.code error} in the returned table -- a failed cell ",
-      "reports {.code n_used = NA} and {.code edf = NA}, never a completed fit."
+  bullets <- character()
+  if (n_failed > 0L) {
+    first_msg <- fits[[which(failed)[1L]]]$error              # nolint: object_usage_linter.
+    bullets <- c(
+      "!" = "{n_failed} of {n_cells} cell{?s} failed to fit and carry no result.",
+      i = "First failure: {first_msg}"
     )
-  ))
+  }
+  if (any(sparse)) {
+    sp <- fits[sparse]
+    key <- vapply(sp, function(f) {
+      paste(sort(c(f$x_name, f$y_name)), collapse = "\r")
+    }, character(1L))
+    sp <- sp[!duplicated(key)]
+    sparse_pairs <- vapply(sp, function(f) {                  # nolint: object_usage_linter.
+      sprintf("%s vs %s (n = %d)", f$y_name, f$x_name, as.integer(f$n_used))
+    }, character(1L), USE.NAMES = FALSE)
+    n_sparse <- length(sparse_pairs)                          # nolint: object_usage_linter.
+    bullets <- c(
+      bullets,
+      "!" = paste(
+        "{n_sparse} pair{?s} share{?s/} fewer than 5 complete rows and",
+        "{?is/are} shown as {.val n < 5}: {sparse_pairs}."
+      )
+    )
+  }
+  bullets <- c(
+    bullets,
+    i = paste0(
+      "Inspect {.code n_used}/{.code error} in the returned table -- a failed cell ",
+      "reports {.code n_used = NA} and {.code edf = NA}, never a completed fit; ",
+      "a sparse cell reports its shared-row count in {.code n_used}."
+    )
+  )
+  cli::cli_warn(bullets)
   invisible(NULL)
 }
 

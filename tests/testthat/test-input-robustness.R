@@ -210,3 +210,69 @@ test_that("na_action = 'complete' also drops infinite rows", {
   )
   expect_true(all(vapply(res$pairs, `[[`, integer(1L), "n_used") == 79L))
 })
+
+make_disjoint_data <- function(n = 80L, seed = 13L) {
+  withr::with_seed(seed, {
+    x1 <- stats::rnorm(n)
+    d <- data.frame(
+      x1 = x1,
+      x2 = 0.8 * x1 + stats::rnorm(n, sd = 0.5),
+      x3 = sin(x1) + stats::rnorm(n, sd = 0.3)
+    )
+  })
+  half <- seq_len(n / 2L)
+  d$x1[half] <- NA
+  d$x2[-half] <- NA
+  d
+}
+
+test_that("a pair with no shared rows warns once and leaves other cells intact", {
+  d <- make_disjoint_data()
+  w <- testthat::capture_warnings(
+    res <- janusplot_data(d, engine = "gam")
+  )
+  expect_length(w, 1L)
+  expect_match(w, "fewer than 5")
+  expect_match(w, "x1")
+  expect_match(w, "x2")
+  expect_match(w, "n = 0", fixed = TRUE)
+  p12 <- res$pairs[[1L]]
+  expect_identical(c(p12$var_i, p12$var_j), c("x1", "x2"))
+  expect_identical(p12$n_used, 0L)
+  expect_true(is.na(p12$edf_yx))
+  others <- res$pairs[-1L]
+  expect_true(all(is.finite(vapply(others, `[[`, numeric(1L), "edf_yx"))))
+})
+
+test_that("janusplot() renders a matrix with a sparse pair", {
+  d <- make_disjoint_data()
+  d$x2[1:3] <- d$x1[1:3] <- 1
+  w <- testthat::capture_warnings(
+    out <- janusplot(d, engine = "gam", with_data = TRUE)
+  )
+  expect_length(w, 1L)
+  expect_match(w, "n = 3", fixed = TRUE)
+  expect_s3_class(out$plot, "ggplot")
+  tbl <- out$data
+  sparse <- (tbl$var_x %in% c("x1", "x2")) & (tbl$var_y %in% c("x1", "x2"))
+  expect_true(all(tbl$n_used[sparse] == 3L))
+  expect_true(all(is.finite(tbl$edf[!sparse])))
+  f <- withr::local_tempfile(fileext = ".png")
+  expect_no_error(ggplot2::ggsave(f, out$plot, width = 5, height = 5))
+})
+
+test_that("failed and sparse cells share one warning", {
+  d <- make_disjoint_data()
+  d$x4 <- 1
+  w <- testthat::capture_warnings(janusplot_data(d, engine = "gam"))
+  expect_length(w, 1L)
+  expect_match(w, "failed to fit")
+  expect_match(w, "fewer than 5")
+})
+
+test_that("an error is raised only when every pair has fewer than 5 rows", {
+  d <- data.frame(a = c(1:4, rep(NA, 6)), b = c(rep(NA, 6), 1:4),
+                  c = c(1, NA, 2, NA, 3, NA, 4, NA, 5, NA))
+  expect_error(janusplot_data(d, engine = "gam"), "fewer than 5")
+  expect_error(janusplot(d, engine = "gam"), "fewer than 5")
+})

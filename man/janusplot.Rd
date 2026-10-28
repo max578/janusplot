@@ -296,7 +296,10 @@ warning fires and the argument is merged into \code{annotations}.}
 \item{na_action}{One of \code{"pairwise"} (default; per-cell complete
 observations) or \code{"complete"} (listwise; all cells use the same
 rows). Infinite values (\code{Inf}, \code{-Inf}) count as missing, and a
-warning gives the number removed per column.}
+warning gives the number removed per column.
+A pair sharing fewer than 5 complete rows is drawn as an empty
+"n < 5" cell, keeps its shared-row count in \code{n_used} and is listed
+in a warning; an error is raised only when no pair reaches 5 rows.}
 
 \item{parallel}{Logical. If \code{TRUE}, use \code{future.apply::future_mapply()}
 to fit pairs in parallel. Requires the \code{future.apply} package and a
