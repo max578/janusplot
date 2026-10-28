@@ -21,3 +21,12 @@
   (`"minimum"`, `"maximum"` or `NA`).
 * The `skewed_peak` and `rippled_peak` legend thumbnails were redrawn
   so that each one is classified as its own category.
+
+## Deprecated
+
+* The `mono_nonmono`, `mono_s` and `curv_strong` cutoffs of
+  `janusplot_shape_cutoffs()` were deprecated. The classifier never
+  read them, so passing them had no effect on any label. They now
+  raise a deprecation warning, are dropped from the returned list and
+  no longer appear among the defaults or in the documentation.
+  Classification is unchanged.

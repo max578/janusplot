@@ -334,3 +334,23 @@ test_that(".classify_shape falls back to the sign of C without extremum", {
                                            extremum = "maximum"),
                "broad_peak")
 })
+
+test_that("unused cutoffs are deprecated, dropped and change nothing", {
+  withr::local_options(lifecycle_verbosity = "warning")
+  expect_setequal(names(janusplot_shape_cutoffs()),
+                  c("mono_strong", "mono_mod", "curv_low", "curv_mod",
+                    "flat"))
+  for (nm in c("mono_nonmono", "mono_s", "curv_strong")) {
+    args <- stats::setNames(list(0.7), nm)
+    expect_warning(co <- do.call(janusplot_shape_cutoffs, args),
+                   class = "lifecycle_warning_deprecated")
+    expect_identical(co, janusplot_shape_cutoffs())
+  }
+  # A full custom list still carrying the old names classifies the same.
+  x <- seq(0, 1, length.out = 200L)
+  fo <- .mk_fit(x, sin(2 * pi * x))
+  old_style <- c(janusplot_shape_cutoffs(),
+                 list(mono_nonmono = 0.99, mono_s = 0.01, curv_strong = 0.99))
+  expect_identical(janusplot:::.compute_shape_metrics(fo, old_style),
+                   janusplot:::.compute_shape_metrics(fo))
+})

@@ -29,14 +29,17 @@
 #' \describe{
 #'   \item{`mono_strong`}{`|M|` threshold for a strictly monotone smooth (default `0.9`).}
 #'   \item{`mono_mod`}{`|M|` threshold for a curved-but-monotone smooth (default `0.5`).}
-#'   \item{`mono_nonmono`}{`|M|` below this is considered non-monotone (default `0.3`).}
-#'   \item{`mono_s`}{`|M|` threshold for labelling an S-shape (default `0.5`).}
 #'   \item{`curv_low`}{`|C|` below this is considered near-linear curvature (default `0.2`).}
 #'   \item{`curv_mod`}{`|C|` threshold for a clearly curved monotone (default `0.5`).}
-#'   \item{`curv_strong`}{`|C|` threshold for a U-shape / inverted-U shape
-#'     (default `0.5`).}
 #'   \item{`flat`}{`range(fit) / sd(y)` below this is called `flat` (default `0.05`).}
 #' }
+#'
+#' The cutoffs `mono_nonmono`, `mono_s` and `curv_strong` are
+#' deprecated. The classifier never read them: non-monotone and
+#' S-shaped curves are identified from the turning-point and
+#' inflection counts, and peak against trough from the type of the
+#' extremum. Passing them raises a deprecation warning and they are
+#' dropped from the returned list.
 #'
 #' @examples
 #' janusplot_shape_cutoffs()
@@ -47,14 +50,21 @@ janusplot_shape_cutoffs <- function(...) {
   defaults <- list(
     mono_strong  = 0.9,
     mono_mod     = 0.5,
-    mono_nonmono = 0.3,
-    mono_s       = 0.5,
     curv_low     = 0.2,
     curv_mod     = 0.5,
-    curv_strong  = 0.5,
     flat         = 0.05
   )
   overrides <- list(...)
+  deprecated <- intersect(names(overrides),
+                          c("mono_nonmono", "mono_s", "curv_strong"))
+  for (nm in deprecated) {
+    lifecycle::deprecate_warn(
+      when    = "0.2.1",
+      what    = I(paste0("The `", nm, "` cutoff")),
+      details = "The shape classifier never used it; it is ignored."
+    )
+  }
+  overrides <- overrides[setdiff(names(overrides), deprecated)]
   if (length(overrides)) {
     unknown <- setdiff(names(overrides), names(defaults))
     if (length(unknown)) {
