@@ -648,6 +648,13 @@
   if (n_used < 5L) {
     return(.empty_fit_result(x_name, y_name, n_used))
   }
+  degenerate <- .degenerate_pair_message(dat[[x_name]], dat[[y_name]],
+                                         x_name, y_name)
+  if (!is.na(degenerate)) {
+    out <- .empty_fit_result(x_name, y_name, NA_integer_)
+    out$error <- degenerate
+    return(out)
+  }
   n_unique <- length(unique(dat[[x_name]]))
 
   # Initial fit at user-requested k (mgcv resolves k=-1 internally).
@@ -811,6 +818,25 @@
   out$corr  <- .compute_correlations(dat, x_name, y_name)
   out$shape <- .compute_shape_metrics_raw(out)
   out
+}
+
+# mgcv stops with an uninformative message when y is an exact copy or
+# an exact affine transform of x; name the cause instead.
+.degenerate_pair_message <- function(x, y, x_name, y_name) {
+  if (identical(x, y)) {
+    return(sprintf("`%s` and `%s` are identical; no smooth can be fitted.",
+                   x_name, y_name))
+  }
+  if (stats::sd(x) > 0 && stats::sd(y) > 0) {
+    r <- stats::cor(x, y)
+    if (is.finite(r) && abs(1 - abs(r)) <= 1e-12) {
+      return(sprintf(
+        "`%s` and `%s` are perfectly collinear (|r| = 1); no smooth can be fitted.",
+        x_name, y_name
+      ))
+    }
+  }
+  NA_character_
 }
 
 .empty_fit_result <- function(x_name, y_name, n_used) {

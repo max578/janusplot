@@ -37,7 +37,9 @@ returned tables and messages.}
 
 \item{vars}{Character vector of column names to use. \code{NULL} (default)
 uses all numeric columns in \code{data}. Non-numeric columns trigger an
-error listing offenders.}
+error listing offenders. Two columns that are identical or exactly
+collinear (absolute correlation 1) are not fitted against each
+other: both cells fail with a message naming the columns.}
 
 \item{adjust}{A one-sided formula RHS giving additional covariates
 and/or random effects to include in every pairwise GAM. For example,

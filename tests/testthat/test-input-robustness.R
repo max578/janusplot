@@ -276,3 +276,55 @@ test_that("an error is raised only when every pair has fewer than 5 rows", {
   expect_error(janusplot_data(d, engine = "gam"), "fewer than 5")
   expect_error(janusplot(d, engine = "gam"), "fewer than 5")
 })
+
+make_collinear_data <- function(n = 60L, seed = 14L) {
+  withr::with_seed(seed, {
+    x1 <- stats::runif(n, 0, 3)
+    data.frame(
+      x1 = x1,
+      x2 = x1,
+      x3 = 2 * x1 + 1,
+      x4 = sin(x1) + stats::rnorm(n, sd = 0.3)
+    )
+  })
+}
+
+test_that("identical and collinear columns route through the failed-cell path", {
+  d <- make_collinear_data()
+  w <- testthat::capture_warnings(
+    res <- janusplot_data(d, engine = "gam")
+  )
+  expect_length(w, 1L)
+  expect_match(w, "failed to fit")
+  pick <- function(a, b) {
+    res$pairs[[which(vapply(res$pairs, function(p) {
+      p$var_i == a && p$var_j == b
+    }, logical(1L)))]]
+  }
+  p12 <- pick("x1", "x2")
+  expect_match(p12$error_yx, "identical")
+  expect_match(p12$error_yx, "x1")
+  expect_match(p12$error_yx, "x2")
+  expect_match(p12$error_xy, "identical")
+  p13 <- pick("x1", "x3")
+  expect_match(p13$error_yx, "collinear")
+  expect_match(p13$error_yx, "x3")
+  expect_true(is.na(p13$n_used))
+  p14 <- pick("x1", "x4")
+  expect_true(is.na(p14$error_yx))
+  expect_true(is.finite(p14$edf_yx))
+})
+
+test_that("janusplot() carries the collinearity message in its table", {
+  d <- make_collinear_data()
+  names(d)[2L] <- "x1 copy"
+  expect_warning(
+    out <- janusplot(d, engine = "gam", with_data = TRUE),
+    "failed to fit"
+  )
+  expect_s3_class(out$plot, "ggplot")
+  row <- out$data[out$data$var_x == "x1" & out$data$var_y == "x1 copy", ]
+  expect_match(row$error, "`x1 copy`", fixed = TRUE)
+  expect_match(row$error, "identical")
+  expect_true(all(is.finite(out$data$edf[out$data$var_y == "x4"])))
+})
