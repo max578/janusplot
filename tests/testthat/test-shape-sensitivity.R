@@ -100,3 +100,25 @@ test_that("linear_up is recognised as monotone at moderate n, low noise", {
   monot_pred <- janusplot:::.shape_lookup(res$predicted, "monotonic")
   expect_gte(mean(monot_pred == "monotone", na.rm = TRUE), 0.95)
 })
+
+test_that("wave and bi_wave generators have the extrema their categories need", {
+  gens <- janusplot:::.shape_sensitivity_generators()
+  x <- seq(0, 1, length.out = 400L)
+  turning <- function(y) {
+    m <- janusplot:::.compute_shape_metrics(list(
+      x_name = "x", y_name = "y",
+      pred = data.frame(x = x, fit = y), raw = data.frame(x = x, y = y)
+    ))
+    m
+  }
+  w <- turning(gens$wave(x))
+  expect_equal(w$n_turning_points, 2L)
+  expect_equal(w$shape_category, "wave")
+  bw <- turning(gens$bi_wave(x))
+  expect_equal(bw$n_turning_points, 4L)
+  # Four interior extrema force at least three inflections, so the
+  # noiseless bi-wave lands in the bi_wave_ripple cell of its archetype.
+  expect_equal(janusplot:::.shape_lookup(bw$shape_category, "archetype"),
+               "multimodal")
+  expect_true(bw$shape_category %in% c("bi_wave", "bi_wave_ripple"))
+})

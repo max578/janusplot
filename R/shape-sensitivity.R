@@ -33,11 +33,15 @@
     inverted_u   = function(x) .norm01(1 - 4 * (x - 0.5)^2),
     skewed_peak  = function(x) .norm01(x * exp(-3 * x)),
     broad_peak   = function(x) .norm01(exp(-((x - 0.5) * 3)^4)),
-    wave         = function(x) 0.5 + 0.5 * sin(2 * pi * (x - 0.25)),
+    # One full sine period with zero phase: a maximum at x = 0.25 and
+    # a minimum at x = 0.75. A quarter-period shift would put troughs
+    # at both ends and leave a single interior maximum (a peak).
+    wave         = function(x) 0.5 + 0.5 * sin(2 * pi * x),
     bimodal      = function(x) {
       .norm01(exp(-((x - 0.25) * 6)^2) + exp(-((x - 0.75) * 6)^2))
     },
-    bi_wave      = function(x) 0.5 + 0.5 * sin(4 * pi * (x - 0.125))
+    # Two full periods, zero phase: four interior extrema.
+    bi_wave      = function(x) 0.5 + 0.5 * sin(4 * pi * x)
   )
 }
 

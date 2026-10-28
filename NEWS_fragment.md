@@ -30,3 +30,20 @@
   raise a deprecation warning, are dropped from the returned list and
   no longer appear among the defaults or in the documentation.
   Classification is unchanged.
+
+## Shape-sensitivity study
+
+* The `wave` and `bi_wave` ground-truth generators of
+  `janusplot_shape_sensitivity()` were corrected. Both carried a
+  quarter-period phase shift that placed a trough at each end of
+  `[0, 1]`, so `wave` had a single interior maximum (a broad peak) and
+  `bi_wave` had three interior extrema (a bimodal curve). They now use
+  zero phase: `wave` has one maximum and one minimum, and `bi_wave` has
+  four interior extrema.
+* `shape_sensitivity_demo` was regenerated with the recorded seed
+  (2026) under the corrected generator and the extremum-type
+  classifier. `wave` recovery rose from 0% to 96.9% exact and 97.8% by
+  archetype, which lifted the overall figures from 70.1% to 86.2% exact
+  and from 76.9% to 93.1% by archetype. The other five shapes are
+  unchanged. The shape-recognition-sensitivity vignette was updated to
+  match, including a corrected verdict for hypothesis H2.
