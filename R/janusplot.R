@@ -23,7 +23,14 @@
 #'   and/or random effects to include in every pairwise GAM. For example,
 #'   `adjust = ~ s(age) + s(site, bs = "re")` fits
 #'   `gam(y ~ s(x) + s(age) + s(site, bs = "re"))` for each pair.
-#'   Default `NULL` fits unadjusted pairwise smooths.
+#'   Default `NULL` fits unadjusted pairwise smooths. The curve, its
+#'   confidence band and its derivatives are predicted at the
+#'   population level: random-effect smooths (`bs = "re"` and factor
+#'   smooths `bs = "fs"`) are excluded from prediction, numeric
+#'   covariates are held at their mean over the rows used by the pair,
+#'   and fixed factors at their most frequent level.
+#'   [janusplot_data()] records these values per pair as
+#'   `prediction_reference_yx` / `prediction_reference_xy`.
 #' @param method Smoothing-parameter estimation method passed to
 #'   the chosen fitting backend. Default `NULL` resolves
 #'   per-engine: `"fREML"` for `engine = "bam"` (mgcv's
@@ -1016,6 +1023,15 @@ janusplot <- function(
 #'     `monotonicity_index_xy`, `convexity_index_xy`,
 #'     `n_turning_yx`, `n_inflect_yx`, `n_turning_xy`,
 #'     `n_inflect_xy`, `shape_yx`, `shape_xy`).
+#'     `prediction_reference_yx` and `prediction_reference_xy` are data
+#'     frames with one row per `adjust` variable and columns
+#'     `variable`, `reference` and `value`, recording what each
+#'     variable was held at on the prediction grid: the mean of a
+#'     numeric covariate (also in `value`), the most frequent level of
+#'     a fixed factor, or `"excluded (random effect)"` when the
+#'     variable enters only through random-effect smooths, which are
+#'     dropped so the curve and band are population-level. They have
+#'     zero rows when `adjust` is `NULL`.
 #'     When `derivatives` is non-empty, each pair additionally
 #'     carries `deriv_yx` and `deriv_xy`, each a named list keyed by
 #'     order (`"1"`, `"2"`) whose entries are data frames with
@@ -1183,6 +1199,8 @@ janusplot_data <- function(
         shape_linear_xy    = .shape_lookup(shape_xy, "linear"),
         deriv_yx           = f_yx$deriv,
         deriv_xy           = f_xy$deriv,
+        prediction_reference_yx = f_yx$prediction_reference,
+        prediction_reference_xy = f_xy$prediction_reference,
         k_check_yx         = f_yx$k_check,
         k_check_xy         = f_xy$k_check,
         engine             = f_yx$engine %||% f_xy$engine %||% NA_character_,

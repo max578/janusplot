@@ -69,7 +69,14 @@ error listing offenders.}
 and/or random effects to include in every pairwise GAM. For example,
 \code{adjust = ~ s(age) + s(site, bs = "re")} fits
 \code{gam(y ~ s(x) + s(age) + s(site, bs = "re"))} for each pair.
-Default \code{NULL} fits unadjusted pairwise smooths.}
+Default \code{NULL} fits unadjusted pairwise smooths. The curve, its
+confidence band and its derivatives are predicted at the
+population level: random-effect smooths (\code{bs = "re"} and factor
+smooths \code{bs = "fs"}) are excluded from prediction, numeric
+covariates are held at their mean over the rows used by the pair,
+and fixed factors at their most frequent level.
+\code{\link[=janusplot_data]{janusplot_data()}} records these values per pair as
+\code{prediction_reference_yx} / \code{prediction_reference_xy}.}
 
 \item{method}{Smoothing-parameter estimation method passed to
 the chosen fitting backend. Default \code{NULL} resolves

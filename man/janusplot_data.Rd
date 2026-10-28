@@ -39,7 +39,14 @@ error listing offenders.}
 and/or random effects to include in every pairwise GAM. For example,
 \code{adjust = ~ s(age) + s(site, bs = "re")} fits
 \code{gam(y ~ s(x) + s(age) + s(site, bs = "re"))} for each pair.
-Default \code{NULL} fits unadjusted pairwise smooths.}
+Default \code{NULL} fits unadjusted pairwise smooths. The curve, its
+confidence band and its derivatives are predicted at the
+population level: random-effect smooths (\code{bs = "re"} and factor
+smooths \code{bs = "fs"}) are excluded from prediction, numeric
+covariates are held at their mean over the rows used by the pair,
+and fixed factors at their most frequent level.
+\code{\link[=janusplot_data]{janusplot_data()}} records these values per pair as
+\code{prediction_reference_yx} / \code{prediction_reference_xy}.}
 
 \item{method}{Smoothing-parameter estimation method passed to
 the chosen fitting backend. Default \code{NULL} resolves
@@ -191,6 +198,15 @@ Spearman / Kendall correlations (\code{cor_pearson}, \code{cor_spearman},
 \code{monotonicity_index_xy}, \code{convexity_index_xy},
 \code{n_turning_yx}, \code{n_inflect_yx}, \code{n_turning_xy},
 \code{n_inflect_xy}, \code{shape_yx}, \code{shape_xy}).
+\code{prediction_reference_yx} and \code{prediction_reference_xy} are data
+frames with one row per \code{adjust} variable and columns
+\code{variable}, \code{reference} and \code{value}, recording what each
+variable was held at on the prediction grid: the mean of a
+numeric covariate (also in \code{value}), the most frequent level of
+a fixed factor, or \code{"excluded (random effect)"} when the
+variable enters only through random-effect smooths, which are
+dropped so the curve and band are population-level. They have
+zero rows when \code{adjust} is \code{NULL}.
 When \code{derivatives} is non-empty, each pair additionally
 carries \code{deriv_yx} and \code{deriv_xy}, each a named list keyed by
 order (\code{"1"}, \code{"2"}) whose entries are data frames with
