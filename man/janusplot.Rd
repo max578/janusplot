@@ -59,17 +59,27 @@ janusplot(
 )
 }
 \arguments{
-\item{data}{A data frame with numeric columns to include.}
+\item{data}{A data frame with numeric columns to include. Column
+names need not be syntactic (\code{"grain yield (t/ha)"},
+\code{"2019_yield"}): they are fitted under internal \code{\link[=make.names]{make.names()}}
+aliases and reported under their original names in labels,
+returned tables and messages.}
 
 \item{vars}{Character vector of column names to use. \code{NULL} (default)
 uses all numeric columns in \code{data}. Non-numeric columns trigger an
-error listing offenders.}
+error listing offenders. Two columns that are identical or exactly
+collinear (absolute correlation 1) are not fitted against each
+other: both cells fail with a message naming the columns.}
 
 \item{adjust}{A one-sided formula RHS giving additional covariates
 and/or random effects to include in every pairwise GAM. For example,
 \code{adjust = ~ s(age) + s(site, bs = "re")} fits
 \code{gam(y ~ s(x) + s(age) + s(site, bs = "re"))} for each pair.
-Default \code{NULL} fits unadjusted pairwise smooths.}
+Default \code{NULL} fits unadjusted pairwise smooths. Non-syntactic
+column names are referenced with backticks, e.g.
+\code{adjust = ~ s(`site name`, bs = "re")}. Character and logical
+\code{adjust} columns are converted to factor before fitting, with a
+message naming them.}
 
 \item{method}{Smoothing-parameter estimation method passed to
 the chosen fitting backend. Default \code{NULL} resolves
@@ -287,7 +297,11 @@ warning fires and the argument is merged into \code{annotations}.}
 
 \item{na_action}{One of \code{"pairwise"} (default; per-cell complete
 observations) or \code{"complete"} (listwise; all cells use the same
-rows).}
+rows). Infinite values (\code{Inf}, \code{-Inf}) count as missing, and a
+warning gives the number removed per column.
+A pair sharing fewer than 5 complete rows is drawn as an empty
+"n < 5" cell, keeps its shared-row count in \code{n_used} and is listed
+in a warning; an error is raised only when no pair reaches 5 rows.}
 
 \item{parallel}{Logical. If \code{TRUE}, use \code{future.apply::future_mapply()}
 to fit pairs in parallel. Requires the \code{future.apply} package and a

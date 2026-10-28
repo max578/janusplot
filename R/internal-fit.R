@@ -177,6 +177,143 @@
 }
 
 # ---------------------------------------------------------------
+# Internal aliasing for non-syntactic column names
+# ---------------------------------------------------------------
+# mgcv cannot parse s() on a non-syntactic name even when backticked,
+# so fits run on make.names() aliases. All-syntactic input is returned
+# untouched.
+
+.alias_columns <- function(data, vars, adjust) {
+  cols <- intersect(unique(c(vars, .adjust_vars(adjust))), names(data))
+  aliases <- make.names(cols, unique = TRUE)
+  if (identical(aliases, cols)) {
+    return(list(data = data, vars = vars, adjust = adjust,
+                aliased = FALSE, map = NULL))
+  }
+  work <- data[, cols, drop = FALSE]
+  names(work) <- aliases
+  lookup <- stats::setNames(aliases, cols)
+  if (!is.null(adjust)) {
+    adjust[[2L]] <- .rename_symbols(adjust[[2L]], lookup)
+  }
+  list(
+    data    = work,
+    vars    = unname(lookup[vars]),
+    adjust  = adjust,
+    aliased = TRUE,
+    map     = stats::setNames(cols, aliases)
+  )
+}
+
+# Replace every symbol named in `lookup` (original -> alias) inside a
+# call, leaving function heads and constants alone.
+.rename_symbols <- function(expr, lookup) {
+  if (is.name(expr)) {
+    nm <- as.character(expr)
+    if (nzchar(nm) && nm %in% names(lookup)) {
+      return(as.name(lookup[[nm]]))
+    }
+    return(expr)
+  }
+  if (is.call(expr) && length(expr) > 1L) {
+    for (i in 2:length(expr)) {
+      if (!identical(expr[[i]], quote(expr = ))) {
+        expr[[i]] <- .rename_symbols(expr[[i]], lookup)
+      }
+    }
+  }
+  expr
+}
+
+# Per-variable k lists are keyed by original names; re-key them onto
+# the aliases so .resolve_k() finds them.
+.alias_k <- function(k, map) {
+  if (!is.list(k) || is.null(map) || is.null(names(k))) return(k)
+  rev_map <- stats::setNames(names(map), map)
+  hit <- names(k) %in% names(rev_map)
+  names(k)[hit] <- rev_map[names(k)[hit]]
+  k
+}
+
+# Aliases -> original names in message text: whole tokens, one pass,
+# so an alias equal to another column's original name is not rewritten
+# twice.
+.restore_names_in_text <- function(txt, map) {
+  if (is.null(map) || !length(txt)) return(txt)
+  changed <- map[names(map) != map]
+  if (!length(changed)) return(txt)
+  keys <- names(changed)[order(nchar(names(changed)), decreasing = TRUE)]
+  esc <- gsub("([.\\\\])", "\\\\\\1", keys)
+  pattern <- paste0("(?<![A-Za-z0-9._])(", paste(esc, collapse = "|"),
+                    ")(?![A-Za-z0-9._])")
+  vapply(txt, function(t) {
+    if (is.na(t)) return(t)
+    m <- gregexpr(pattern, t, perl = TRUE)
+    hits <- regmatches(t, m)[[1L]]
+    if (!length(hits)) return(t)
+    regmatches(t, m) <- list(unname(changed[hits]))
+    t
+  }, character(1L), USE.NAMES = FALSE)
+}
+
+# Put the original names back on a fitted cell.
+.restore_fit_names <- function(f, map) {
+  f$x_name <- map[[f$x_name]]
+  f$y_name <- map[[f$y_name]]
+  if (is.data.frame(f$raw) && ncol(f$raw) > 0L) {
+    nm <- names(f$raw)
+    hit <- nm %in% names(map)
+    nm[hit] <- map[nm[hit]]
+    names(f$raw) <- nm
+  }
+  if (!is.null(f$error) && !is.na(f$error)) {
+    f$error <- .restore_names_in_text(f$error, map)
+  }
+  f
+}
+
+# Original column name for an internal (possibly aliased) name.
+.original_names <- function(nms, map) {
+  if (is.null(map)) return(nms)
+  unname(map[nms])
+}
+
+# Character and logical adjust variables make mgcv fail on model-frame
+# construction; coerce them to factor so fixed and random-effect terms
+# both work.
+.coerce_adjust_factors <- function(data, vars, adjust, map = NULL) {
+  adj <- setdiff(intersect(.adjust_vars(adjust), names(data)), vars)
+  to_coerce <- adj[vapply(data[adj], function(col) {
+    is.character(col) || is.logical(col)
+  }, logical(1L))]
+  if (!length(to_coerce)) return(data)
+  for (nm in to_coerce) data[[nm]] <- factor(data[[nm]])
+  coerced <- .original_names(to_coerce, map)                  # nolint: object_usage_linter.
+  cli::cli_inform(c(
+    i = "Converted character or logical {.arg adjust} column{?s} {.val {coerced}} to factor."
+  ))
+  data
+}
+
+# mgcv fails on +/-Inf; treat them as missing so pairwise or listwise
+# deletion removes them and n_used counts only finite rows.
+.drop_infinite <- function(data, vars, adjust, map = NULL) {
+  cols <- intersect(unique(c(vars, .adjust_vars(adjust))), names(data))
+  cols <- cols[vapply(data[cols], is.numeric, logical(1L))]
+  n_inf <- vapply(data[cols], function(col) sum(is.infinite(col)),
+                  integer(1L))
+  hit <- cols[n_inf > 0L]
+  if (!length(hit)) return(data)
+  for (nm in hit) data[[nm]][is.infinite(data[[nm]])] <- NA
+  counts <- paste0(.original_names(hit, map), " (", n_inf[hit], ")") # nolint: object_usage_linter.
+  cli::cli_warn(c(
+    "!" = "Infinite values treated as missing in column{?s}: {counts}.",
+    i = "Affected rows are dropped from every cell that uses those columns."
+  ))
+  data
+}
+
+# ---------------------------------------------------------------
 # Build the pairwise GAM formula
 # ---------------------------------------------------------------
 
@@ -511,6 +648,13 @@
   if (n_used < 5L) {
     return(.empty_fit_result(x_name, y_name, n_used))
   }
+  degenerate <- .degenerate_pair_message(dat[[x_name]], dat[[y_name]],
+                                         x_name, y_name)
+  if (!is.na(degenerate)) {
+    out <- .empty_fit_result(x_name, y_name, NA_integer_)
+    out$error <- degenerate
+    return(out)
+  }
   n_unique <- length(unique(dat[[x_name]]))
 
   # Initial fit at user-requested k (mgcv resolves k=-1 internally).
@@ -676,6 +820,25 @@
   out
 }
 
+# mgcv stops with an uninformative message when y is an exact copy or
+# an exact affine transform of x; name the cause instead.
+.degenerate_pair_message <- function(x, y, x_name, y_name) {
+  if (identical(x, y)) {
+    return(sprintf("`%s` and `%s` are identical; no smooth can be fitted.",
+                   x_name, y_name))
+  }
+  if (stats::sd(x) > 0 && stats::sd(y) > 0) {
+    r <- stats::cor(x, y)
+    if (is.finite(r) && abs(1 - abs(r)) <= 1e-12) {
+      return(sprintf(
+        "`%s` and `%s` are perfectly collinear (|r| = 1); no smooth can be fitted.",
+        x_name, y_name
+      ))
+    }
+  }
+  NA_character_
+}
+
 .empty_fit_result <- function(x_name, y_name, n_used) {
   list(
     x_name = x_name, y_name = y_name, fit = NULL,
@@ -720,6 +883,13 @@
                            discrete = FALSE,
                            nthreads = 1L, ...) {
   .check_parallel_plan(parallel)
+  aliasing <- .alias_columns(data, vars, adjust)
+  data   <- aliasing$data
+  vars   <- aliasing$vars
+  adjust <- aliasing$adjust
+  k      <- .alias_k(k, aliasing$map)
+  data   <- .coerce_adjust_factors(data, vars, adjust, aliasing$map)
+  data   <- .drop_infinite(data, vars, adjust, aliasing$map)
   if (na_action == "complete") {
     data <- data[stats::complete.cases(
       data[, unique(c(vars, .adjust_vars(adjust))), drop = FALSE]
@@ -728,6 +898,8 @@
   grid <- expand.grid(i = seq_along(vars), j = seq_along(vars),
                       KEEP.OUT.ATTRS = FALSE)
   grid <- grid[grid$i != grid$j, , drop = FALSE]
+  .check_any_pair_fittable(data, vars, adjust, na_action, aliasing$map,
+                           call = rlang::caller_env())
 
   fit_one <- function(i, j) {
     .fit_pair(
@@ -746,16 +918,58 @@
     )
   }
 
-  if (isTRUE(parallel) && rlang::is_installed("future.apply")) {
-    fits <- future.apply::future_mapply(
-      fit_one, grid$i, grid$j, SIMPLIFY = FALSE,
-      future.seed = TRUE
+  run_fits <- function() {
+    if (isTRUE(parallel) && rlang::is_installed("future.apply")) {
+      future.apply::future_mapply(
+        fit_one, grid$i, grid$j, SIMPLIFY = FALSE,
+        future.seed = TRUE
+      )
+    } else {
+      mapply(fit_one, grid$i, grid$j, SIMPLIFY = FALSE)
+    }
+  }
+  if (isTRUE(aliasing$aliased)) {
+    # Warnings raised by mgcv name the aliases; re-signal them with the
+    # original column names restored.
+    fits <- withCallingHandlers(
+      run_fits(),
+      warning = function(w) {
+        msg <- conditionMessage(w)
+        restored <- .restore_names_in_text(msg, aliasing$map)
+        if (!identical(restored, msg)) {
+          warning(restored, call. = FALSE)
+          invokeRestart("muffleWarning")
+        }
+      }
     )
+    fits <- lapply(fits, .restore_fit_names, map = aliasing$map)
   } else {
-    fits <- mapply(fit_one, grid$i, grid$j, SIMPLIFY = FALSE)
+    fits <- run_fits()
   }
   names(fits) <- sprintf("%d_%d", grid$i, grid$j)
   fits
+}
+
+# A single sparse pair never stops the matrix, but a matrix in which no
+# pair reaches 5 shared rows has nothing to show.
+.check_any_pair_fittable <- function(data, vars, adjust, na_action,
+                                     map = NULL,
+                                     call = rlang::caller_env()) {
+  adj <- intersect(.adjust_vars(adjust), names(data))
+  n_shared <- if (na_action == "complete") {
+    nrow(data)
+  } else {
+    pairs <- utils::combn(vars, 2L, simplify = FALSE)
+    vapply(pairs, function(p) {
+      sum(stats::complete.cases(data[, unique(c(p, adj)), drop = FALSE]))
+    }, integer(1L))
+  }
+  if (any(n_shared >= 5L)) return(invisible(NULL))
+  max_shared <- max(n_shared)                                 # nolint: object_usage_linter.
+  cli::cli_abort(c(
+    "Every pair of {.arg vars} shares fewer than 5 complete rows.",
+    i = "The largest shared count is {max_shared}; no cell can be fitted."
+  ), call = call)
 }
 
 # ---------------------------------------------------------------
@@ -884,18 +1098,49 @@
     err <- f$error
     !is.null(err) && !is.na(err) && nzchar(err)
   }, logical(1L))
+  # Cells that never reached mgcv because the pair shares < 5 rows.
+  sparse <- !failed & vapply(fits, function(f) {
+    n <- f$n_used
+    !is.null(n) && !is.na(n) && n < 5L && is.null(f$fit)
+  }, logical(1L))
   n_failed <- sum(failed)                                    # nolint: object_usage_linter.
-  if (n_failed == 0L) return(invisible(NULL))
+  if (n_failed == 0L && !any(sparse)) return(invisible(NULL))
   n_cells <- length(fits)                                     # nolint: object_usage_linter.
-  first_msg <- fits[[which(failed)[1L]]]$error                # nolint: object_usage_linter.
-  cli::cli_warn(c(
-    "!" = "{n_failed} of {n_cells} cell{?s} failed to fit and carry no result.",
-    "i" = "First failure: {first_msg}",
-    "i" = paste0(
-      "Inspect {.code n_used}/{.code error} in the returned table -- a failed cell ",
-      "reports {.code n_used = NA} and {.code edf = NA}, never a completed fit."
+  bullets <- character()
+  if (n_failed > 0L) {
+    first_msg <- fits[[which(failed)[1L]]]$error              # nolint: object_usage_linter.
+    bullets <- c(
+      "!" = "{n_failed} of {n_cells} cell{?s} failed to fit and carry no result.",
+      i = "First failure: {first_msg}"
     )
-  ))
+  }
+  if (any(sparse)) {
+    sp <- fits[sparse]
+    key <- vapply(sp, function(f) {
+      paste(sort(c(f$x_name, f$y_name)), collapse = "\r")
+    }, character(1L))
+    sp <- sp[!duplicated(key)]
+    sparse_pairs <- vapply(sp, function(f) {                  # nolint: object_usage_linter.
+      sprintf("%s vs %s (n = %d)", f$y_name, f$x_name, as.integer(f$n_used))
+    }, character(1L), USE.NAMES = FALSE)
+    n_sparse <- length(sparse_pairs)                          # nolint: object_usage_linter.
+    bullets <- c(
+      bullets,
+      "!" = paste(
+        "{n_sparse} pair{?s} share{?s/} fewer than 5 complete rows and",
+        "{?is/are} shown as {.val n < 5}: {sparse_pairs}."
+      )
+    )
+  }
+  bullets <- c(
+    bullets,
+    i = paste0(
+      "Inspect {.code n_used}/{.code error} in the returned table -- a failed cell ",
+      "reports {.code n_used = NA} and {.code edf = NA}, never a completed fit; ",
+      "a sparse cell reports its shared-row count in {.code n_used}."
+    )
+  )
+  cli::cli_warn(bullets)
   invisible(NULL)
 }
 

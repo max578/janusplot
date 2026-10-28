@@ -15,15 +15,25 @@
 #' heteroscedasticity, leverage, and directional non-linearity that a
 #' single scalar correlation hides.
 #'
-#' @param data A data frame with numeric columns to include.
+#' @param data A data frame with numeric columns to include. Column
+#'   names need not be syntactic (`"grain yield (t/ha)"`,
+#'   `"2019_yield"`): they are fitted under internal [make.names()]
+#'   aliases and reported under their original names in labels,
+#'   returned tables and messages.
 #' @param vars Character vector of column names to use. `NULL` (default)
 #'   uses all numeric columns in `data`. Non-numeric columns trigger an
-#'   error listing offenders.
+#'   error listing offenders. Two columns that are identical or exactly
+#'   collinear (absolute correlation 1) are not fitted against each
+#'   other: both cells fail with a message naming the columns.
 #' @param adjust A one-sided formula RHS giving additional covariates
 #'   and/or random effects to include in every pairwise GAM. For example,
 #'   `adjust = ~ s(age) + s(site, bs = "re")` fits
 #'   `gam(y ~ s(x) + s(age) + s(site, bs = "re"))` for each pair.
-#'   Default `NULL` fits unadjusted pairwise smooths.
+#'   Default `NULL` fits unadjusted pairwise smooths. Non-syntactic
+#'   column names are referenced with backticks, e.g.
+#'   ``adjust = ~ s(`site name`, bs = "re")``. Character and logical
+#'   `adjust` columns are converted to factor before fitting, with a
+#'   message naming them.
 #' @param method Smoothing-parameter estimation method passed to
 #'   the chosen fitting backend. Default `NULL` resolves
 #'   per-engine: `"fREML"` for `engine = "bam"` (mgcv's
@@ -203,7 +213,11 @@
 #'   warning fires and the argument is merged into `annotations`.
 #' @param na_action One of `"pairwise"` (default; per-cell complete
 #'   observations) or `"complete"` (listwise; all cells use the same
-#'   rows).
+#'   rows). Infinite values (`Inf`, `-Inf`) count as missing, and a
+#'   warning gives the number removed per column.
+#'   A pair sharing fewer than 5 complete rows is drawn as an empty
+#'   "n < 5" cell, keeps its shared-row count in `n_used` and is listed
+#'   in a warning; an error is raised only when no pair reaches 5 rows.
 #' @param compact One of `"auto"` (default), `"always"`, or `"never"`.
 #'   Controls scale-aware content suppression per cell:
 #'   * `"auto"` -- tier 0 at `n_var < compact_threshold` (the v0.1.0
