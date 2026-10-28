@@ -77,8 +77,7 @@
 
 * A curve with a single turning point is now labelled by the type of
   that extremum, read from the sign of the first derivative on either
-  side of it, rather than by the sign of the convexity index or not at
-  all. A minimum gives `u_shape`, `skewed_trough`, `broad_trough` or
+  side of it. A minimum gives `u_shape`, `skewed_trough`, `broad_trough` or
   `rippled_trough` for 0, 1, 2 or 3+ inflections; a maximum gives
   `inverted_u`, `skewed_peak`, `broad_peak` or `rippled_peak`.
   Previously `skewed_peak`, `broad_peak` and `rippled_peak` were applied
