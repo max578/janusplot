@@ -167,6 +167,60 @@
   }
 }
 
+# mgcv's default basis dimension for a univariate smooth of type `bs`
+# when k = -1, read from the smooth.construct.<bs>.smooth.spec methods
+# (mgcv 1.9) at the default penalty order `m` (janusplot never sets m):
+#   tp, ts     -- null-space dimension M = 2 plus def.k = 8, so 10;
+#   cr, cs, cc -- 10;
+#   ps, cp     -- max(10, m[1] + 1) = 10 with m = c(2, 2) (cp: max(10, m[1]));
+#   bs         -- max(10, m[1]) = 10 with m = c(3, 2).
+# Any other basis returns NA: its default is left to mgcv and not capped.
+.default_k_for_bs <- function(bs) {
+  if (as.character(bs)[1L] %in%
+      c("tp", "ts", "cr", "cs", "cc", "ps", "cp", "bs")) {
+    10L
+  } else {
+    NA_integer_
+  }
+}
+
+# Smallest basis dimension mgcv fits for a univariate smooth of type
+# `bs` at the default `m` (checked against mgcv 1.9.4): below it mgcv
+# raises k itself or fails, so capping lower would not help.
+.min_k_for_bs <- function(bs) {
+  switch(as.character(bs)[1L],
+    cc = 4L,
+    ps = 4L,
+    bs = 5L,
+    3L
+  )
+}
+
+# Resolve the basis dimension for one ordered pair from that pair's own
+# rows. mgcv refuses (tp, cr, cs) or warns (ps, bs) when k exceeds the
+# number of distinct covariate values, so the effective k is
+#   k_used = min(k requested or the mgcv default for bs, n_unique).
+# `k_fit` is what goes into the formula: the user's value unchanged
+# (including -1 for the mgcv default) unless the cap applies, so
+# uncapped fits are identical to an uncapped call. A predictor with
+# fewer distinct values than the basis minimum is not capped: no smooth
+# of that basis can be fitted, and mgcv's own error is kept.
+.resolve_pair_k <- function(k_val, bs, n_unique) {
+  k_requested <- if (is.na(k_val) || k_val < 0) {
+    .default_k_for_bs(bs)
+  } else {
+    as.integer(k_val)
+  }
+  k_capped <- !is.na(k_requested) && k_requested > n_unique &&
+    n_unique >= .min_k_for_bs(bs)
+  list(
+    k_requested = k_requested,
+    k_used      = if (k_capped) as.integer(n_unique) else k_requested,
+    k_capped    = k_capped,
+    k_fit       = if (k_capped) as.integer(n_unique) else k_val
+  )
+}
+
 # ---------------------------------------------------------------
 # Extract names of variables referenced in an adjust formula RHS
 # ---------------------------------------------------------------
@@ -656,9 +710,12 @@
     return(out)
   }
   n_unique <- length(unique(dat[[x_name]]))
+  k_res <- .resolve_pair_k(k_val, bs, n_unique)
+  k_fit <- k_res$k_fit
 
-  # Initial fit at user-requested k (mgcv resolves k=-1 internally).
-  fml <- .build_formula(y_name, x_name, k_val, bs, adjust)
+  # Initial fit at user-requested k (mgcv resolves k=-1 internally),
+  # capped at the pair's distinct x count when the request exceeds it.
+  fml <- .build_formula(y_name, x_name, k_fit, bs, adjust)
   resolved_method <- if (is.null(method) || identical(method, "auto") ||
                          identical(method, "default")) {
     .engine_default_method(engine)
@@ -677,13 +734,16 @@
     # as unknown rather than a number that looks like a successful cell.
     out <- .empty_fit_result(x_name, y_name, NA_integer_)
     out$error <- conditionMessage(fit)
+    out$k_requested <- k_res$k_requested
+    out$k_used      <- k_res$k_used
+    out$k_capped    <- k_res$k_capped
     return(out)
   }
 
   # Strategy A -- diagnostic, always on.
   k_diag <- .k_check_one_pair(fit, x_name, n_unique,
                               thresholds = k_check_thresholds)
-  k_initial <- if (k_val < 0) {
+  k_initial <- if (k_fit < 0) {
     # mgcv default -- surface the actual k' from k.check, not -1.
     if (!is.na(k_diag$k_prime)) k_diag$k_prime + 1 else NA_real_
   } else {
@@ -727,6 +787,9 @@
   } else {
     k_final <- k_initial
   }
+  # After a refit, k_used reports the basis dimension of the returned fit;
+  # the refit cap (n_unique - 1) keeps it below the distinct-value limit.
+  k_used <- if (k_iterations > 0L) as.integer(k_final) else k_res$k_used
 
   smry <- summary(fit)
   # First smooth term is s(x); paranoid guard in case mgcv reorders
@@ -803,6 +866,9 @@
     error    = NA_character_,
     engine   = engine,
     method   = resolved_method,
+    k_requested = k_res$k_requested,
+    k_used      = k_used,
+    k_capped    = k_res$k_capped,
     k_check  = list(
       k_prime         = k_diag$k_prime,
       k_index         = k_diag$k_index,
@@ -849,6 +915,7 @@
     edf = NA_real_, pvalue = NA_real_, dev_exp = NA_real_,
     n_used = n_used, error = NA_character_,
     engine = NA_character_, method = NA_character_,
+    k_requested = NA_integer_, k_used = NA_integer_, k_capped = NA,
     k_check = list(
       k_prime        = NA_real_,
       k_index        = NA_real_,
@@ -1141,6 +1208,35 @@
     )
   )
   cli::cli_warn(bullets)
+  invisible(NULL)
+}
+
+# One message per call naming every predictor whose basis dimension was
+# capped at its distinct-value count, with the k used. A predictor capped
+# at one k in every pair is listed once; otherwise each pair is listed.
+.inform_k_capped <- function(fits) {
+  capped <- Filter(function(f) isTRUE(f$k_capped), fits)
+  if (!length(capped)) return(invisible(NULL))
+  x_names <- vapply(capped, function(f) f$x_name, character(1L))
+  y_names <- vapply(capped, function(f) f$y_name, character(1L))
+  k_used  <- vapply(capped, function(f) as.integer(f$k_used), integer(1L))
+  items <- unlist(lapply(unique(x_names), function(v) {         # nolint: object_usage_linter.
+    sel <- x_names == v
+    ks <- unique(k_used[sel])
+    if (length(ks) == 1L) {
+      sprintf("%s (k = %d)", v, ks)
+    } else {
+      sprintf("%s predicting %s (k = %d)", v, y_names[sel], k_used[sel])
+    }
+  }))
+  n_capped <- length(capped)                                     # nolint: object_usage_linter.
+  cli::cli_inform(c(
+    i = paste(
+      "Capped the basis dimension at the number of distinct predictor",
+      "values in {n_capped} cell{?s}: {items}."
+    ),
+    i = "See {.code k_requested}, {.code k_used} and {.code k_capped} in the returned data."
+  ))
   invisible(NULL)
 }
 

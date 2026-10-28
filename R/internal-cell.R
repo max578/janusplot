@@ -672,10 +672,11 @@
   }
 
   # Top-left underglyph (next to shape code): k-check warning. Either
-  # ASCII "!" or Unicode warning sign per glyph_style. Only renders
-  # when the cell is positively flagged; "unreliable" cells stay quiet.
+  # ASCII "!" or Unicode warning sign per glyph_style. Renders when the
+  # cell is positively flagged or its basis dimension was capped at the
+  # distinct x count; otherwise "unreliable" cells stay quiet.
   if ("k_warn" %in% annotations &&
-      isTRUE(fit_obj$k_check$k_flag)) {
+      (isTRUE(fit_obj$k_check$k_flag) || isTRUE(fit_obj$k_capped))) {
     warn_glyph <- if (identical(glyph_style, "unicode")) "\u26A0" else "!"
     p <- p + ggplot2::annotate(
       "text", x = -Inf, y = Inf,
