@@ -140,7 +140,11 @@
 #'   per-cell fill colour by the chosen scalar. Correlation choices use
 #'   a diverging palette with limits `c(-1, 1)` and a shared `corr`
 #'   colour-bar title; `"edf"` and `"deviance_gap"` use a sequential
-#'   palette labelled by the metric.
+#'   palette labelled by the metric. `"deviance_gap"` is the deviance
+#'   explained by the smooth minus the deviance explained by the
+#'   straight-line fit of the same ordered pair (same `adjust` terms,
+#'   engine and method), bounded in `[0, 1]`: near 0 for a linear
+#'   association, larger the more the smooth adds over a line.
 #' @param fill_by Deprecated alias for `colour_by`. If supplied emits a
 #'   single soft deprecation warning and is forwarded to `colour_by`.
 #' @param palette Character. Colour palette for the cell fill scale.
@@ -342,8 +346,10 @@
 #'   `"First derivative f'"`, or `"Second derivative f''"`). If
 #'   `with_data = TRUE`, a list with two elements: `plot` (the
 #'   ggplot) and `data` (a tidy table with columns `var_x`, `var_y`,
-#'   `position`, `n_used`, `edf`, `pvalue`, `signif`, `dev_exp`,
-#'   `asymmetry_index`, `cor_pearson`, `cor_spearman`,
+#'   `position`, `n_used`, `edf`, `pvalue`, `signif`, `dev_exp`
+#'   (deviance explained by the smooth), `deviance_gap` (`dev_exp`
+#'   minus the deviance explained by the straight-line fit, in
+#'   `[0, 1]`), `asymmetry_index`, `cor_pearson`, `cor_spearman`,
 #'   `cor_kendall`, `tie_ratio`, `monotonicity_index`,
 #'   `convexity_index`, `n_turning_points`, `n_inflections`,
 #'   `flat_range_ratio`, `shape_category`, `colour_value`,
@@ -831,6 +837,7 @@ janusplot <- function(
       pvalue             = f$pvalue,
       signif             = .pvalue_to_glyph(f$pvalue),
       dev_exp            = f$dev_exp,
+      deviance_gap       = f$deviance_gap %||% NA_real_,
       asymmetry_index    = asym_tbl[[asym_key]] %||% NA_real_,
       cor_pearson        = f$corr$cor_pearson,
       cor_spearman       = f$corr$cor_spearman,
@@ -919,7 +926,10 @@ janusplot <- function(
     pearson      = "Cell colour encodes Pearson correlation (corr)",
     kendall      = "Cell colour encodes Kendall correlation (corr)",
     edf          = "Cell colour encodes EDF (see right-margin legend)",
-    deviance_gap = "Cell colour encodes deviance explained",
+    deviance_gap = paste(
+      "Cell colour encodes the deviance gap: deviance explained by the",
+      "smooth minus that of the straight-line fit"
+    ),
     none         = NULL
   )
   if (!is.null(colour_msg)) parts <- c(parts, colour_msg)
@@ -990,9 +1000,9 @@ janusplot <- function(
 #' `r lifecycle::badge("experimental")`
 #'
 #' Companion to [janusplot()] returning the raw list of GAM fits plus
-#' per-cell metrics (EDF, F-test p-value, deviance explained, asymmetry
-#' index, pairwise correlations, shape descriptors) without constructing
-#' the ggplot. Useful for custom rendering or downstream analysis.
+#' per-cell metrics (EDF, F-test p-value, deviance explained, deviance
+#' gap over a straight line, asymmetry index, pairwise correlations,
+#' shape descriptors) without constructing the ggplot. Useful for custom rendering or downstream analysis.
 #'
 #' @inheritParams janusplot
 #' @param keep_fits Logical. If `TRUE`, retain full [mgcv::gam()] model
@@ -1015,7 +1025,11 @@ janusplot <- function(
 #'     `var_i`, `var_j`, `fit_yx`, `fit_xy` (NULL if `keep_fits = FALSE`),
 #'     `pred_yx`, `pred_xy` (data frames with `x`, `fit`, `se`, `lo`,
 #'     `hi`), `edf_yx`, `edf_xy`, `pvalue_yx`, `pvalue_xy`, `dev_exp_yx`,
-#'     `dev_exp_xy`, `n_used`, `asymmetry_index`, plus Pearson /
+#'     `dev_exp_xy` (deviance explained by the smooth),
+#'     `deviance_gap_yx`, `deviance_gap_xy` (deviance explained by the
+#'     smooth minus that of the straight-line fit of the same direction
+#'     with the same `adjust` terms, bounded in `[0, 1]`), `n_used`,
+#'     `asymmetry_index`, plus Pearson /
 #'     Spearman / Kendall correlations (`cor_pearson`, `cor_spearman`,
 #'     `cor_kendall`), the maximum tie ratio across `x` and `y`
 #'     (`tie_ratio`), and per-direction shape descriptors
@@ -1173,6 +1187,8 @@ janusplot_data <- function(
         pvalue_xy              = f_xy$pvalue,
         dev_exp_yx             = f_yx$dev_exp,
         dev_exp_xy             = f_xy$dev_exp,
+        deviance_gap_yx        = f_yx$deviance_gap %||% NA_real_,
+        deviance_gap_xy        = f_xy$deviance_gap %||% NA_real_,
         n_used                 = min(f_yx$n_used, f_xy$n_used),
         asymmetry_index        = .compute_asymmetry_index(f_yx$edf, f_xy$edf),
         cor_pearson            = corr$cor_pearson,

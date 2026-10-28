@@ -569,6 +569,37 @@
   }
 }
 
+# ---------------------------------------------------------------
+# Deviance gap: deviance explained by the smooth minus deviance
+# explained by the straight-line fit of the same ordered pair, with
+# the same adjust terms, engine, method and family, clamped to
+# [0, 1]. Penalisation can leave a smooth that is shrunk to a line
+# fractionally below the unpenalised line; that rounds to a gap of 0.
+# ---------------------------------------------------------------
+
+.deviance_gap <- function(fit, dev_exp, dat, x_name, y_name, adjust,
+                          engine, method, discrete, nthreads, ...) {
+  if (!is.finite(dev_exp)) return(NA_real_)
+  rhs <- sprintf("`%s`", x_name)
+  if (!is.null(adjust)) {
+    adj_rhs <- paste(deparse(adjust[[2L]], width.cutoff = 500L),
+                     collapse = " ")
+    rhs <- paste(rhs, "+", adj_rhs)
+  }
+  lin_fml <- stats::as.formula(sprintf("`%s` ~ %s", y_name, rhs))
+  has_other_smooths <- length(fit$smooth) > 1L
+  lin <- tryCatch(
+    .fit_one_gam(lin_fml, dat, engine = engine, method = method,
+                 discrete = isTRUE(discrete) && has_other_smooths,
+                 nthreads = nthreads, ...),
+    error = function(e) NULL
+  )
+  if (is.null(lin)) return(NA_real_)
+  dev_lin <- summary(lin)$dev.expl %||% NA_real_
+  if (!is.finite(dev_lin)) return(NA_real_)
+  min(1, max(0, dev_exp - dev_lin))
+}
+
 .fit_pair <- function(x_name, y_name, data_full, adjust, method, k, bs,
                      na_action, n_grid = 100L,
                      derivatives = integer(),
@@ -671,6 +702,10 @@
   edf <- unname(smry$s.table[s_row, "edf"])
   pval <- unname(smry$s.table[s_row, "p-value"])
   dev_exp <- unname(smry$dev.expl %||% NA_real_)
+  deviance_gap <- .deviance_gap(fit, dev_exp, dat, x_name, y_name, adjust,
+                                engine = engine, method = resolved_method,
+                                discrete = discrete, nthreads = nthreads,
+                                ...)
 
   # Prediction grid on the response scale, holding adjust covariates at typical values
   x_vals <- dat[[x_name]]
@@ -738,6 +773,7 @@
     edf      = edf,
     pvalue   = pval,
     dev_exp  = dev_exp,
+    deviance_gap = deviance_gap,
     n_used   = n_used,
     error    = NA_character_,
     engine   = engine,
@@ -768,6 +804,7 @@
     deriv = list(),
     raw = data.frame(),
     edf = NA_real_, pvalue = NA_real_, dev_exp = NA_real_,
+    deviance_gap = NA_real_,
     n_used = n_used, error = NA_character_,
     engine = NA_character_, method = NA_character_,
     prediction_reference = data.frame(

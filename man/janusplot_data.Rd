@@ -190,7 +190,11 @@ A list with components:
 \code{var_i}, \code{var_j}, \code{fit_yx}, \code{fit_xy} (NULL if \code{keep_fits = FALSE}),
 \code{pred_yx}, \code{pred_xy} (data frames with \code{x}, \code{fit}, \code{se}, \code{lo},
 \code{hi}), \code{edf_yx}, \code{edf_xy}, \code{pvalue_yx}, \code{pvalue_xy}, \code{dev_exp_yx},
-\code{dev_exp_xy}, \code{n_used}, \code{asymmetry_index}, plus Pearson /
+\code{dev_exp_xy} (deviance explained by the smooth),
+\code{deviance_gap_yx}, \code{deviance_gap_xy} (deviance explained by the
+smooth minus that of the straight-line fit of the same direction
+with the same \code{adjust} terms, bounded in \verb{[0, 1]}), \code{n_used},
+\code{asymmetry_index}, plus Pearson /
 Spearman / Kendall correlations (\code{cor_pearson}, \code{cor_spearman},
 \code{cor_kendall}), the maximum tie ratio across \code{x} and \code{y}
 (\code{tie_ratio}), and per-direction shape descriptors
@@ -227,9 +231,9 @@ monotonicity and convexity indices.}
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
 Companion to \code{\link[=janusplot]{janusplot()}} returning the raw list of GAM fits plus
-per-cell metrics (EDF, F-test p-value, deviance explained, asymmetry
-index, pairwise correlations, shape descriptors) without constructing
-the ggplot. Useful for custom rendering or downstream analysis.
+per-cell metrics (EDF, F-test p-value, deviance explained, deviance
+gap over a straight line, asymmetry index, pairwise correlations,
+shape descriptors) without constructing the ggplot. Useful for custom rendering or downstream analysis.
 }
 \examples{
 # Per-pair fits + metrics on a small mtcars slice

@@ -205,7 +205,11 @@ secondary diagnostics and the grid-induced drift is tolerable.}
 per-cell fill colour by the chosen scalar. Correlation choices use
 a diverging palette with limits \code{c(-1, 1)} and a shared \code{corr}
 colour-bar title; \code{"edf"} and \code{"deviance_gap"} use a sequential
-palette labelled by the metric.}
+palette labelled by the metric. \code{"deviance_gap"} is the deviance
+explained by the smooth minus the deviance explained by the
+straight-line fit of the same ordered pair (same \code{adjust} terms,
+engine and method), bounded in \verb{[0, 1]}: near 0 for a linear
+association, larger the more the smooth adds over a line.}
 
 \item{fill_by}{Deprecated alias for \code{colour_by}. If supplied emits a
 single soft deprecation warning and is forwarded to \code{colour_by}.}
@@ -451,8 +455,10 @@ that names the displayed quantity (\code{"Direct fit"},
 \code{"First derivative f'"}, or \code{"Second derivative f''"}). If
 \code{with_data = TRUE}, a list with two elements: \code{plot} (the
 ggplot) and \code{data} (a tidy table with columns \code{var_x}, \code{var_y},
-\code{position}, \code{n_used}, \code{edf}, \code{pvalue}, \code{signif}, \code{dev_exp},
-\code{asymmetry_index}, \code{cor_pearson}, \code{cor_spearman},
+\code{position}, \code{n_used}, \code{edf}, \code{pvalue}, \code{signif}, \code{dev_exp}
+(deviance explained by the smooth), \code{deviance_gap} (\code{dev_exp}
+minus the deviance explained by the straight-line fit, in
+\verb{[0, 1]}), \code{asymmetry_index}, \code{cor_pearson}, \code{cor_spearman},
 \code{cor_kendall}, \code{tie_ratio}, \code{monotonicity_index},
 \code{convexity_index}, \code{n_turning_points}, \code{n_inflections},
 \code{flat_range_ratio}, \code{shape_category}, \code{colour_value},
