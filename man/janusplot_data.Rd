@@ -206,7 +206,10 @@ resolved to mgcv's default for \code{bs}), \code{k_used_yx} / \code{k_used_xy}
 (the basis dimension of the returned fit, after the cap at the
 number of distinct predictor values in the pair's rows and any
 \code{auto_refit_k} refit) and \code{k_capped_yx} / \code{k_capped_xy} (\code{TRUE}
-when that cap reduced the request).
+when that cap reduced the request; listed beside
+\code{asymmetry_index}). A is unreliable when either direction of the
+pair had its basis dimension capped at the number of distinct
+predictor values.
 When \code{derivatives} is non-empty, each pair additionally
 carries \code{deriv_yx} and \code{deriv_xy}, each a named list keyed by
 order (\code{"1"}, \code{"2"}) whose entries are data frames with

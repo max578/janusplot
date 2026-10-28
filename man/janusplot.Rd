@@ -223,12 +223,17 @@ Defaults to \code{"RdBu"} when \code{colour_by} is a correlation and
 diverging palette.}
 
 \item{annotations}{Character vector, a subset of
-\code{c("edf", "A", "shape", "code")}. Controls which corner
+\code{c("edf", "A", "shape", "code", "k_warn")}. Controls which corner
 annotations appear on each off-diagonal cell:
 \itemize{
 \item \code{"code"} -- 2-letter ASCII shape code, \strong{top-left} corner.
 \item \code{"A"} and \code{"edf"} -- asymmetry index and effective degrees of
-freedom, stacked \strong{bottom-left}.
+freedom, stacked \strong{bottom-left}. A is unreliable when either
+direction of the pair had its basis dimension capped at the
+number of distinct predictor values.
+\item \code{"k_warn"} -- basis-dimension warning glyph, \strong{top-left}, on
+cells flagged for possible k underfit (\code{k_flag}) or whose basis
+dimension was capped (\code{k_capped}).
 \item \code{"shape"} -- shape glyph (Unicode or ASCII per \code{glyph_style}),
 \strong{bottom-right} corner.
 }
@@ -467,6 +472,11 @@ resolved to mgcv's default for \code{bs}), \code{k_used} (the basis
 dimension of the returned fit, after the distinct-value cap and
 any \code{auto_refit_k} refit) and \code{k_capped} (\code{TRUE} when the
 request exceeded the distinct predictor values and was reduced).
+Beside \code{asymmetry_index} sit the pair-level flags \code{k_capped_yx}
+and \code{k_capped_xy}, identical on both cells of a pair, where \verb{_yx}
+is the fit of the later variable in \code{vars} on the earlier one.
+A is unreliable when either direction of the pair had its basis
+dimension capped at the number of distinct predictor values.
 Derivative \emph{curves} themselves (grid of \eqn{x}, fitted
 \eqn{\hat f^{(k)}}, SE) live on \code{janusplot_data()} -- see there.
 }

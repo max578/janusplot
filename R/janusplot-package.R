@@ -25,7 +25,10 @@
 #' For each pair, the asymmetry index `A_ij = |EDF_yx - EDF_xy| /
 #' (EDF_yx + EDF_xy)` is bounded in \[0, 1\]. Values near 0 indicate
 #' symmetric complexity; values near 1 indicate the two directional
-#' fits differ sharply in effective degrees of freedom.
+#' fits differ sharply in effective degrees of freedom. A is unreliable
+#' when either direction of the pair had its basis dimension capped at
+#' the number of distinct predictor values (`k_capped_yx` or
+#' `k_capped_xy` is `TRUE`).
 #'
 #' Under the additive noise model (Hoyer et al. 2009; Peters et al.
 #' 2014), the two directional regressions are generally asymmetric

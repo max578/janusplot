@@ -155,11 +155,16 @@
 #'   `colour_by` is a correlation silently upgrades to the default
 #'   diverging palette.
 #' @param annotations Character vector, a subset of
-#'   `c("edf", "A", "shape", "code")`. Controls which corner
+#'   `c("edf", "A", "shape", "code", "k_warn")`. Controls which corner
 #'   annotations appear on each off-diagonal cell:
 #'   * `"code"` -- 2-letter ASCII shape code, **top-left** corner.
 #'   * `"A"` and `"edf"` -- asymmetry index and effective degrees of
-#'     freedom, stacked **bottom-left**.
+#'     freedom, stacked **bottom-left**. A is unreliable when either
+#'     direction of the pair had its basis dimension capped at the
+#'     number of distinct predictor values.
+#'   * `"k_warn"` -- basis-dimension warning glyph, **top-left**, on
+#'     cells flagged for possible k underfit (`k_flag`) or whose basis
+#'     dimension was capped (`k_capped`).
 #'   * `"shape"` -- shape glyph (Unicode or ASCII per `glyph_style`),
 #'     **bottom-right** corner.
 #'
@@ -358,6 +363,11 @@
 #'   dimension of the returned fit, after the distinct-value cap and
 #'   any `auto_refit_k` refit) and `k_capped` (`TRUE` when the
 #'   request exceeded the distinct predictor values and was reduced).
+#'   Beside `asymmetry_index` sit the pair-level flags `k_capped_yx`
+#'   and `k_capped_xy`, identical on both cells of a pair, where `_yx`
+#'   is the fit of the later variable in `vars` on the earlier one.
+#'   A is unreliable when either direction of the pair had its basis
+#'   dimension capped at the number of distinct predictor values.
 #'   Derivative *curves* themselves (grid of \eqn{x}, fitted
 #'   \eqn{\hat f^{(k)}}, SE) live on `janusplot_data()` -- see there.
 #'
@@ -820,6 +830,9 @@ janusplot <- function(
     ij <- as.integer(strsplit(key, "_", fixed = TRUE)[[1L]])
     position <- if (ij[1L] < ij[2L]) "upper" else "lower"
     asym_key <- paste(sort(ij), collapse = "_")
+    # Pair-level cap flags, keyed like A: _yx is vars[j] ~ s(vars[i]) for i < j.
+    f_yx <- fits[[sprintf("%d_%d", min(ij), max(ij))]]
+    f_xy <- fits[[sprintf("%d_%d", max(ij), min(ij))]]
     shape_cat <- .classify_shape(
       f$shape$monotonicity_index, f$shape$convexity_index,
       f$shape$n_turning_points, f$shape$n_inflections,
@@ -841,6 +854,8 @@ janusplot <- function(
       signif             = .pvalue_to_glyph(f$pvalue),
       dev_exp            = f$dev_exp,
       asymmetry_index    = asym_tbl[[asym_key]] %||% NA_real_,
+      k_capped_yx        = isTRUE(f_yx$k_capped),
+      k_capped_xy        = isTRUE(f_xy$k_capped),
       cor_pearson        = f$corr$cor_pearson,
       cor_spearman       = f$corr$cor_spearman,
       cor_kendall        = f$corr$cor_kendall,
@@ -1041,7 +1056,10 @@ janusplot <- function(
 #'     (the basis dimension of the returned fit, after the cap at the
 #'     number of distinct predictor values in the pair's rows and any
 #'     `auto_refit_k` refit) and `k_capped_yx` / `k_capped_xy` (`TRUE`
-#'     when that cap reduced the request).
+#'     when that cap reduced the request; listed beside
+#'     `asymmetry_index`). A is unreliable when either direction of the
+#'     pair had its basis dimension capped at the number of distinct
+#'     predictor values.
 #'     When `derivatives` is non-empty, each pair additionally
 #'     carries `deriv_yx` and `deriv_xy`, each a named list keyed by
 #'     order (`"1"`, `"2"`) whose entries are data frames with
@@ -1186,6 +1204,8 @@ janusplot_data <- function(
         dev_exp_xy             = f_xy$dev_exp,
         n_used                 = min(f_yx$n_used, f_xy$n_used),
         asymmetry_index        = .compute_asymmetry_index(f_yx$edf, f_xy$edf),
+        k_capped_yx            = isTRUE(f_yx$k_capped),
+        k_capped_xy            = isTRUE(f_xy$k_capped),
         cor_pearson            = corr$cor_pearson,
         cor_spearman           = corr$cor_spearman,
         cor_kendall            = corr$cor_kendall,
@@ -1216,8 +1236,6 @@ janusplot_data <- function(
         k_requested_xy     = f_xy$k_requested,
         k_used_yx          = f_yx$k_used,
         k_used_xy          = f_xy$k_used,
-        k_capped_yx        = isTRUE(f_yx$k_capped),
-        k_capped_xy        = isTRUE(f_xy$k_capped),
         engine             = f_yx$engine %||% f_xy$engine %||% NA_character_,
         method             = f_yx$method %||% f_xy$method %||% NA_character_,
         error_yx           = f_yx$error %||% NA_character_,
