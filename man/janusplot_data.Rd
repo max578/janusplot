@@ -49,7 +49,16 @@ recommended at scale), \code{"REML"} for \code{engine = "gam"}
 to override.}
 
 \item{k}{Integer, or named list mapping variable names to integers.
-Basis dimension for \code{s()}. Default \code{-1L} (mgcv's automatic choice).}
+Basis dimension for \code{s()}. Default \code{-1L} (mgcv's automatic choice,
+10 for the \code{"tp"}, \code{"ts"}, \code{"cr"}, \code{"cs"}, \code{"cc"}, \code{"ps"}, \code{"cp"} and
+\code{"bs"} bases). For each ordered pair the effective basis dimension
+is capped at the number of distinct predictor values in that pair's
+complete rows, since mgcv cannot fit a basis larger than that:
+\code{k_used = min(k, n_distinct)}. Capped cells are named in one message
+per call and recorded as \code{k_requested}, \code{k_used} and \code{k_capped}. A
+predictor with fewer distinct values than the smallest basis mgcv
+accepts (3 for \code{"tp"}) is not capped, and its cells fail with
+mgcv's error.}
 
 \item{bs}{Basis type for \code{s()}. Default \code{"tp"} (thin plate).}
 
@@ -191,6 +200,13 @@ Spearman / Kendall correlations (\code{cor_pearson}, \code{cor_spearman},
 \code{monotonicity_index_xy}, \code{convexity_index_xy},
 \code{n_turning_yx}, \code{n_inflect_yx}, \code{n_turning_xy},
 \code{n_inflect_xy}, \code{shape_yx}, \code{shape_xy}).
+The basis dimension of each direction is recorded as
+\code{k_requested_yx} / \code{k_requested_xy} (the requested \code{k}, with \code{-1}
+resolved to mgcv's default for \code{bs}), \code{k_used_yx} / \code{k_used_xy}
+(the basis dimension of the returned fit, after the cap at the
+number of distinct predictor values in the pair's rows and any
+\code{auto_refit_k} refit) and \code{k_capped_yx} / \code{k_capped_xy} (\code{TRUE}
+when that cap reduced the request).
 When \code{derivatives} is non-empty, each pair additionally
 carries \code{deriv_yx} and \code{deriv_xy}, each a named list keyed by
 order (\code{"1"}, \code{"2"}) whose entries are data frames with
