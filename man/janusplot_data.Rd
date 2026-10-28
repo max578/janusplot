@@ -63,7 +63,8 @@ Basis dimension for \code{s()}. Default \code{-1L} (mgcv's automatic choice).}
 
 \item{na_action}{One of \code{"pairwise"} (default; per-cell complete
 observations) or \code{"complete"} (listwise; all cells use the same
-rows).}
+rows). Infinite values (\code{Inf}, \code{-Inf}) count as missing, and a
+warning gives the number removed per column.}
 
 \item{parallel}{Logical. If \code{TRUE}, use \code{future.apply::future_mapply()}
 to fit pairs in parallel. Requires the \code{future.apply} package and a

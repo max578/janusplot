@@ -295,6 +295,24 @@
   data
 }
 
+# mgcv fails on +/-Inf; treat them as missing so pairwise or listwise
+# deletion removes them and n_used counts only finite rows.
+.drop_infinite <- function(data, vars, adjust, map = NULL) {
+  cols <- intersect(unique(c(vars, .adjust_vars(adjust))), names(data))
+  cols <- cols[vapply(data[cols], is.numeric, logical(1L))]
+  n_inf <- vapply(data[cols], function(col) sum(is.infinite(col)),
+                  integer(1L))
+  hit <- cols[n_inf > 0L]
+  if (!length(hit)) return(data)
+  for (nm in hit) data[[nm]][is.infinite(data[[nm]])] <- NA
+  counts <- paste0(.original_names(hit, map), " (", n_inf[hit], ")") # nolint: object_usage_linter.
+  cli::cli_warn(c(
+    "!" = "Infinite values treated as missing in column{?s}: {counts}.",
+    i = "Affected rows are dropped from every cell that uses those columns."
+  ))
+  data
+}
+
 # ---------------------------------------------------------------
 # Build the pairwise GAM formula
 # ---------------------------------------------------------------
@@ -845,6 +863,7 @@
   adjust <- aliasing$adjust
   k      <- .alias_k(k, aliasing$map)
   data   <- .coerce_adjust_factors(data, vars, adjust, aliasing$map)
+  data   <- .drop_infinite(data, vars, adjust, aliasing$map)
   if (na_action == "complete") {
     data <- data[stats::complete.cases(
       data[, unique(c(vars, .adjust_vars(adjust))), drop = FALSE]

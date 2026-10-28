@@ -168,3 +168,45 @@ test_that("factor adjust columns trigger no coercion message", {
   )
   expect_false(any(grepl("factor", msgs)))
 })
+
+test_that("infinite values are treated as missing with one warning", {
+  d <- make_linear_data(n = 80L)
+  d$x1[c(3L, 9L)] <- c(Inf, -Inf)
+  d$x3[5L] <- Inf
+  w <- testthat::capture_warnings(
+    res <- janusplot_data(d, vars = c("x1", "x2", "x3"), engine = "gam")
+  )
+  expect_length(w, 1L)
+  expect_match(w, "x1")
+  expect_match(w, "x3")
+  expect_match(w, "infinite", ignore.case = TRUE)
+  expect_true(all(is.na(vapply(res$pairs, `[[`, character(1L), "error_yx"))))
+  n_used <- stats::setNames(
+    vapply(res$pairs, `[[`, integer(1L), "n_used"),
+    vapply(res$pairs, function(p) paste(p$var_i, p$var_j), character(1L))
+  )
+  expect_identical(unname(n_used[c("x1 x2", "x1 x3", "x2 x3")]),
+                   c(78L, 77L, 79L))
+})
+
+test_that("janusplot() drops infinite values and reports n_used", {
+  d <- make_linear_data(n = 80L)
+  d$x2[1:4] <- Inf
+  expect_warning(
+    out <- janusplot(d, vars = c("x1", "x2"), engine = "gam",
+                     with_data = TRUE),
+    "x2"
+  )
+  expect_true(all(out$data$n_used == 76L))
+  expect_true(all(is.na(out$data$error)))
+})
+
+test_that("na_action = 'complete' also drops infinite rows", {
+  d <- make_linear_data(n = 80L)
+  d$x3[2L] <- -Inf
+  res <- suppressWarnings(
+    janusplot_data(d, vars = c("x1", "x2", "x3"), na_action = "complete",
+                   engine = "gam")
+  )
+  expect_true(all(vapply(res$pairs, `[[`, integer(1L), "n_used") == 79L))
+})

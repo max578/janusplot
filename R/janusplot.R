@@ -211,7 +211,8 @@
 #'   warning fires and the argument is merged into `annotations`.
 #' @param na_action One of `"pairwise"` (default; per-cell complete
 #'   observations) or `"complete"` (listwise; all cells use the same
-#'   rows).
+#'   rows). Infinite values (`Inf`, `-Inf`) count as missing, and a
+#'   warning gives the number removed per column.
 #' @param compact One of `"auto"` (default), `"always"`, or `"never"`.
 #'   Controls scale-aware content suppression per cell:
 #'   * `"auto"` -- tier 0 at `n_var < compact_threshold` (the v0.1.0
