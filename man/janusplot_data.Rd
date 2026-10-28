@@ -49,7 +49,16 @@ Default \code{NULL} fits unadjusted pairwise smooths. Non-syntactic
 column names are referenced with backticks, e.g.
 \code{adjust = ~ s(`site name`, bs = "re")}. Character and logical
 \code{adjust} columns are converted to factor before fitting, with a
-message naming them.}
+message naming them. The curve, its
+confidence band and its derivatives are predicted at the
+population level: random-effect smooths (\code{bs = "re"} and factor
+smooths \code{bs = "fs"}) are excluded from prediction, numeric
+covariates are held at their mean over the rows used by the pair,
+and fixed factors at their most frequent level.
+\code{\link[=janusplot_data]{janusplot_data()}} records these values per pair as
+\code{prediction_reference_yx} / \code{prediction_reference_xy}, where
+\verb{_yx} is the upper-triangle fit \code{vars[j] ~ s(vars[i])} (\code{i < j})
+and \verb{_xy} the lower-triangle fit \code{vars[i] ~ s(vars[j])}.}
 
 \item{method}{Smoothing-parameter estimation method passed to
 the chosen fitting backend. Default \code{NULL} resolves
@@ -202,11 +211,20 @@ double-book CPUs). Raise above 1 only when \code{parallel = FALSE}. Ignored when
 A list with components:
 \describe{
 \item{\code{vars}}{Character vector of variables used, in plotted order.}
-\item{\code{pairs}}{List of per-pair results. Each element has \code{i}, \code{j},
+\item{\code{pairs}}{List of per-pair results, one per unordered pair
+\code{i < j}. Suffixes name the direction of fit: \verb{_yx} is the fit
+\code{vars[j] ~ s(vars[i])} (\code{var_j} regressed on \code{var_i}), drawn in
+the upper triangle at row \code{i}, column \code{j}; \verb{_xy} is the fit
+\code{vars[i] ~ s(vars[j])}, drawn in the lower triangle at row \code{j},
+column \code{i}. Each element has \code{i}, \code{j},
 \code{var_i}, \code{var_j}, \code{fit_yx}, \code{fit_xy} (NULL if \code{keep_fits = FALSE}),
 \code{pred_yx}, \code{pred_xy} (data frames with \code{x}, \code{fit}, \code{se}, \code{lo},
 \code{hi}), \code{edf_yx}, \code{edf_xy}, \code{pvalue_yx}, \code{pvalue_xy}, \code{dev_exp_yx},
-\code{dev_exp_xy}, \code{n_used}, \code{asymmetry_index}, plus Pearson /
+\code{dev_exp_xy} (deviance explained by the smooth),
+\code{deviance_gap_yx}, \code{deviance_gap_xy} (deviance explained by the
+smooth minus that of the straight-line fit of the same direction
+with the same \code{adjust} terms, bounded in \verb{[0, 1]}), \code{n_used},
+\code{asymmetry_index}, plus Pearson /
 Spearman / Kendall correlations (\code{cor_pearson}, \code{cor_spearman},
 \code{cor_kendall}), the maximum tie ratio across \code{x} and \code{y}
 (\code{tie_ratio}), and per-direction shape descriptors
@@ -224,6 +242,15 @@ when that cap reduced the request; listed beside
 \code{asymmetry_index}). A is unreliable when either direction of the
 pair had its basis dimension capped at the number of distinct
 predictor values.
+\code{prediction_reference_yx} and \code{prediction_reference_xy} are data
+frames with one row per \code{adjust} variable and columns
+\code{variable}, \code{reference} and \code{value}, recording what each
+variable was held at on the prediction grid: the mean of a
+numeric covariate (also in \code{value}), the most frequent level of
+a fixed factor, or \code{"excluded (random effect)"} when the
+variable enters only through random-effect smooths, which are
+dropped so the curve and band are population-level. They have
+zero rows when \code{adjust} is \code{NULL}.
 When \code{derivatives} is non-empty, each pair additionally
 carries \code{deriv_yx} and \code{deriv_xy}, each a named list keyed by
 order (\code{"1"}, \code{"2"}) whose entries are data frames with
@@ -244,9 +271,9 @@ monotonicity and convexity indices.}
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
 Companion to \code{\link[=janusplot]{janusplot()}} returning the raw list of GAM fits plus
-per-cell metrics (EDF, F-test p-value, deviance explained, asymmetry
-index, pairwise correlations, shape descriptors) without constructing
-the ggplot. Useful for custom rendering or downstream analysis.
+per-cell metrics (EDF, F-test p-value, deviance explained, deviance
+gap over a straight line, asymmetry index, pairwise correlations,
+shape descriptors) without constructing the ggplot. Useful for custom rendering or downstream analysis.
 }
 \examples{
 # Per-pair fits + metrics on a small mtcars slice

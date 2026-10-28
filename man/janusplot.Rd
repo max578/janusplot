@@ -79,7 +79,16 @@ Default \code{NULL} fits unadjusted pairwise smooths. Non-syntactic
 column names are referenced with backticks, e.g.
 \code{adjust = ~ s(`site name`, bs = "re")}. Character and logical
 \code{adjust} columns are converted to factor before fitting, with a
-message naming them.}
+message naming them. The curve, its
+confidence band and its derivatives are predicted at the
+population level: random-effect smooths (\code{bs = "re"} and factor
+smooths \code{bs = "fs"}) are excluded from prediction, numeric
+covariates are held at their mean over the rows used by the pair,
+and fixed factors at their most frequent level.
+\code{\link[=janusplot_data]{janusplot_data()}} records these values per pair as
+\code{prediction_reference_yx} / \code{prediction_reference_xy}, where
+\verb{_yx} is the upper-triangle fit \code{vars[j] ~ s(vars[i])} (\code{i < j})
+and \verb{_xy} the lower-triangle fit \code{vars[i] ~ s(vars[j])}.}
 
 \item{method}{Smoothing-parameter estimation method passed to
 the chosen fitting backend. Default \code{NULL} resolves
@@ -217,7 +226,11 @@ secondary diagnostics and the grid-induced drift is tolerable.}
 per-cell fill colour by the chosen scalar. Correlation choices use
 a diverging palette with limits \code{c(-1, 1)} and a shared \code{corr}
 colour-bar title; \code{"edf"} and \code{"deviance_gap"} use a sequential
-palette labelled by the metric.}
+palette labelled by the metric. \code{"deviance_gap"} is the deviance
+explained by the smooth minus the deviance explained by the
+straight-line fit of the same ordered pair (same \code{adjust} terms,
+engine and method), bounded in \verb{[0, 1]}: near 0 for a linear
+association, larger the more the smooth adds over a line.}
 
 \item{fill_by}{Deprecated alias for \code{colour_by}. If supplied emits a
 single soft deprecation warning and is forwarded to \code{colour_by}.}
@@ -472,8 +485,10 @@ that names the displayed quantity (\code{"Direct fit"},
 \code{"First derivative f'"}, or \code{"Second derivative f''"}). If
 \code{with_data = TRUE}, a list with two elements: \code{plot} (the
 ggplot) and \code{data} (a tidy table with columns \code{var_x}, \code{var_y},
-\code{position}, \code{n_used}, \code{edf}, \code{pvalue}, \code{signif}, \code{dev_exp},
-\code{asymmetry_index}, \code{cor_pearson}, \code{cor_spearman},
+\code{position}, \code{n_used}, \code{edf}, \code{pvalue}, \code{signif}, \code{dev_exp}
+(deviance explained by the smooth), \code{deviance_gap} (\code{dev_exp}
+minus the deviance explained by the straight-line fit, in
+\verb{[0, 1]}), \code{asymmetry_index}, \code{cor_pearson}, \code{cor_spearman},
 \code{cor_kendall}, \code{tie_ratio}, \code{monotonicity_index},
 \code{convexity_index}, \code{n_turning_points}, \code{n_inflections},
 \code{flat_range_ratio}, \code{shape_category}, \code{colour_value},

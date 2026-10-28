@@ -33,7 +33,16 @@
 #'   column names are referenced with backticks, e.g.
 #'   ``adjust = ~ s(`site name`, bs = "re")``. Character and logical
 #'   `adjust` columns are converted to factor before fitting, with a
-#'   message naming them.
+#'   message naming them. The curve, its
+#'   confidence band and its derivatives are predicted at the
+#'   population level: random-effect smooths (`bs = "re"` and factor
+#'   smooths `bs = "fs"`) are excluded from prediction, numeric
+#'   covariates are held at their mean over the rows used by the pair,
+#'   and fixed factors at their most frequent level.
+#'   [janusplot_data()] records these values per pair as
+#'   `prediction_reference_yx` / `prediction_reference_xy`, where
+#'   `_yx` is the upper-triangle fit `vars[j] ~ s(vars[i])` (`i < j`)
+#'   and `_xy` the lower-triangle fit `vars[i] ~ s(vars[j])`.
 #' @param method Smoothing-parameter estimation method passed to
 #'   the chosen fitting backend. Default `NULL` resolves
 #'   per-engine: `"fREML"` for `engine = "bam"` (mgcv's
@@ -152,7 +161,11 @@
 #'   per-cell fill colour by the chosen scalar. Correlation choices use
 #'   a diverging palette with limits `c(-1, 1)` and a shared `corr`
 #'   colour-bar title; `"edf"` and `"deviance_gap"` use a sequential
-#'   palette labelled by the metric.
+#'   palette labelled by the metric. `"deviance_gap"` is the deviance
+#'   explained by the smooth minus the deviance explained by the
+#'   straight-line fit of the same ordered pair (same `adjust` terms,
+#'   engine and method), bounded in `[0, 1]`: near 0 for a linear
+#'   association, larger the more the smooth adds over a line.
 #' @param fill_by Deprecated alias for `colour_by`. If supplied emits a
 #'   single soft deprecation warning and is forwarded to `colour_by`.
 #' @param palette Character. Colour palette for the cell fill scale.
@@ -363,8 +376,10 @@
 #'   `"First derivative f'"`, or `"Second derivative f''"`). If
 #'   `with_data = TRUE`, a list with two elements: `plot` (the
 #'   ggplot) and `data` (a tidy table with columns `var_x`, `var_y`,
-#'   `position`, `n_used`, `edf`, `pvalue`, `signif`, `dev_exp`,
-#'   `asymmetry_index`, `cor_pearson`, `cor_spearman`,
+#'   `position`, `n_used`, `edf`, `pvalue`, `signif`, `dev_exp`
+#'   (deviance explained by the smooth), `deviance_gap` (`dev_exp`
+#'   minus the deviance explained by the straight-line fit, in
+#'   `[0, 1]`), `asymmetry_index`, `cor_pearson`, `cor_spearman`,
 #'   `cor_kendall`, `tie_ratio`, `monotonicity_index`,
 #'   `convexity_index`, `n_turning_points`, `n_inflections`,
 #'   `flat_range_ratio`, `shape_category`, `colour_value`,
@@ -867,6 +882,7 @@ janusplot <- function(
       pvalue             = f$pvalue,
       signif             = .pvalue_to_glyph(f$pvalue),
       dev_exp            = f$dev_exp,
+      deviance_gap       = f$deviance_gap %||% NA_real_,
       asymmetry_index    = asym_tbl[[asym_key]] %||% NA_real_,
       k_capped_yx        = isTRUE(f_yx$k_capped),
       k_capped_xy        = isTRUE(f_xy$k_capped),
@@ -960,7 +976,10 @@ janusplot <- function(
     pearson      = "Cell colour encodes Pearson correlation (corr)",
     kendall      = "Cell colour encodes Kendall correlation (corr)",
     edf          = "Cell colour encodes EDF (see right-margin legend)",
-    deviance_gap = "Cell colour encodes deviance explained",
+    deviance_gap = paste(
+      "Cell colour encodes the deviance gap: deviance explained by the",
+      "smooth minus that of the straight-line fit"
+    ),
     none         = NULL
   )
   if (!is.null(colour_msg)) parts <- c(parts, colour_msg)
@@ -1031,9 +1050,9 @@ janusplot <- function(
 #' `r lifecycle::badge("experimental")`
 #'
 #' Companion to [janusplot()] returning the raw list of GAM fits plus
-#' per-cell metrics (EDF, F-test p-value, deviance explained, asymmetry
-#' index, pairwise correlations, shape descriptors) without constructing
-#' the ggplot. Useful for custom rendering or downstream analysis.
+#' per-cell metrics (EDF, F-test p-value, deviance explained, deviance
+#' gap over a straight line, asymmetry index, pairwise correlations,
+#' shape descriptors) without constructing the ggplot. Useful for custom rendering or downstream analysis.
 #'
 #' @inheritParams janusplot
 #' @param keep_fits Logical. If `TRUE`, retain full [mgcv::gam()] model
@@ -1052,11 +1071,20 @@ janusplot <- function(
 #' @returns A list with components:
 #' \describe{
 #'   \item{`vars`}{Character vector of variables used, in plotted order.}
-#'   \item{`pairs`}{List of per-pair results. Each element has `i`, `j`,
+#'   \item{`pairs`}{List of per-pair results, one per unordered pair
+#'     `i < j`. Suffixes name the direction of fit: `_yx` is the fit
+#'     `vars[j] ~ s(vars[i])` (`var_j` regressed on `var_i`), drawn in
+#'     the upper triangle at row `i`, column `j`; `_xy` is the fit
+#'     `vars[i] ~ s(vars[j])`, drawn in the lower triangle at row `j`,
+#'     column `i`. Each element has `i`, `j`,
 #'     `var_i`, `var_j`, `fit_yx`, `fit_xy` (NULL if `keep_fits = FALSE`),
 #'     `pred_yx`, `pred_xy` (data frames with `x`, `fit`, `se`, `lo`,
 #'     `hi`), `edf_yx`, `edf_xy`, `pvalue_yx`, `pvalue_xy`, `dev_exp_yx`,
-#'     `dev_exp_xy`, `n_used`, `asymmetry_index`, plus Pearson /
+#'     `dev_exp_xy` (deviance explained by the smooth),
+#'     `deviance_gap_yx`, `deviance_gap_xy` (deviance explained by the
+#'     smooth minus that of the straight-line fit of the same direction
+#'     with the same `adjust` terms, bounded in `[0, 1]`), `n_used`,
+#'     `asymmetry_index`, plus Pearson /
 #'     Spearman / Kendall correlations (`cor_pearson`, `cor_spearman`,
 #'     `cor_kendall`), the maximum tie ratio across `x` and `y`
 #'     (`tie_ratio`), and per-direction shape descriptors
@@ -1074,6 +1102,15 @@ janusplot <- function(
 #'     `asymmetry_index`). A is unreliable when either direction of the
 #'     pair had its basis dimension capped at the number of distinct
 #'     predictor values.
+#'     `prediction_reference_yx` and `prediction_reference_xy` are data
+#'     frames with one row per `adjust` variable and columns
+#'     `variable`, `reference` and `value`, recording what each
+#'     variable was held at on the prediction grid: the mean of a
+#'     numeric covariate (also in `value`), the most frequent level of
+#'     a fixed factor, or `"excluded (random effect)"` when the
+#'     variable enters only through random-effect smooths, which are
+#'     dropped so the curve and band are population-level. They have
+#'     zero rows when `adjust` is `NULL`.
 #'     When `derivatives` is non-empty, each pair additionally
 #'     carries `deriv_yx` and `deriv_xy`, each a named list keyed by
 #'     order (`"1"`, `"2"`) whose entries are data frames with
@@ -1216,6 +1253,8 @@ janusplot_data <- function(
         pvalue_xy              = f_xy$pvalue,
         dev_exp_yx             = f_yx$dev_exp,
         dev_exp_xy             = f_xy$dev_exp,
+        deviance_gap_yx        = f_yx$deviance_gap %||% NA_real_,
+        deviance_gap_xy        = f_xy$deviance_gap %||% NA_real_,
         n_used                 = min(f_yx$n_used, f_xy$n_used),
         asymmetry_index        = .compute_asymmetry_index(f_yx$edf, f_xy$edf),
         k_capped_yx            = isTRUE(f_yx$k_capped),
@@ -1244,6 +1283,8 @@ janusplot_data <- function(
         shape_linear_xy    = .shape_lookup(shape_xy, "linear"),
         deriv_yx           = f_yx$deriv,
         deriv_xy           = f_xy$deriv,
+        prediction_reference_yx = f_yx$prediction_reference,
+        prediction_reference_xy = f_xy$prediction_reference,
         k_check_yx         = f_yx$k_check,
         k_check_xy         = f_xy$k_check,
         k_requested_yx     = f_yx$k_requested,

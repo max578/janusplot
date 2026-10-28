@@ -6,6 +6,8 @@
 #  * "spearman" / "pearson" / "kendall" -- symmetric correlation
 #     coefficient, diverging palette, limits c(-1, 1).
 #  * "edf" / "deviance_gap" -- non-linearity index, sequential palette.
+#     deviance_gap is the smooth's deviance explained minus the
+#     straight line's, in [0, 1].
 #  * "none" -- no fill.
 # Supported values for colour_by:
 .colour_choices <- function() {
@@ -19,7 +21,7 @@
 .colour_value <- function(fit_obj, colour_by) {
   if (colour_by == "none") return(NA_real_)
   if (colour_by == "edf") return(fit_obj$edf)
-  if (colour_by == "deviance_gap") return(fit_obj$dev_exp)
+  if (colour_by == "deviance_gap") return(fit_obj$deviance_gap)
   corr <- fit_obj$corr
   if (is.null(corr)) return(NA_real_)
   switch(colour_by,
@@ -33,7 +35,7 @@
 .colour_label <- function(colour_by) {
   switch(colour_by,
     edf           = "EDF",
-    deviance_gap  = "Dev. expl.",
+    deviance_gap  = "Dev. gap",
     spearman      = "corr",
     pearson       = "corr",
     kendall       = "corr",

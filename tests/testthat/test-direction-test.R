@@ -278,6 +278,91 @@ test_that("incomplete rows are dropped pairwise before fitting", {
 })
 
 # ---------------------------------------------------------------
+# Guards on n
+# ---------------------------------------------------------------
+
+test_that("a sample below n_min abstains with the reason stated", {
+  d <- make_anm_identifiable(n = 25L)
+  res <- janusplot_direction_test(d, "x", "y", n_permutations = 199L,
+                                  seed = 1L)
+  expect_identical(res$verdict, "undecided")
+  expect_identical(res$reason_code, "n_below_min")
+  expect_identical(res$reason, "n below n_min")
+  expect_identical(res$n, 25L)
+  expect_identical(res$n_used, 25L)
+  expect_true(is.na(res$p_forward))
+  expect_true(is.na(res$p_reverse))
+  expect_identical(res$n_min, 30L)
+})
+
+test_that("a sample above n_max is subsampled reproducibly", {
+  skip_if_no_kernR()
+  d <- make_anm_identifiable(n = 300L)
+  a <- janusplot_direction_test(d, "x", "y", n_permutations = 199L,
+                                n_max = 120L, seed = 3L)
+  b <- janusplot_direction_test(d, "x", "y", n_permutations = 199L,
+                                n_max = 120L, seed = 3L)
+  expect_identical(a$n, 300L)
+  expect_identical(a$n_used, 120L)
+  expect_identical(a$n_max, 120L)
+  expect_identical(a$edf_forward, b$edf_forward)
+  expect_identical(a$p_forward, b$p_forward)
+})
+
+test_that("the subsample without a seed is fixed and leaves the RNG alone", {
+  skip_if_no_kernR()
+  d <- make_anm_identifiable(n = 300L)
+  withr::local_seed(42L)
+  before <- .Random.seed
+  a <- .direction_subsample(d, n_max = 120L, seed = NULL)
+  expect_identical(.Random.seed, before)
+  b <- .direction_subsample(d, n_max = 120L, seed = NULL)
+  expect_identical(a, b)
+  expect_identical(nrow(a), 120L)
+})
+
+test_that("n_used equals the complete cases when no guard applies", {
+  skip_if_no_kernR()
+  d <- make_anm_identifiable(n = 60L)
+  res <- janusplot_direction_test(d, "x", "y", n_permutations = 199L,
+                                  seed = 2L)
+  expect_identical(res$n_used, 60L)
+  expect_identical(res$n_max, 2000L)
+})
+
+test_that("malformed n guards are refused", {
+  d <- make_anm_identifiable(n = 40L)
+  expect_error(janusplot_direction_test(d, "x", "y", n_min = 0L),
+               "n_min")
+  expect_error(janusplot_direction_test(d, "x", "y", n_max = 10L),
+               "n_max")
+  expect_error(janusplot_direction_test(d, "x", "y", n_min = 50L,
+                                        n_max = 40L),
+               "n_max")
+})
+
+# ---------------------------------------------------------------
+# Non-syntactic column names
+# ---------------------------------------------------------------
+
+test_that("column names with spaces and symbols are handled", {
+  skip_if_no_kernR()
+  d <- make_anm_identifiable()
+  ref <- janusplot_direction_test(d, "x", "y", n_permutations = 199L,
+                                  seed = 1L)
+  names(d) <- c("grain yield (t/ha)", "protein %")
+  res <- janusplot_direction_test(d, "grain yield (t/ha)", "protein %",
+                                  n_permutations = 199L, seed = 1L)
+  expect_identical(res$verdict, ref$verdict)
+  expect_identical(res$p_forward, ref$p_forward)
+  expect_identical(res$x, "grain yield (t/ha)")
+  expect_identical(res$y, "protein %")
+  expect_identical(res$forward, "grain yield (t/ha) -> protein %")
+  expect_match(res$reason, "grain yield (t/ha)", fixed = TRUE)
+  expect_false(grepl("janus_", res$reason, fixed = TRUE))
+})
+
+# ---------------------------------------------------------------
 # Internals the verdict rests on
 # ---------------------------------------------------------------
 

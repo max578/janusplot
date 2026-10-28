@@ -15,7 +15,9 @@ janusplot_direction_test(
   n_permutations = 500L,
   linear_tol = 0.01,
   gaussian_alpha = 0.01,
-  seed = NULL
+  seed = NULL,
+  n_min = 30L,
+  n_max = 2000L
 )
 }
 \arguments{
@@ -25,7 +27,9 @@ janusplot_direction_test(
 cause under the forward hypothesis.}
 
 \item{y}{Character. Column name of the second variable -- the putative
-effect under the forward hypothesis.}
+effect under the forward hypothesis. Column names need not be
+syntactic: names with spaces or symbols are accepted and are
+returned and reported as supplied.}
 
 \item{k}{Basis dimension passed to \code{\link[mgcv:s]{mgcv::s()}}. Default \code{-1L} lets
 \code{mgcv} choose.}
@@ -54,7 +58,24 @@ detector. Default \code{0.01}.}
 
 \item{seed}{Integer or \code{NULL}. Seed for the HSIC permutation draws.
 The reverse direction is seeded at \code{seed + 1} so the two null
-distributions are not drawn from the same permutation sequence.}
+distributions are not drawn from the same permutation sequence.
+Also seeds the row subsample taken when the complete cases exceed
+\code{n_max}; with \code{seed = NULL} that subsample uses seed \code{2026}, so it
+is reproducible in both cases. The subsample does not change the
+global random-number state.}
+
+\item{n_min}{Integer. Smallest number of complete cases on which a
+verdict is given. Below it the function returns \code{"undecided"} with
+\code{reason_code = "n_below_min"} and \code{reason = "n below n_min"},
+without fitting or testing. Default \code{30L}. Samples below 20
+complete cases are refused with an error whatever \code{n_min} is.}
+
+\item{n_max}{Integer. Largest number of rows used for the fits and
+the HSIC tests, which build \code{n} by \code{n} kernel matrices. Above it a
+random subsample of \code{n_max} rows is drawn (see \code{seed}). Default
+\code{2000L}. The HSIC verdict depends on \code{n}: with more rows the test
+detects smaller departures from independence, so verdicts at
+different \code{n} are not directly comparable.}
 }
 \value{
 A named list:
@@ -63,7 +84,9 @@ A named list:
 \code{"reverse"} (\code{y} drives \code{x}), or \code{"undecided"}.}
 \item{\code{reason_code}}{Machine-readable ground for the verdict:
 \code{"forward_only"}, \code{"reverse_only"}, \code{"both_independent"},
-\code{"neither_independent"}, or \code{"linear_gaussian"}.}
+\code{"neither_independent"}, \code{"linear_gaussian"}, or
+\code{"n_below_min"}. For \code{"n_below_min"} the p-values, statistics,
+EDFs, curvatures and normality p-values are \code{NA}.}
 \item{\code{reason}}{One-paragraph statement of the same ground.}
 \item{\code{x}, \code{y}}{The column names, as supplied.}
 \item{\code{forward}, \code{reverse}}{The two hypotheses as printable
@@ -83,9 +106,12 @@ Shapiro-Wilk p-values (\code{x}, \code{y}, \code{residuals_forward},
 \code{residuals_reverse}).}
 \item{\code{linear_gaussian}}{\code{TRUE} when the non-identifiable
 linear-Gaussian case was detected.}
-\item{\code{n}}{Complete cases used.}
+\item{\code{n}}{Complete cases on \code{x} and \code{y}.}
+\item{\code{n_used}}{Rows used for the fits and tests: \code{n}, or
+\code{n_max} when \code{n} exceeds it.}
 \item{\code{alpha}, \code{gaussian_alpha}, \code{linear_tol},
-\code{n_permutations}}{The settings the verdict was reached under.}
+\code{n_permutations}, \code{n_min}, \code{n_max}}{The settings the verdict
+was reached under.}
 }
 }
 \description{

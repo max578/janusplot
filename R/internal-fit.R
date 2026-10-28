@@ -395,7 +395,9 @@
 
 # ---------------------------------------------------------------
 # Hold adjust-covariates at "typical" values for prediction
-# numeric -> mean; factor -> most common level
+# numeric -> mean; factor -> most common level. A factor that only
+# enters through a random-effect term keeps the modal level as a valid
+# placeholder; that term is excluded from prediction (see below).
 # ---------------------------------------------------------------
 
 .typical_newdata <- function(train_data, x_name, x_grid, adjust) {
@@ -419,6 +421,78 @@
 }
 
 # ---------------------------------------------------------------
+# Random-effect smooth terms to drop from prediction, so the curve,
+# its band and its derivatives are population-level rather than
+# conditional on whichever group the prediction grid happens to name.
+# Covers `bs = "re"` (class random.effect) and factor-smooth
+# interactions `bs = "fs"` (class fs.interaction), both of which are
+# random effects in mgcv's mixed-model representation.
+# ---------------------------------------------------------------
+
+.random_effect_terms <- function(fit) {
+  if (is.null(fit) || !length(fit$smooth)) return(character())
+  is_re <- vapply(fit$smooth, function(sm) {
+    inherits(sm, c("random.effect", "fs.interaction"))
+  }, logical(1L))
+  vapply(fit$smooth[is_re], function(sm) sm$label, character(1L))
+}
+
+# Predict on the grid, excluding random-effect terms when there are
+# any. The grid already carries a valid level for every factor, so
+# mgcv's newdata checks can be skipped (`newdata.guaranteed = TRUE`).
+.predict_population <- function(fit, newdata, exclude, ...) {
+  if (length(exclude)) {
+    stats::predict(fit, newdata = newdata, exclude = exclude,
+                   newdata.guaranteed = TRUE, ...)
+  } else {
+    stats::predict(fit, newdata = newdata, ...)
+  }
+}
+
+# What each adjust variable is held at on the prediction grid: the
+# mean for a numeric covariate, the most frequent level for a factor,
+# or "excluded (random effect)" when every model term using the
+# variable is a random-effect smooth dropped from prediction.
+.prediction_reference <- function(fit, newdata, x_name, adjust, exclude) {
+  adj_names <- setdiff(.adjust_vars(adjust), x_name)
+  adj_names <- intersect(adj_names, names(newdata))
+  empty <- data.frame(variable = character(), reference = character(),
+                      value = numeric(), stringsAsFactors = FALSE)
+  if (!length(adj_names)) return(empty)
+  kept_vars <- character()
+  excl_vars <- character()
+  if (!is.null(fit$pterms)) {
+    kept_vars <- all.vars(stats::delete.response(fit$pterms))
+  }
+  for (sm in fit$smooth) {
+    sm_vars <- setdiff(c(sm$term, sm$by), "NA")
+    if (sm$label %in% exclude) {
+      excl_vars <- c(excl_vars, sm_vars)
+    } else {
+      kept_vars <- c(kept_vars, sm_vars)
+    }
+  }
+  rows <- lapply(adj_names, function(nm) {
+    val <- newdata[[nm]][1L]
+    if (nm %in% excl_vars && !(nm %in% kept_vars)) {
+      ref <- "excluded (random effect)"
+      num <- NA_real_
+    } else if (is.numeric(val)) {
+      ref <- format(signif(val, 6L))
+      num <- as.numeric(val)
+    } else {
+      ref <- as.character(val)
+      num <- NA_real_
+    }
+    data.frame(variable = nm, reference = ref, value = num,
+               stringsAsFactors = FALSE)
+  })
+  out <- do.call(rbind, rows)
+  rownames(out) <- NULL
+  out
+}
+
+# ---------------------------------------------------------------
 # Analytic pointwise derivatives of a univariate mgcv::gam smooth via
 # the LP (linear-predictor) matrix. Let X_p be the LP matrix evaluated
 # on the plotting grid, with beta = coef(fit) and V_p = fit$Vp the
@@ -435,20 +509,24 @@
 # either estimate or variance. So the derivative is with respect to
 # x_i of the (partial) fit shown in the cell -- i.e. exactly what the
 # user sees in the fit panel.
+# Random-effect terms are passed as `exclude`, which zeroes their LP
+# columns; as they are constant across the grid this leaves the
+# derivative unchanged and keeps it consistent with the fit panel.
 #
 # Returns a named list keyed by order ("1", "2", ...) of data frames
 # with the same schema as fit_obj$pred so the cell renderer can
 # consume fit and derivative panels uniformly.
 # ---------------------------------------------------------------
 
-.derivatives_lpmatrix <- function(fit, newdata, x_grid, orders) {
+.derivatives_lpmatrix <- function(fit, newdata, x_grid, orders,
+                                  exclude = character()) {
   if (!length(orders)) return(list())
   if (is.null(fit) || !inherits(fit, "gam")) return(list())
   if (!is.numeric(x_grid) || length(x_grid) < 3L) return(list())
   h <- mean(diff(x_grid))
   if (!is.finite(h) || h <= 0) return(list())
   Xp <- tryCatch(
-    stats::predict(fit, newdata = newdata, type = "lpmatrix"),
+    .predict_population(fit, newdata, exclude, type = "lpmatrix"),
     error = function(e) NULL
   )
   if (is.null(Xp) || !is.matrix(Xp) || nrow(Xp) != length(x_grid)) {
@@ -493,14 +571,15 @@
 # unchanged and are reused from `.derivatives_lpmatrix()`.
 
 .derivatives_simultaneous_bands <- function(fit, newdata, x_grid, orders,
-                                            n_sim = 1000L, alpha = 0.05) {
+                                            n_sim = 1000L, alpha = 0.05,
+                                            exclude = character()) {
   if (!length(orders)) return(list())
   if (is.null(fit) || !inherits(fit, "gam")) return(list())
   if (!is.numeric(x_grid) || length(x_grid) < 3L) return(list())
   h <- mean(diff(x_grid))
   if (!is.finite(h) || h <= 0) return(list())
   Xp <- tryCatch(
-    stats::predict(fit, newdata = newdata, type = "lpmatrix"),
+    .predict_population(fit, newdata, exclude, type = "lpmatrix"),
     error = function(e) NULL
   )
   if (is.null(Xp) || !is.matrix(Xp) || nrow(Xp) != length(x_grid)) {
@@ -681,6 +760,37 @@
   }
 }
 
+# ---------------------------------------------------------------
+# Deviance gap: deviance explained by the smooth minus deviance
+# explained by the straight-line fit of the same ordered pair, with
+# the same adjust terms, engine, method and family, clamped to
+# [0, 1]. Penalisation can leave a smooth that is shrunk to a line
+# fractionally below the unpenalised line; that rounds to a gap of 0.
+# ---------------------------------------------------------------
+
+.deviance_gap <- function(fit, dev_exp, dat, x_name, y_name, adjust,
+                          engine, method, discrete, nthreads, ...) {
+  if (!is.finite(dev_exp)) return(NA_real_)
+  rhs <- sprintf("`%s`", x_name)
+  if (!is.null(adjust)) {
+    adj_rhs <- paste(deparse(adjust[[2L]], width.cutoff = 500L),
+                     collapse = " ")
+    rhs <- paste(rhs, "+", adj_rhs)
+  }
+  lin_fml <- stats::as.formula(sprintf("`%s` ~ %s", y_name, rhs))
+  has_other_smooths <- length(fit$smooth) > 1L
+  lin <- tryCatch(
+    .fit_one_gam(lin_fml, dat, engine = engine, method = method,
+                 discrete = isTRUE(discrete) && has_other_smooths,
+                 nthreads = nthreads, ...),
+    error = function(e) NULL
+  )
+  if (is.null(lin)) return(NA_real_)
+  dev_lin <- summary(lin)$dev.expl %||% NA_real_
+  if (!is.finite(dev_lin)) return(NA_real_)
+  min(1, max(0, dev_exp - dev_lin))
+}
+
 .fit_pair <- function(x_name, y_name, data_full, adjust, method, k, bs,
                      na_action, n_grid = 100L,
                      derivatives = integer(),
@@ -799,13 +909,21 @@
   edf <- unname(smry$s.table[s_row, "edf"])
   pval <- unname(smry$s.table[s_row, "p-value"])
   dev_exp <- unname(smry$dev.expl %||% NA_real_)
+  deviance_gap <- .deviance_gap(fit, dev_exp, dat, x_name, y_name, adjust,
+                                engine = engine, method = resolved_method,
+                                discrete = discrete, nthreads = nthreads,
+                                ...)
 
   # Prediction grid on the response scale, holding adjust covariates at typical values
   x_vals <- dat[[x_name]]
   x_grid <- seq(min(x_vals), max(x_vals), length.out = n_grid)
+  # Random-effect terms are excluded so the curve and its band are
+  # population-level, not conditional on the modal group.
   nd <- .typical_newdata(dat, x_name, x_grid, adjust)
+  re_terms <- .random_effect_terms(fit)
+  pred_ref <- .prediction_reference(fit, nd, x_name, adjust, re_terms)
   preds <- tryCatch(
-    stats::predict(fit, newdata = nd, se.fit = TRUE),
+    .predict_population(fit, nd, re_terms, se.fit = TRUE),
     error = function(e) NULL
   )
   if (is.null(preds)) {
@@ -824,7 +942,7 @@
   }
 
   deriv_list <- if (length(derivatives)) {
-    .derivatives_lpmatrix(fit, nd, x_grid, derivatives)
+    .derivatives_lpmatrix(fit, nd, x_grid, derivatives, exclude = re_terms)
   } else {
     list()
   }
@@ -839,7 +957,7 @@
     if (identical(derivative_ci, "simultaneous")) {
       sim <- .derivatives_simultaneous_bands(
         fit, nd, x_grid, derivatives,
-        n_sim = derivative_ci_nsim
+        n_sim = derivative_ci_nsim, exclude = re_terms
       )
       for (k_nm in names(sim)) {
         if (!is.null(deriv_list[[k_nm]])) {
@@ -862,6 +980,7 @@
     edf      = edf,
     pvalue   = pval,
     dev_exp  = dev_exp,
+    deviance_gap = deviance_gap,
     n_used   = n_used,
     error    = NA_character_,
     engine   = engine,
@@ -869,6 +988,7 @@
     k_requested = k_res$k_requested,
     k_used      = k_used,
     k_capped    = k_res$k_capped,
+    prediction_reference = pred_ref,
     k_check  = list(
       k_prime         = k_diag$k_prime,
       k_index         = k_diag$k_index,
@@ -913,9 +1033,14 @@
     deriv = list(),
     raw = data.frame(),
     edf = NA_real_, pvalue = NA_real_, dev_exp = NA_real_,
+    deviance_gap = NA_real_,
     n_used = n_used, error = NA_character_,
     engine = NA_character_, method = NA_character_,
     k_requested = NA_integer_, k_used = NA_integer_, k_capped = NA,
+    prediction_reference = data.frame(
+      variable = character(), reference = character(),
+      value = numeric(), stringsAsFactors = FALSE
+    ),
     k_check = list(
       k_prime        = NA_real_,
       k_index        = NA_real_,
