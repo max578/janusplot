@@ -60,6 +60,24 @@
 }
 
 # ---------------------------------------------------------------
+# Row subsample for the n x n kernel matrices. Drawn with `seed`, or
+# with 2026 when `seed` is NULL, so the subsample is reproducible
+# either way; the global RNG state is restored afterwards. Rows keep
+# their original order.
+# ---------------------------------------------------------------
+
+.direction_subsample <- function(dat, n_max, seed) {
+  n <- nrow(dat)
+  if (n <= n_max) return(dat)
+  sub_seed <- if (is.null(seed)) 2026L else as.integer(seed)
+  idx <- .with_preserved_seed({
+    set.seed(sub_seed)
+    sort(sample.int(n, n_max))
+  })
+  dat[idx, , drop = FALSE]
+}
+
+# ---------------------------------------------------------------
 # Fit one direction and return everything the verdict needs.
 # ---------------------------------------------------------------
 
@@ -177,6 +195,21 @@
 #' @param seed Integer or `NULL`. Seed for the HSIC permutation draws.
 #'   The reverse direction is seeded at `seed + 1` so the two null
 #'   distributions are not drawn from the same permutation sequence.
+#'   Also seeds the row subsample taken when the complete cases exceed
+#'   `n_max`; with `seed = NULL` that subsample uses seed `2026`, so it
+#'   is reproducible in both cases. The subsample does not change the
+#'   global random-number state.
+#' @param n_min Integer. Smallest number of complete cases on which a
+#'   verdict is given. Below it the function returns `"undecided"` with
+#'   `reason_code = "n_below_min"` and `reason = "n below n_min"`,
+#'   without fitting or testing. Default `30L`. Samples below 20
+#'   complete cases are refused with an error whatever `n_min` is.
+#' @param n_max Integer. Largest number of rows used for the fits and
+#'   the HSIC tests, which build `n` by `n` kernel matrices. Above it a
+#'   random subsample of `n_max` rows is drawn (see `seed`). Default
+#'   `2000L`. The HSIC verdict depends on `n`: with more rows the test
+#'   detects smaller departures from independence, so verdicts at
+#'   different `n` are not directly comparable.
 #'
 #' @returns A named list:
 #'   \describe{
@@ -184,7 +217,9 @@
 #'       `"reverse"` (`y` drives `x`), or `"undecided"`.}
 #'     \item{`reason_code`}{Machine-readable ground for the verdict:
 #'       `"forward_only"`, `"reverse_only"`, `"both_independent"`,
-#'       `"neither_independent"`, or `"linear_gaussian"`.}
+#'       `"neither_independent"`, `"linear_gaussian"`, or
+#'       `"n_below_min"`. For `"n_below_min"` the p-values, statistics,
+#'       EDFs, curvatures and normality p-values are `NA`.}
 #'     \item{`reason`}{One-paragraph statement of the same ground.}
 #'     \item{`x`, `y`}{The column names, as supplied.}
 #'     \item{`forward`, `reverse`}{The two hypotheses as printable
@@ -204,9 +239,12 @@
 #'       `residuals_reverse`).}
 #'     \item{`linear_gaussian`}{`TRUE` when the non-identifiable
 #'       linear-Gaussian case was detected.}
-#'     \item{`n`}{Complete cases used.}
+#'     \item{`n`}{Complete cases on `x` and `y`.}
+#'     \item{`n_used`}{Rows used for the fits and tests: `n`, or
+#'       `n_max` when `n` exceeds it.}
 #'     \item{`alpha`, `gaussian_alpha`, `linear_tol`,
-#'       `n_permutations`}{The settings the verdict was reached under.}
+#'       `n_permutations`, `n_min`, `n_max`}{The settings the verdict
+#'       was reached under.}
 #'   }
 #'
 #' @references
@@ -255,26 +293,49 @@ janusplot_direction_test <- function(data, x, y,
                                      n_permutations = 500L,
                                      linear_tol     = 0.01,
                                      gaussian_alpha = 0.01,
-                                     seed           = NULL) {
+                                     seed           = NULL,
+                                     n_min          = 30L,
+                                     n_max          = 2000L) {
   .validate_direction_args(
     data, x, y, k, bs, alpha, n_permutations, linear_tol, gaussian_alpha, seed
   )
+  .validate_n_guards(n_min, n_max)
+  n_min <- as.integer(n_min)
+  n_max <- as.integer(n_max)
 
   dat <- .complete_pair(data, x, y, NULL)
-  n_used <- nrow(dat)
-  if (n_used < 20L) {
+  n_complete <- nrow(dat)
+  if (n_complete < 20L) {
     # Well-typed arguments, but the method's own requirement -- enough
     # complete cases to fit two smooths and permute a kernel statistic
     # over their residuals -- is not met. Declines with a classed
     # condition rather than returning a verdict it cannot support.
     cli::cli_abort(
       c(
-        "{.arg data} has {n_used} complete case{?s} on {.val {x}} and {.val {y}}.",
+        "{.arg data} has {n_complete} complete case{?s} on {.val {x}} and {.val {y}}.",
         i = "At least 20 are needed to fit both directions and permute the HSIC null."
       ),
       class = c("janusplot_refusal", "orchestra_refusal")
     )
   }
+  settings <- list(
+    alpha          = alpha,
+    gaussian_alpha = gaussian_alpha,
+    linear_tol     = linear_tol,
+    n_permutations = as.integer(n_permutations),
+    n_min          = n_min,
+    n_max          = n_max
+  )
+  if (n_complete < n_min) {
+    return(.direction_result(
+      verdict = "undecided", reason_code = "n_below_min",
+      reason = "n below n_min", x = x, y = y,
+      n = n_complete, n_used = n_complete, settings = settings
+    ))
+  }
+  dat <- .direction_subsample(dat, n_max, seed)
+  n_used <- nrow(dat)
+
   if (!.kernR_available()) {
     cli::cli_abort(c(
       "{.pkg kernR} is required for {.fn janusplot_direction_test}.",
@@ -384,14 +445,12 @@ janusplot_direction_test <- function(data, x, y,
     )
   }
 
-  list(
+  .direction_result(
     verdict             = verdict,
     reason_code         = reason_code,
     reason              = reason,
     x                   = x,
     y                   = y,
-    forward             = fwd_label,
-    reverse             = rev_label,
     p_forward           = hsic_forward$p_value,
     p_reverse           = hsic_reverse$p_value,
     statistic_forward   = hsic_forward$statistic,
@@ -404,12 +463,94 @@ janusplot_direction_test <- function(data, x, y,
     curvature_reverse   = reverse$curvature,
     normality_p         = normality_p,
     linear_gaussian     = linear_gaussian,
-    n                   = n_used,
-    alpha               = alpha,
-    gaussian_alpha      = gaussian_alpha,
-    linear_tol          = linear_tol,
-    n_permutations      = as.integer(n_permutations)
+    n                   = n_complete,
+    n_used              = n_used,
+    settings            = settings
   )
+}
+
+# ---------------------------------------------------------------
+# Assemble the return list. Defaults are the NA fill used when no
+# test was run (n below n_min).
+# ---------------------------------------------------------------
+
+.direction_result <- function(verdict, reason_code, reason, x, y,
+                              n, n_used, settings,
+                              p_forward           = NA_real_,
+                              p_reverse           = NA_real_,
+                              statistic_forward   = NA_real_,
+                              statistic_reverse   = NA_real_,
+                              independent_forward = NA,
+                              independent_reverse = NA,
+                              edf_forward         = NA_real_,
+                              edf_reverse         = NA_real_,
+                              curvature_forward   = NA_real_,
+                              curvature_reverse   = NA_real_,
+                              normality_p         = c(
+                                x                 = NA_real_,
+                                y                 = NA_real_,
+                                residuals_forward = NA_real_,
+                                residuals_reverse = NA_real_
+                              ),
+                              linear_gaussian     = NA) {
+  list(
+    verdict             = verdict,
+    reason_code         = reason_code,
+    reason              = reason,
+    x                   = x,
+    y                   = y,
+    forward             = sprintf("%s -> %s", x, y),
+    reverse             = sprintf("%s -> %s", y, x),
+    p_forward           = p_forward,
+    p_reverse           = p_reverse,
+    statistic_forward   = statistic_forward,
+    statistic_reverse   = statistic_reverse,
+    independent_forward = independent_forward,
+    independent_reverse = independent_reverse,
+    edf_forward         = edf_forward,
+    edf_reverse         = edf_reverse,
+    curvature_forward   = curvature_forward,
+    curvature_reverse   = curvature_reverse,
+    normality_p         = normality_p,
+    linear_gaussian     = linear_gaussian,
+    n                   = n,
+    n_used              = n_used,
+    alpha               = settings$alpha,
+    gaussian_alpha      = settings$gaussian_alpha,
+    linear_tol          = settings$linear_tol,
+    n_permutations      = settings$n_permutations,
+    n_min               = settings$n_min,
+    n_max               = settings$n_max
+  )
+}
+
+.validate_n_guards <- function(n_min, n_max, call = rlang::caller_env()) {
+  for (nm in c("n_min", "n_max")) {
+    value <- if (identical(nm, "n_min")) n_min else n_max
+    if (!is.numeric(value) || length(value) != 1L || !is.finite(value) ||
+        value < 1 || value != round(value)) {
+      cli::cli_abort(
+        "{.arg {nm}} must be a single positive whole number.",
+        call = call
+      )
+    }
+  }
+  if (n_max < 20) {
+    cli::cli_abort(
+      c(
+        "{.arg n_max} must be at least 20.",
+        i = "Fewer rows cannot support fits in both directions."
+      ),
+      call = call
+    )
+  }
+  if (n_max < n_min) {
+    cli::cli_abort(
+      "{.arg n_max} ({n_max}) must not be smaller than {.arg n_min} ({n_min}).",
+      call = call
+    )
+  }
+  invisible(NULL)
 }
 
 # ---------------------------------------------------------------
