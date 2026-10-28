@@ -47,7 +47,7 @@ A data frame with one row per fit. Columns:
 \item{\code{n}}{Sample size for this fit.}
 \item{\code{sigma}}{Noise level for this fit.}
 \item{\code{seed}}{RNG seed used.}
-\item{\code{predicted}}{Classifier output at the fine (24-category) level.}
+\item{\code{predicted}}{Classifier output at the fine (27-category) level.}
 \item{\code{correct}}{Logical -- does \code{predicted == truth}?}
 \item{\code{archetype_truth}}{Expected archetype for \code{truth}.}
 \item{\code{archetype_pred}}{Archetype of \code{predicted}.}
@@ -65,7 +65,7 @@ inflection counts.}
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-Run a full-factorial sensitivity sweep for the janusplot 24-category
+Run a full-factorial sensitivity sweep for the janusplot 27-category
 shape classifier. For each combination of ground-truth shape, sample
 size \code{n}, noise level \code{sigma}, and replicate, the sweep:
 \enumerate{
@@ -74,7 +74,7 @@ size \code{n}, noise level \code{sigma}, and replicate, the sweep:
 y-range, so signal-to-noise is comparable across shapes).
 \item Fits \code{mgcv::gam(y ~ s(x), method = "REML")}.
 \item Runs \code{\link[=janusplot_shape_metrics]{janusplot_shape_metrics()}} to classify the fitted smooth.
-\item Records correctness at both the fine (24-category) and
+\item Records correctness at both the fine (27-category) and
 archetype (7-family) levels.
 }
 

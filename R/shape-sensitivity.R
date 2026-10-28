@@ -135,7 +135,7 @@ janusplot_shape_sensitivity_shapes <- function() {
 #' @description
 #' `r lifecycle::badge("experimental")`
 #'
-#' Run a full-factorial sensitivity sweep for the janusplot 24-category
+#' Run a full-factorial sensitivity sweep for the janusplot 27-category
 #' shape classifier. For each combination of ground-truth shape, sample
 #' size `n`, noise level `sigma`, and replicate, the sweep:
 #' \enumerate{
@@ -144,7 +144,7 @@ janusplot_shape_sensitivity_shapes <- function() {
 #'     y-range, so signal-to-noise is comparable across shapes).
 #'   \item Fits `mgcv::gam(y ~ s(x), method = "REML")`.
 #'   \item Runs [janusplot_shape_metrics()] to classify the fitted smooth.
-#'   \item Records correctness at both the fine (24-category) and
+#'   \item Records correctness at both the fine (27-category) and
 #'     archetype (7-family) levels.
 #' }
 #'
@@ -176,7 +176,7 @@ janusplot_shape_sensitivity_shapes <- function() {
 #'   \item{`n`}{Sample size for this fit.}
 #'   \item{`sigma`}{Noise level for this fit.}
 #'   \item{`seed`}{RNG seed used.}
-#'   \item{`predicted`}{Classifier output at the fine (24-category) level.}
+#'   \item{`predicted`}{Classifier output at the fine (27-category) level.}
 #'   \item{`correct`}{Logical -- does `predicted == truth`?}
 #'   \item{`archetype_truth`}{Expected archetype for `truth`.}
 #'   \item{`archetype_pred`}{Archetype of `predicted`.}
@@ -298,7 +298,7 @@ janusplot_shape_sensitivity <- function(
 #' `r lifecycle::badge("experimental")`
 #'
 #' Aggregate the raw output of [janusplot_shape_sensitivity()] into a
-#' per-cell mean-accuracy table at either the fine (24-category) or
+#' per-cell mean-accuracy table at either the fine (27-category) or
 #' archetype (7-family) level.
 #'
 #' @param results Data frame returned by [janusplot_shape_sensitivity()].
@@ -445,7 +445,7 @@ janusplot_shape_sensitivity_summary <- function(
 #' Produce one of four diagnostic plots from the raw data frame returned
 #' by [janusplot_shape_sensitivity()]:
 #' \describe{
-#'   \item{`"confusion_fine"`}{24 x (|shapes|) confusion matrix at the
+#'   \item{`"confusion_fine"`}{27 x (|shapes|) confusion matrix at the
 #'     fine category level -- rows = ground truth, columns = predicted,
 #'     cells coloured by `P(pred | truth)`.}
 #'   \item{`"confusion_archetype"`}{7 x 7 confusion matrix at the

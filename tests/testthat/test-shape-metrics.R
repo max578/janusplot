@@ -128,10 +128,10 @@ test_that("janusplot_shape_metrics() rejects bogus inputs", {
   expect_error(janusplot_shape_metrics(fit, x_name = "no_such_column"))
 })
 
-test_that(".shape_taxonomy has unique category names and 24 rows", {
+test_that(".shape_taxonomy has unique category names and 27 rows", {
   tax <- janusplot:::.shape_taxonomy()
-  expect_equal(nrow(tax), 24L)
-  expect_equal(length(unique(tax$category)), 24L)
+  expect_equal(nrow(tax), 27L)
+  expect_equal(length(unique(tax$category)), 27L)
   ascii_bytes <- vapply(tax$ascii, function(s) all(charToRaw(s) < as.raw(128L)),
                         logical(1L))
   expect_true(all(ascii_bytes))
@@ -140,7 +140,7 @@ test_that(".shape_taxonomy has unique category names and 24 rows", {
 test_that("taxonomy hierarchy columns are complete, unique, and ASCII", {
   tax <- janusplot:::.shape_taxonomy()
   # 2-letter codes must be unique and ASCII
-  expect_equal(length(unique(tax$code)), 24L)
+  expect_equal(length(unique(tax$code)), 27L)
   expect_true(all(nchar(tax$code) == 2L))
   code_bytes <- vapply(tax$code, function(s) all(charToRaw(s) < as.raw(128L)),
                        logical(1L))
@@ -239,4 +239,98 @@ test_that("janusplot_shape_metrics() declines with a classed refusal on too few 
   expect_true(grepl("_refusal$", class(cond)[1L]))
   expect_true(any(grepl("_(refusal|abstention)$", class(cond))))
   expect_match(conditionMessage(cond), "wt", fixed = TRUE)
+})
+
+# ---------------------------------------------------------------
+# Single-extremum curves: the extremum type, not the sign of C,
+# decides peak against trough. Each peak thumbnail and its
+# reflection must land in the matching peak / trough category.
+# ---------------------------------------------------------------
+
+.extremum_cases <- data.frame(
+  thumb  = c("inverted_u", "skewed_peak", "broad_peak", "rippled_peak"),
+  trough = c("u_shape", "skewed_trough", "broad_trough", "rippled_trough"),
+  n_I    = c(0L, 1L, 2L, 3L),
+  stringsAsFactors = FALSE
+)
+
+for (k in seq_len(nrow(.extremum_cases))) {
+  local({
+    cs <- .extremum_cases[k, ]
+    test_that(sprintf("one maximum with %d inflection(s) is %s", cs$n_I,
+                      cs$thumb), {
+      d <- janusplot:::.shape_thumbnail_df(cs$thumb, n = 200L)
+      m <- janusplot:::.compute_shape_metrics(.mk_fit(d$x, d$y))
+      expect_equal(m$n_turning_points, 1L)
+      expect_equal(min(m$n_inflections, 3L), cs$n_I)
+      expect_equal(m$extremum_type, "maximum")
+      expect_equal(m$shape_category, cs$thumb)
+    })
+    test_that(sprintf("one minimum with %d inflection(s) is %s", cs$n_I,
+                      cs$trough), {
+      d <- janusplot:::.shape_thumbnail_df(cs$thumb, n = 200L)
+      m <- janusplot:::.compute_shape_metrics(.mk_fit(d$x, 1 - d$y))
+      expect_equal(m$n_turning_points, 1L)
+      expect_equal(min(m$n_inflections, 3L), cs$n_I)
+      expect_equal(m$extremum_type, "minimum")
+      expect_equal(m$shape_category, cs$trough)
+    })
+  })
+}
+
+test_that("trough thumbnails are reflections that classify as themselves", {
+  for (cat in .extremum_cases$trough) {
+    d <- janusplot:::.shape_thumbnail_df(cat, n = 200L)
+    m <- janusplot:::.compute_shape_metrics(.mk_fit(d$x, d$y))
+    expect_equal(m$shape_category, cat, label = cat)
+  }
+})
+
+test_that("a minimum is u_shape even when density weighting makes C negative", {
+  # One sharp minimum at x = 0.2, then a long gently concave rise whose
+  # inflection is below the lobe threshold (n_inflections = 0). Data
+  # concentrated on the concave stretch drive C below zero; the old
+  # sign-of-C rule called this inverted_u.
+  x  <- seq(0, 1, length.out = 200L)
+  y  <- log(cosh((x - 0.2) * 15)) / 15 -
+    0.15 * log1p(exp((x - 0.7) * 15)) / 15
+  xr <- c(seq(0, 0.45, length.out = 10L), seq(0.46, 1, length.out = 300L))
+  fo <- list(
+    x_name = "x", y_name = "y",
+    pred   = data.frame(x = x, fit = y, se = 0, lo = y, hi = y),
+    raw    = data.frame(x = xr, y = stats::approx(x, y, xr)$y)
+  )
+  m <- janusplot:::.compute_shape_metrics(fo)
+  expect_lt(m$convexity_index, 0)
+  expect_equal(c(m$n_turning_points, m$n_inflections), c(1L, 0L))
+  expect_equal(m$shape_category, "u_shape")
+  # Reflection: one maximum with C > 0 is inverted_u.
+  fo$pred$fit <- -fo$pred$fit
+  fo$raw$y    <- -fo$raw$y
+  m2 <- janusplot:::.compute_shape_metrics(fo)
+  expect_gt(m2$convexity_index, 0)
+  expect_equal(m2$shape_category, "inverted_u")
+})
+
+test_that("a real mgcv fit of a skewed minimum is labelled skewed_trough", {
+  withr::local_seed(2026L)
+  n <- 400L
+  x <- sort(stats::runif(n, 0, 1))
+  y <- -sin(pi * x^2) + stats::rnorm(n, sd = 0.03)
+  d <- data.frame(x = x, y = y)
+  fit <- mgcv::gam(y ~ s(x), data = d, method = "REML")
+  m <- janusplot_shape_metrics(fit, x_name = "x", newdata = d)
+  expect_equal(m$extremum_type, "minimum")
+  expect_equal(m$shape_category, "skewed_trough")
+})
+
+test_that(".classify_shape falls back to the sign of C without extremum", {
+  co <- janusplot_shape_cutoffs()
+  expect_equal(janusplot:::.classify_shape(0, 0.8, 1L, 2L, 1, co),
+               "broad_trough")
+  expect_equal(janusplot:::.classify_shape(0, -0.8, 1L, 2L, 1, co),
+               "broad_peak")
+  expect_equal(janusplot:::.classify_shape(0, 0.8, 1L, 2L, 1, co,
+                                           extremum = "maximum"),
+               "broad_peak")
 })

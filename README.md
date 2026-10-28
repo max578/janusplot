@@ -29,8 +29,8 @@ Two novelties, paired with the asymmetry story:
 1.  **Asymmetry index**
     `A = |EDF_yx − EDF_xy| / (EDF_yx + EDF_xy) ∈ [0, 1]` — a
     single-number summary of the directional disparity per pair.
-2.  **24-category shape taxonomy** — each fitted smooth is classified
-    into one of 24 named shapes (`linear_up`, `skewed_peak`, `bimodal`,
+2.  **27-category shape taxonomy** — each fitted smooth is classified
+    into one of 27 named shapes (`linear_up`, `skewed_peak`, `bimodal`,
     `bi_wave`, `rippled_monotone`, …) via a `(T, I)` dispatch on
     turning-point and inflection counts, with monotonicity/convexity
     indices for disambiguation. The taxonomy rolls up through three
@@ -91,7 +91,7 @@ Default encoding:
   `EDF = ...`.
 - **Top-right** — significance glyph for the smooth’s F-test
   (`· * ** ***`).
-- **Below the matrix** — a standing reference legend illustrating all 24
+- **Below the matrix** — a standing reference legend illustrating all 27
   shape categories as canonical thumbnail splines, labelled
   `<name> (<code>)`.
 
@@ -112,7 +112,7 @@ janusplot(d, annotations = c("edf", "A", "shape"),
 |----|----|----|
 | `monotone_linear` | `linear_up` `linear_down` | `y = x` |
 | `monotone_curved` | `convex_up` `concave_up` `convex_down` `concave_down` `s_shape` `rippled_monotone` | `tanh`, `sqrt`, `exp(−x)` |
-| `unimodal` | `u_shape` `inverted_u` `skewed_peak` `broad_peak` `rippled_peak` | `(x−.5)²`, `x·exp(−3x)`, plateau |
+| `unimodal` | `inverted_u` `skewed_peak` `broad_peak` `rippled_peak` and their reflections `u_shape` `skewed_trough` `broad_trough` `rippled_trough` | `(x−.5)²`, `sin(πx²)`, plateau |
 | `wave` | `wave` `warped_wave` `rippled_wave` `complex_wave` | `sin(2πx)` family |
 | `multimodal` | `bimodal` `bimodal_ripple` `bi_wave` `bi_wave_ripple` | two-peak mix, `sin(4πx)` |
 | `chaotic` | `complex` | ≥ 5 extrema / inflections |

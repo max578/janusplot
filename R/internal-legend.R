@@ -97,7 +97,8 @@
     .classify_shape(
       f$shape$monotonicity_index, f$shape$convexity_index,
       f$shape$n_turning_points, f$shape$n_inflections,
-      f$shape$flat_range_ratio, cutoffs
+      f$shape$flat_range_ratio, cutoffs,
+      extremum = f$shape$extremum_type
     )
   }, character(1L))
 }

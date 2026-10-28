@@ -41,11 +41,19 @@ sign changes of \verb{f'}. Equals the number of interior extrema.}
 sign changes of \verb{f''}.}
 \item{\code{flat_range_ratio}}{\code{range(f) / sd(y)} -- small values
 indicate a degenerate flat smooth.}
-\item{\code{shape_category}}{One of 24 labels from
+\item{\code{extremum_type}}{\code{"minimum"} or \code{"maximum"} when exactly
+one turning point is counted (sign of \verb{f'} negative then
+positive, or positive then negative, across it); \code{NA}
+otherwise.}
+\item{\code{shape_category}}{One of 27 labels from
 \code{\link[=janusplot_shape_hierarchy]{janusplot_shape_hierarchy()}} dispatched on
-\verb{(n_turning_points, n_inflections)} with
+\verb{(n_turning_points, n_inflections)}, with
 \verb{(monotonicity_index, convexity_index)} disambiguation for
-the monotone case.}
+the monotone case and \code{extremum_type} separating the peak
+family (\code{inverted_u}, \code{skewed_peak}, \code{broad_peak},
+\code{rippled_peak}) from the trough family (\code{u_shape},
+\code{skewed_trough}, \code{broad_trough}, \code{rippled_trough}) for a
+single turning point.}
 }
 }
 \description{

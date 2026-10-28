@@ -109,6 +109,7 @@ bimodal_ripple
 bi_wave
 bi_wave_ripple
 broad_peak
+broad_trough
 complex_wave
 concave_down
 concave_up
@@ -119,9 +120,11 @@ linear_down
 linear_up
 rippled_monotone
 rippled_peak
+rippled_trough
 rippled_wave
 s_shape
 skewed_peak
+skewed_trough
 u_shape
 warped_wave
 

@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-`janusplot()` assigns every fitted smooth to one of 24 shape
+`janusplot()` assigns every fitted smooth to one of 27 shape
 categories via a `(n_turning_points, n_inflections)` dispatch with
 additional `(monotonicity_index, convexity_index)` disambiguation
 for the monotone cases (see the `janusplot` vignette for the full
@@ -38,7 +38,7 @@ noise level `sigma`, the sweep:
    SNR-comparable scale across shapes.
 2. Fits `mgcv::gam(y ~ s(x), method = "REML")`.
 3. Classifies the fit via `janusplot_shape_metrics()`.
-4. Records correctness at the **fine** (24-category) and
+4. Records correctness at the **fine** (27-category) and
    **archetype** (7-family) levels.
 
 The design factors are orthogonal and replicated. See

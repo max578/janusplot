@@ -584,7 +584,8 @@
       fit_obj$shape$monotonicity_index,
       fit_obj$shape$convexity_index,
       fit_obj$shape$n_turning_points, fit_obj$shape$n_inflections,
-      fit_obj$shape$flat_range_ratio, shape_cutoffs
+      fit_obj$shape$flat_range_ratio, shape_cutoffs,
+      extremum = fit_obj$shape$extremum_type
     )
     g <- .shape_glyph(shape_cat, style = glyph_style)
     if (!is.na(g) && nzchar(g)) {
@@ -637,7 +638,8 @@
       fit_obj$shape$monotonicity_index,
       fit_obj$shape$convexity_index,
       fit_obj$shape$n_turning_points, fit_obj$shape$n_inflections,
-      fit_obj$shape$flat_range_ratio, shape_cutoffs
+      fit_obj$shape$flat_range_ratio, shape_cutoffs,
+      extremum = fit_obj$shape$extremum_type
     )
   } else {
     NA_character_
