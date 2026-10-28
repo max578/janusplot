@@ -342,6 +342,27 @@ test_that("malformed n guards are refused", {
 })
 
 # ---------------------------------------------------------------
+# Non-syntactic column names
+# ---------------------------------------------------------------
+
+test_that("column names with spaces and symbols are handled", {
+  skip_if_no_kernR()
+  d <- make_anm_identifiable()
+  ref <- janusplot_direction_test(d, "x", "y", n_permutations = 199L,
+                                  seed = 1L)
+  names(d) <- c("grain yield (t/ha)", "protein %")
+  res <- janusplot_direction_test(d, "grain yield (t/ha)", "protein %",
+                                  n_permutations = 199L, seed = 1L)
+  expect_identical(res$verdict, ref$verdict)
+  expect_identical(res$p_forward, ref$p_forward)
+  expect_identical(res$x, "grain yield (t/ha)")
+  expect_identical(res$y, "protein %")
+  expect_identical(res$forward, "grain yield (t/ha) -> protein %")
+  expect_match(res$reason, "grain yield (t/ha)", fixed = TRUE)
+  expect_false(grepl("janus_", res$reason, fixed = TRUE))
+})
+
+# ---------------------------------------------------------------
 # Internals the verdict rests on
 # ---------------------------------------------------------------
 

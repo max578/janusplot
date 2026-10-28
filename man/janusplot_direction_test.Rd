@@ -27,7 +27,9 @@ janusplot_direction_test(
 cause under the forward hypothesis.}
 
 \item{y}{Character. Column name of the second variable -- the putative
-effect under the forward hypothesis.}
+effect under the forward hypothesis. Column names need not be
+syntactic: names with spaces or symbols are accepted and are
+returned and reported as supplied.}
 
 \item{k}{Basis dimension passed to \code{\link[mgcv:s]{mgcv::s()}}. Default \code{-1L} lets
 \code{mgcv} choose.}

@@ -173,7 +173,9 @@
 #' @param x Character. Column name of the first variable -- the putative
 #'   cause under the forward hypothesis.
 #' @param y Character. Column name of the second variable -- the putative
-#'   effect under the forward hypothesis.
+#'   effect under the forward hypothesis. Column names need not be
+#'   syntactic: names with spaces or symbols are accepted and are
+#'   returned and reported as supplied.
 #' @param k Basis dimension passed to [mgcv::s()]. Default `-1L` lets
 #'   `mgcv` choose.
 #' @param bs Character. Spline basis passed to [mgcv::s()]. Default
@@ -303,7 +305,11 @@ janusplot_direction_test <- function(data, x, y,
   n_min <- as.integer(n_min)
   n_max <- as.integer(n_max)
 
+  # Fit on syntactic aliases so column names with spaces or symbols
+  # reach mgcv's formula parser intact; x and y keep the user's names
+  # for the return value and every message.
   dat <- .complete_pair(data, x, y, NULL)
+  dat <- data.frame(janus_x = dat[[x]], janus_y = dat[[y]])
   n_complete <- nrow(dat)
   if (n_complete < 20L) {
     # Well-typed arguments, but the method's own requirement -- enough
@@ -348,18 +354,18 @@ janusplot_direction_test <- function(data, x, y,
     ))
   }
 
-  forward <- .direction_fit(dat, x, y, k, bs, method)
-  reverse <- .direction_fit(dat, y, x, k, bs, method)
+  forward <- .direction_fit(dat, "janus_x", "janus_y", k, bs, method)
+  reverse <- .direction_fit(dat, "janus_y", "janus_x", k, bs, method)
 
   seed_forward <- if (is.null(seed)) NULL else as.integer(seed)
   seed_reverse <- if (is.null(seed)) NULL else as.integer(seed) + 1L
   hsic_forward <- kernR::hsic_test(
-    forward$residuals, dat[[x]],
+    forward$residuals, dat$janus_x,
     n_permutations = as.integer(n_permutations),
     alpha = alpha, seed = seed_forward
   )
   hsic_reverse <- kernR::hsic_test(
-    reverse$residuals, dat[[y]],
+    reverse$residuals, dat$janus_y,
     n_permutations = as.integer(n_permutations),
     alpha = alpha, seed = seed_reverse
   )
@@ -368,8 +374,8 @@ janusplot_direction_test <- function(data, x, y,
   independent_reverse <- hsic_reverse$p_value > alpha
 
   normality_p <- c(
-    x                 = .normality_pvalue(dat[[x]]),
-    y                 = .normality_pvalue(dat[[y]]),
+    x                 = .normality_pvalue(dat$janus_x),
+    y                 = .normality_pvalue(dat$janus_y),
     residuals_forward = .normality_pvalue(forward$residuals),
     residuals_reverse = .normality_pvalue(reverse$residuals)
   )
