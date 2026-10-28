@@ -29,7 +29,9 @@
 #'   `gam(y ~ s(x) + s(age) + s(site, bs = "re"))` for each pair.
 #'   Default `NULL` fits unadjusted pairwise smooths. Non-syntactic
 #'   column names are referenced with backticks, e.g.
-#'   ``adjust = ~ s(`site name`, bs = "re")``.
+#'   ``adjust = ~ s(`site name`, bs = "re")``. Character and logical
+#'   `adjust` columns are converted to factor before fitting, with a
+#'   message naming them.
 #' @param method Smoothing-parameter estimation method passed to
 #'   the chosen fitting backend. Default `NULL` resolves
 #'   per-engine: `"fREML"` for `engine = "bam"` (mgcv's

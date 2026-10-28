@@ -106,3 +106,65 @@ test_that("alias restoration in messages is whole-token and single-pass", {
     "s(a.b) vs a b, 2019_yield and site name; N.rate..x stays"
   )
 })
+
+make_grouped_data <- function(n = 90L, seed = 12L) {
+  withr::with_seed(seed, {
+    g <- rep(c("s1", "s2", "s3"), length.out = n)
+    eff <- c(s1 = -1, s2 = 0, s3 = 1)[g]
+    x1 <- stats::runif(n, 0, 3)
+    data.frame(
+      x1 = x1,
+      x2 = sin(x1) + eff + stats::rnorm(n, sd = 0.3),
+      x3 = 0.5 * x1 + eff + stats::rnorm(n, sd = 0.3),
+      site_year = g,
+      irrigated = rep(c(TRUE, FALSE), length.out = n),
+      stringsAsFactors = FALSE
+    )
+  })
+}
+
+test_that("character adjust columns are coerced to factor with one inform", {
+  d <- make_grouped_data()
+  expect_message(
+    res <- janusplot_data(d, vars = c("x1", "x2", "x3"),
+                          adjust = ~ site_year, engine = "gam"),
+    "site_year"
+  )
+  expect_true(all(is.na(vapply(res$pairs, `[[`, character(1L), "error_yx"))))
+  msgs <- testthat::capture_messages(
+    janusplot(d, vars = c("x1", "x2", "x3"),
+              adjust = ~ s(site_year, bs = "re") + irrigated,
+              engine = "gam", with_data = TRUE)
+  )
+  coerce_msgs <- grep("factor", msgs, value = TRUE)
+  expect_length(coerce_msgs, 1L)
+  expect_match(coerce_msgs, "site_year")
+  expect_match(coerce_msgs, "irrigated")
+})
+
+test_that("random-effect terms work on a coerced character column", {
+  d <- make_grouped_data()
+  out <- suppressMessages(
+    janusplot(d, vars = c("x1", "x2", "x3"),
+              adjust = ~ s(site_year, bs = "re"),
+              engine = "gam", with_data = TRUE)
+  )
+  expect_true(all(is.na(out$data$error)))
+  expect_true(all(is.finite(out$data$edf)))
+  res <- suppressMessages(
+    janusplot_data(d, vars = c("x1", "x2"),
+                   adjust = ~ s(site_year, bs = "re"),
+                   engine = "bam", keep_fits = TRUE)
+  )
+  expect_true(is.factor(res$pairs[[1L]]$fit_yx$model$site_year))
+})
+
+test_that("factor adjust columns trigger no coercion message", {
+  d <- make_grouped_data()
+  d$site_year <- factor(d$site_year)
+  msgs <- testthat::capture_messages(
+    janusplot_data(d, vars = c("x1", "x2"),
+                   adjust = ~ s(site_year, bs = "re"), engine = "gam")
+  )
+  expect_false(any(grepl("factor", msgs)))
+})

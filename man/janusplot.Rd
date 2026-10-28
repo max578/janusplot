@@ -75,7 +75,9 @@ and/or random effects to include in every pairwise GAM. For example,
 \code{gam(y ~ s(x) + s(age) + s(site, bs = "re"))} for each pair.
 Default \code{NULL} fits unadjusted pairwise smooths. Non-syntactic
 column names are referenced with backticks, e.g.
-\code{adjust = ~ s(`site name`, bs = "re")}.}
+\code{adjust = ~ s(`site name`, bs = "re")}. Character and logical
+\code{adjust} columns are converted to factor before fitting, with a
+message naming them.}
 
 \item{method}{Smoothing-parameter estimation method passed to
 the chosen fitting backend. Default \code{NULL} resolves

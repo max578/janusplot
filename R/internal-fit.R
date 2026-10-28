@@ -272,6 +272,29 @@
   f
 }
 
+# Original column name for an internal (possibly aliased) name.
+.original_names <- function(nms, map) {
+  if (is.null(map)) return(nms)
+  unname(map[nms])
+}
+
+# Character and logical adjust variables make mgcv fail on model-frame
+# construction; coerce them to factor so fixed and random-effect terms
+# both work.
+.coerce_adjust_factors <- function(data, vars, adjust, map = NULL) {
+  adj <- setdiff(intersect(.adjust_vars(adjust), names(data)), vars)
+  to_coerce <- adj[vapply(data[adj], function(col) {
+    is.character(col) || is.logical(col)
+  }, logical(1L))]
+  if (!length(to_coerce)) return(data)
+  for (nm in to_coerce) data[[nm]] <- factor(data[[nm]])
+  coerced <- .original_names(to_coerce, map)                  # nolint: object_usage_linter.
+  cli::cli_inform(c(
+    i = "Converted character or logical {.arg adjust} column{?s} {.val {coerced}} to factor."
+  ))
+  data
+}
+
 # ---------------------------------------------------------------
 # Build the pairwise GAM formula
 # ---------------------------------------------------------------
@@ -821,6 +844,7 @@
   vars   <- aliasing$vars
   adjust <- aliasing$adjust
   k      <- .alias_k(k, aliasing$map)
+  data   <- .coerce_adjust_factors(data, vars, adjust, aliasing$map)
   if (na_action == "complete") {
     data <- data[stats::complete.cases(
       data[, unique(c(vars, .adjust_vars(adjust))), drop = FALSE]
