@@ -179,14 +179,9 @@
 # ---------------------------------------------------------------
 # Internal aliasing for non-syntactic column names
 # ---------------------------------------------------------------
-#
-# Formulas are assembled by pasting column names, and mgcv cannot parse
-# s() on a name such as "grain yield (t/ha)" even when backticked. The
-# fit layer therefore works on make.names() aliases of every column it
-# uses (the vars plus every variable of `adjust`) and restores the
-# original names in everything user-visible afterwards. When every used
-# name is already syntactic the data, vars and adjust are returned
-# untouched, so the common path is a no-op.
+# mgcv cannot parse s() on a non-syntactic name even when backticked,
+# so fits run on make.names() aliases. All-syntactic input is returned
+# untouched.
 
 .alias_columns <- function(data, vars, adjust) {
   cols <- intersect(unique(c(vars, .adjust_vars(adjust))), names(data))
@@ -240,11 +235,9 @@
   k
 }
 
-# Rewrite aliases back to original names inside free text (mgcv error
-# and warning messages). Matches whole alias tokens only, in a single
-# pass, so an alias that equals another column's original name (e.g.
-# "a.b" standing for "a b" while "a.b" itself became "a.b.1") is never
-# rewritten twice.
+# Aliases -> original names in message text: whole tokens, one pass,
+# so an alias equal to another column's original name is not rewritten
+# twice.
 .restore_names_in_text <- function(txt, map) {
   if (is.null(map) || !length(txt)) return(txt)
   changed <- map[names(map) != map]

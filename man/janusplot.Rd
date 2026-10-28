@@ -60,10 +60,10 @@ janusplot(
 }
 \arguments{
 \item{data}{A data frame with numeric columns to include. Column
-names need not be syntactic: names such as \code{"grain yield (t/ha)"}
-or \code{"2019_yield"} are fitted under internal \code{\link[=make.names]{make.names()}} aliases
-and reported under their original names in labels, returned
-tables and messages.}
+names need not be syntactic (\code{"grain yield (t/ha)"},
+\code{"2019_yield"}): they are fitted under internal \code{\link[=make.names]{make.names()}}
+aliases and reported under their original names in labels,
+returned tables and messages.}
 
 \item{vars}{Character vector of column names to use. \code{NULL} (default)
 uses all numeric columns in \code{data}. Non-numeric columns trigger an

@@ -1,7 +1,5 @@
-# Input robustness: non-syntactic names, character adjust columns,
-# infinite values, pairs with too few shared rows, identical columns.
-# Every behaviour lives in the shared fitting internals, so each test
-# exercises both janusplot() and janusplot_data().
+# Each behaviour lives in the shared fitting internals; tests cover
+# both janusplot() and janusplot_data().
 
 make_odd_names_data <- function(n = 80L, seed = 11L) {
   withr::with_seed(seed, {

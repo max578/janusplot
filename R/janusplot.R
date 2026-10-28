@@ -16,10 +16,10 @@
 #' single scalar correlation hides.
 #'
 #' @param data A data frame with numeric columns to include. Column
-#'   names need not be syntactic: names such as `"grain yield (t/ha)"`
-#'   or `"2019_yield"` are fitted under internal [make.names()] aliases
-#'   and reported under their original names in labels, returned
-#'   tables and messages.
+#'   names need not be syntactic (`"grain yield (t/ha)"`,
+#'   `"2019_yield"`): they are fitted under internal [make.names()]
+#'   aliases and reported under their original names in labels,
+#'   returned tables and messages.
 #' @param vars Character vector of column names to use. `NULL` (default)
 #'   uses all numeric columns in `data`. Non-numeric columns trigger an
 #'   error listing offenders.
