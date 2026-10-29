@@ -231,8 +231,8 @@ print.janusplot_compare <- function(x, ...) {
   differ <- .compare_settings_differ(x$fit_a$settings, x$fit_b$settings)
   if (length(differ)) {
     cli::cat_line(sprintf(
-      paste("The fits also differ in %s; a changed label may come from",
-            "%s rather than the adjustment."),
+      paste("The fits also differ in %s, so a changed label may come from",
+            "%s as well as from the adjustment."),
       paste(differ, collapse = ", "),
       if (length(differ) == 1L) "that setting" else "those settings"
     ))

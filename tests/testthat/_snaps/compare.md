@@ -41,5 +41,5 @@
         y ~ s(z): shape skewed_peak -> concave_up, EDF 2.34 -> 1.00, A 0.55 -> 0.59
         z ~ s(x): shape bimodal -> warped_wave, EDF 8.22 -> 3.98, A 0.78 -> 0.60
         z ~ s(y): shape bimodal_ripple -> wave, EDF 8.01 -> 3.89, A 0.55 -> 0.59
-      The fits also differ in k; a changed label may come from that setting rather than the adjustment.
+      The fits also differ in k, so a changed label may come from that setting as well as from the adjustment.
 
