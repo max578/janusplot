@@ -244,8 +244,7 @@ residual-independence test of direction (`janusplot_direction()`).
   `background_by`, `annotations`, `order`, `display`, `group`,
   `focus_by`, `focus_threshold`, `axes` and `style`. Unknown names in
   `...` are an error. The non-linearity colour scale runs from 0 to the
-  observed maximum with a floor of 1, so a wholly linear matrix shows pale
-  borders.
+  observed maximum, with a floor of 1.
 * `plot()` and `janusplot()` gain `background_by` (`"pearson"`,
   `"spearman"`, `"kendall"` or `"none"`): each cell's background is tinted
   by the pair's signed correlation, white at 0 and deeper blue or red
@@ -473,6 +472,9 @@ residual-independence test of direction (`janusplot_direction()`).
   the curve and its band sit entirely on one side, so a monotone cell no
   longer loses the reference line off the panel edge.
 * `print()` on a fit or a comparison of two variables reads "1 pair".
+* The colour bars set their layout through the `theme` argument of
+  `ggplot2::guide_colourbar()`, so drawing a matrix raises no ggplot2
+  deprecation warning.
 * `DESCRIPTION` drops the `Remotes:` field, which a CRAN submission cannot
   carry. `kernR (>= 0.8.0)` stays in `Suggests:` and resolves through
   `Additional_repositories: https://max578.r-universe.dev`.
