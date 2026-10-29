@@ -1,10 +1,10 @@
 # Shape-recognition sensitivity study (package-native).
 # Public API:
-#   janusplot_shape_sensitivity_shapes()   - list canonical truths
-#   janusplot_shape_sensitivity()          - run the sweep
-#   janusplot_shape_sensitivity_summary()  - aggregate raw results
-#   janusplot_shape_sensitivity_plot()     - confusion / accuracy /
-#                                            recovery-curve plots
+#   janusplot_shape_sensitivity()    - run the sweep; returns a
+#                                      janusplot_sensitivity data frame
+#   summary.janusplot_sensitivity()  - aggregate raw results
+#   plot.janusplot_sensitivity()     - confusion / accuracy /
+#                                      recovery-curve plots
 #
 # Ground-truth generators live on x in [0, 1] with y normalised to
 # [0, 1] so sigma parameterises noise consistently across shapes
@@ -43,6 +43,18 @@
     # Two full periods, zero phase: four interior extrema.
     bi_wave      = function(x) 0.5 + 0.5 * sin(4 * pi * x)
   )
+}
+
+#' Canonical ground-truth shape names for the sensitivity study
+#'
+#' The 14 generator names in generator order; the default of the
+#' `shapes` argument of [janusplot_shape_sensitivity()] is this set.
+#'
+#' @returns Character vector of length 14.
+#' @keywords internal
+#' @noRd
+.sensitivity_shapes <- function() {
+  names(.shape_sensitivity_generators())
 }
 
 # Expected archetype per truth -- pulled from the live taxonomy so the
@@ -107,32 +119,35 @@
   )
 }
 
+# The columns the summary() and plot() methods read. Aborts naming the
+# argument when `x` is not a data frame carrying all of them.
+.check_sensitivity <- function(x, arg) {
+  needed <- c("truth", "n", "sigma", "predicted", "correct",
+              "archetype_truth", "archetype_pred", "archetype_correct")
+  if (!is.data.frame(x) || !all(needed %in% names(x))) {
+    cli::cli_abort(c(
+      "{.arg {arg}} must be a data frame from {.fn janusplot_shape_sensitivity}.",
+      i = "Required columns: {.val {needed}}."
+    ))
+  }
+  invisible(x)
+}
+
+# Mean accuracy per (truth, n, sigma) cell at the fine or archetype level.
+.sens_summarise <- function(results, level) {
+  col <- if (level == "fine") "correct" else "archetype_correct"
+  agg <- stats::aggregate(
+    as.integer(results[[col]]),
+    by  = list(truth = results$truth, n = results$n, sigma = results$sigma),
+    FUN = mean, na.rm = TRUE
+  )
+  names(agg)[ncol(agg)] <- "accuracy"
+  agg
+}
+
 # ---------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------
-
-#' Canonical ground-truth shapes for the sensitivity study
-#'
-#' @description
-#' `r lifecycle::badge("experimental")`
-#'
-#' Return the names of every canonical ground-truth shape that
-#' [janusplot_shape_sensitivity()] can simulate from. Fourteen shapes
-#' spanning five archetypes (`monotone_linear`, `monotone_curved`,
-#' `unimodal`, `wave`, `multimodal`). The `chaotic` and `degenerate`
-#' archetypes are out of scope (no realistic deterministic generator).
-#'
-#' @returns Character vector of length 14 -- the generator names.
-#'
-#' @seealso [janusplot_shape_sensitivity()], [janusplot_shape_hierarchy()].
-#'
-#' @examples
-#' janusplot_shape_sensitivity_shapes()
-#' @family shape-sensitivity
-#' @export
-janusplot_shape_sensitivity_shapes <- function() {
-  names(.shape_sensitivity_generators())
-}
 
 #' Shape-recognition sensitivity study
 #'
@@ -152,13 +167,21 @@ janusplot_shape_sensitivity_shapes <- function() {
 #'     archetype (7-family) levels.
 #' }
 #'
+#' The result is a data frame of class `janusplot_sensitivity`.
+#' `summary()` aggregates it to a per-cell accuracy table and `plot()`
+#' draws one of four diagnostics.
+#'
 #' The function is the package-native implementation of
 #' `simulation/scripts/scenario_4_shape_recognition.R`. A small
 #' precomputed dataset is shipped as [shape_sensitivity_demo] for
 #' downstream examples without requiring users to re-run the sweep.
 #'
-#' @param shapes Character vector of ground-truth names from
-#'   [janusplot_shape_sensitivity_shapes()]. Default `NULL` -> all 14.
+#' @param shapes Character vector of ground-truth shape names, any
+#'   subset of the 14 canonical shapes in the default. They span five
+#'   archetypes (`monotone_linear`, `monotone_curved`, `unimodal`,
+#'   `wave`, `multimodal`); `chaotic` and `degenerate` have no realistic
+#'   deterministic generator. The default is every shape, and `NULL` is
+#'   equivalent to the default.
 #' @param n_grid Integer vector of sample sizes. Default
 #'   `c(50L, 100L, 200L, 500L)`.
 #' @param sigma_grid Numeric vector of noise levels (fraction of the
@@ -174,7 +197,9 @@ janusplot_shape_sensitivity_shapes <- function() {
 #' @param verbose Logical. Print progress messages to the console.
 #'   Default is `interactive()`.
 #'
-#' @returns A data frame with one row per fit. Columns:
+#' @returns `janusplot_shape_sensitivity()` returns a data frame of class
+#'   `c("janusplot_sensitivity", "data.frame")` with one row per fit.
+#'   Columns:
 #' \describe{
 #'   \item{`truth`}{Ground-truth shape name.}
 #'   \item{`n`}{Sample size for this fit.}
@@ -195,9 +220,13 @@ janusplot_shape_sensitivity_shapes <- function() {
 #'     `NA` otherwise.}
 #' }
 #'
-#' @seealso [janusplot_shape_sensitivity_summary()],
-#'   [janusplot_shape_sensitivity_plot()],
-#'   [janusplot_shape_sensitivity_shapes()], [shape_sensitivity_demo].
+#' `summary()` returns a data frame with columns `truth`, `n`, `sigma`
+#' and `accuracy`, one row per cell of the design, where `accuracy` is
+#' the mean correctness at `level`.
+#'
+#' `plot()` returns a [ggplot2::ggplot] object.
+#'
+#' @seealso [shape_sensitivity_demo], [janusplot_shape_hierarchy()].
 #'
 #' @examples
 #' # Tiny-run smoke test (< 2 seconds): 3 shapes x 2 n x 2 sigma x 5 reps.
@@ -209,11 +238,19 @@ janusplot_shape_sensitivity_shapes <- function() {
 #'   verbose    = FALSE
 #' )
 #' head(res)
-#' janusplot_shape_sensitivity_summary(res, level = "archetype")
+#' summary(res, level = "archetype")
+#'
+#' # The precomputed demo carries the class, so the methods apply directly.
+#' data("shape_sensitivity_demo", package = "janusplot")
+#' head(summary(shape_sensitivity_demo, level = "archetype"))
+#' plot(shape_sensitivity_demo, "recovery_curves")
 #' @family shape-sensitivity
 #' @export
 janusplot_shape_sensitivity <- function(
-    shapes     = NULL,
+    shapes     = c("linear_up", "linear_down", "convex_up", "concave_up",
+                   "convex_down", "concave_down", "s_shape", "u_shape",
+                   "inverted_u", "skewed_peak", "broad_peak", "wave",
+                   "bimodal", "bi_wave"),
     n_grid     = c(50L, 100L, 200L, 500L),
     sigma_grid = c(0.02, 0.05, 0.10, 0.20, 0.40),
     n_rep      = 200L,
@@ -223,7 +260,7 @@ janusplot_shape_sensitivity <- function(
     verbose    = interactive()
 ) {
   generators <- .shape_sensitivity_generators()
-  all_shapes <- names(generators)
+  all_shapes <- .sensitivity_shapes()
   if (is.null(shapes)) shapes <- all_shapes
   if (!is.character(shapes) || !length(shapes)) {
     cli::cli_abort("{.arg shapes} must be a non-empty character vector.")
@@ -293,46 +330,26 @@ janusplot_shape_sensitivity <- function(
   } else {
     lapply(seq_len(total), worker)
   }
-  do.call(rbind, rows)
+  out <- do.call(rbind, rows)
+  class(out) <- c("janusplot_sensitivity", "data.frame")
+  out
 }
 
-#' Summarise a shape-sensitivity sweep
-#'
-#' @description
-#' `r lifecycle::badge("experimental")`
-#'
-#' Aggregate the raw output of [janusplot_shape_sensitivity()] into a
-#' per-cell mean-accuracy table at either the fine (27-category) or
-#' archetype (7-family) level.
-#'
-#' @param results Data frame returned by [janusplot_shape_sensitivity()].
-#' @param level One of `"fine"` (default) or `"archetype"`.
-#'
-#' @returns A data frame with columns `truth`, `n`, `sigma`, `accuracy`.
-#'
-#' @examples
-#' data("shape_sensitivity_demo", package = "janusplot")
-#' head(janusplot_shape_sensitivity_summary(shape_sensitivity_demo,
-#'                                          level = "archetype"))
-#' @family shape-sensitivity
+#' @rdname janusplot_shape_sensitivity
+#' @param object,x A `janusplot_sensitivity` data frame returned by
+#'   `janusplot_shape_sensitivity()`, or a plain data frame with the
+#'   same columns.
+#' @param level The level at which `summary()` scores correctness:
+#'   `"fine"` (default, the 27-category label) or `"archetype"` (the
+#'   7-family label).
+#' @param ... Unused; present for compatibility with the generics.
 #' @export
-janusplot_shape_sensitivity_summary <- function(
-    results, level = c("fine", "archetype")
+summary.janusplot_sensitivity <- function(
+    object, level = c("fine", "archetype"), ...
 ) {
   level <- rlang::arg_match(level)
-  col <- if (level == "fine") "correct" else "archetype_correct"
-  if (!all(c("truth", "n", "sigma", col) %in% names(results))) {
-    cli::cli_abort(
-      "{.arg results} must come from {.fn janusplot_shape_sensitivity}."
-    )
-  }
-  agg <- stats::aggregate(
-    as.integer(results[[col]]),
-    by  = list(truth = results$truth, n = results$n, sigma = results$sigma),
-    FUN = mean, na.rm = TRUE
-  )
-  names(agg)[ncol(agg)] <- "accuracy"
-  agg
+  .check_sensitivity(object, "object")
+  .sens_summarise(object, level)
 }
 
 # ---------------------------------------------------------------
@@ -401,7 +418,7 @@ janusplot_shape_sensitivity_summary <- function(
 }
 
 .sens_plot_accuracy_grid <- function(results) {
-  agg <- janusplot_shape_sensitivity_summary(results, "archetype")
+  agg <- .sens_summarise(results, "archetype")
   ggplot2::ggplot(agg, ggplot2::aes(x = factor(.data$sigma),
                                     y = factor(.data$n),
                                     fill = .data$accuracy)) +
@@ -421,7 +438,7 @@ janusplot_shape_sensitivity_summary <- function(
 }
 
 .sens_plot_recovery_curves <- function(results) {
-  agg <- janusplot_shape_sensitivity_summary(results, "archetype")
+  agg <- .sens_summarise(results, "archetype")
   ggplot2::ggplot(agg, ggplot2::aes(x = .data$sigma, y = .data$accuracy,
                                     colour = factor(.data$n))) +
     ggplot2::geom_line(linewidth = 0.6) +
@@ -441,13 +458,8 @@ janusplot_shape_sensitivity_summary <- function(
     )
 }
 
-#' Visualise a shape-sensitivity sweep
-#'
-#' @description
-#' `r lifecycle::badge("experimental")`
-#'
-#' Produce one of four diagnostic plots from the raw data frame returned
-#' by [janusplot_shape_sensitivity()]:
+#' @rdname janusplot_shape_sensitivity
+#' @param type The diagnostic `plot()` draws:
 #' \describe{
 #'   \item{`"confusion_fine"`}{27 x (|shapes|) confusion matrix at the
 #'     fine category level -- rows = ground truth, columns = predicted,
@@ -459,30 +471,19 @@ janusplot_shape_sensitivity_summary <- function(
 #'   \item{`"recovery_curves"`}{accuracy as a function of sigma,
 #'     one line per sample size, faceted by shape.}
 #' }
-#'
-#' @param results Data frame from [janusplot_shape_sensitivity()] or the
-#'   precomputed [shape_sensitivity_demo].
-#' @param type One of `"confusion_fine"`, `"confusion_archetype"`,
-#'   `"accuracy_grid"`, or `"recovery_curves"`.
-#'
-#' @returns A [ggplot2::ggplot] object.
-#'
-#' @examples
-#' data("shape_sensitivity_demo", package = "janusplot")
-#' janusplot_shape_sensitivity_plot(shape_sensitivity_demo,
-#'                                  "recovery_curves")
-#' @family shape-sensitivity
 #' @export
-janusplot_shape_sensitivity_plot <- function(
-    results,
+plot.janusplot_sensitivity <- function(
+    x,
     type = c("confusion_fine", "confusion_archetype",
-             "accuracy_grid", "recovery_curves")
+             "accuracy_grid", "recovery_curves"),
+    ...
 ) {
   type <- rlang::arg_match(type)
+  .check_sensitivity(x, "x")
   switch(type,
-    confusion_fine      = .sens_plot_confusion_fine(results),
-    confusion_archetype = .sens_plot_confusion_archetype(results),
-    accuracy_grid       = .sens_plot_accuracy_grid(results),
-    recovery_curves     = .sens_plot_recovery_curves(results)
+    confusion_fine      = .sens_plot_confusion_fine(x),
+    confusion_archetype = .sens_plot_confusion_archetype(x),
+    accuracy_grid       = .sens_plot_accuracy_grid(x),
+    recovery_curves     = .sens_plot_recovery_curves(x)
   )
 }

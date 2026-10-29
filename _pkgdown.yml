@@ -69,9 +69,6 @@ reference:
       precomputed demo sweep and four diagnostic plots.
     contents:
       - janusplot_shape_sensitivity
-      - janusplot_shape_sensitivity_shapes
-      - janusplot_shape_sensitivity_summary
-      - janusplot_shape_sensitivity_plot
       - shape_sensitivity_demo
 
 authors:

@@ -59,7 +59,7 @@ janusplot_shape_cutoffs <- function(...) {
                           c("mono_nonmono", "mono_s", "curv_strong"))
   for (nm in deprecated) {
     lifecycle::deprecate_warn(
-      when    = "0.2.1",
+      when    = "1.0.0",
       what    = I(paste0("The `", nm, "` cutoff")),
       details = "The shape classifier never used it; it is ignored."
     )

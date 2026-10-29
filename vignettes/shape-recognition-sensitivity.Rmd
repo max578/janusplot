@@ -45,13 +45,14 @@ The design factors are orthogonal and replicated. See
 `?janusplot_shape_sensitivity` for the function surface. The 14
 canonical ground-truth shapes cover five of the seven archetypes
 (`chaotic` and `degenerate` have no realistic deterministic
-generator).
+generator). They are the default of the runner's `shapes` argument,
+and any subset of them can be named.
 
 ```{r setup-pkg}
 library(janusplot)
 library(ggplot2)
 
-janusplot_shape_sensitivity_shapes()
+eval(formals(janusplot_shape_sensitivity)$shapes)
 ```
 
 ## Pre-registered hypotheses
@@ -99,7 +100,9 @@ The package ships a small-footprint precomputed sweep -- 6 shapes
 across 5 of the 7 archetypes (`u_shape` and `inverted_u` both roll
 up to `unimodal`) × 3 sample sizes × 4 noise levels × 30 replicates
 = 2160 fits -- so you can explore the API without running the full
-sweep yourself.
+sweep yourself. It is a `janusplot_sensitivity` data frame, the
+class the runner returns, so `summary()` and `plot()` apply to it
+directly.
 
 ```{r demo-data}
 data("shape_sensitivity_demo")
@@ -109,8 +112,7 @@ str(shape_sensitivity_demo, vec.len = 2)
 ### Recovery curves (headline figure)
 
 ```{r recovery-curves, fig.cap = "Archetype-recovery accuracy against noise level (sigma) for each of the six ground-truth shapes, at each of the three sample sizes.", fig.alt = "Line plot of archetype-recovery accuracy versus sigma, one line per shape, faceted or coloured by sample size; five lines stay high across the noise range and one (linear_up) sits near 0.7 throughout."}
-janusplot_shape_sensitivity_plot(shape_sensitivity_demo,
-                                 "recovery_curves")
+plot(shape_sensitivity_demo, "recovery_curves")
 ```
 
 Five of the six shapes are recovered well across the whole noise
@@ -125,8 +127,7 @@ curve is flat and mediocre rather than a high-noise-tolerance decay.
 ### Archetype confusion
 
 ```{r archetype-confusion, fig.width = 6, fig.height = 5, fig.cap = "Confusion matrix of true archetype (rows) against predicted archetype (columns), pooled across all n, sigma and replicates in the demo.", fig.alt = "Archetype confusion matrix with true archetypes on the rows and predicted archetypes on the columns; nearly all mass sits on the diagonal, and linear_up truth splits between monotone_linear and monotone_curved."}
-janusplot_shape_sensitivity_plot(shape_sensitivity_demo,
-                                 "confusion_archetype")
+plot(shape_sensitivity_demo, "confusion_archetype")
 ```
 
 One off-diagonal pattern dominates here. `linear_up` lands in
@@ -139,8 +140,7 @@ noise and are labelled `unimodal`.
 ### Archetype-level accuracy grid
 
 ```{r accuracy-grid, fig.cap = "Heatmap of archetype-recovery accuracy across the full (n, sigma) design, one panel per shape.", fig.alt = "Grid of heatmap panels, one per ground-truth shape, with sample size on one axis and noise level on the other, cells shaded by archetype-recovery accuracy; five panels are dark (high accuracy) with lighter cells at the highest noise level, and the linear_up panel is uniformly mid-toned."}
-janusplot_shape_sensitivity_plot(shape_sensitivity_demo,
-                                 "accuracy_grid")
+plot(shape_sensitivity_demo, "accuracy_grid")
 ```
 
 Per-shape heatmap of `P(archetype correct)` across the `(n, sigma)`
@@ -151,8 +151,7 @@ sensitivity at one noise level.
 ### Numerical summary
 
 ```{r summary}
-head(janusplot_shape_sensitivity_summary(shape_sensitivity_demo,
-                                         level = "archetype"), 10)
+head(summary(shape_sensitivity_demo, level = "archetype"), 10)
 ```
 
 ## Running your own sweep
@@ -169,7 +168,7 @@ res <- janusplot_shape_sensitivity(parallel = TRUE)
 
 # Save for your paper
 saveRDS(res, "shape_sensitivity_full.rds")
-janusplot_shape_sensitivity_plot(res, "recovery_curves")
+plot(res, "recovery_curves")
 ```
 
 ### Custom shape subsets + cutoffs
@@ -195,7 +194,7 @@ res_strict <- janusplot_shape_sensitivity(
   cutoffs    = strict
 )
 
-janusplot_shape_sensitivity_summary(res_strict, level = "fine")
+summary(res_strict, level = "fine")
 ```
 
 ## References

@@ -1,7 +1,7 @@
 Package: janusplot
 Type: Package
 Title: Asymmetric Smoothed-Association Matrices via GAM Fits
-Version: 0.2.0
+Version: 1.0.0
 Authors@R: c(
     person("Max", "Moldovan", , "max.moldovan@adelaide.edu.au",
            role = c("aut", "cre", "cph"),
@@ -15,7 +15,7 @@ Description: Render a pairwise, asymmetric smoothed-association matrix
     visualisation is intentionally asymmetric, revealing
     heteroscedasticity, leverage, and directional non-linearity that
     a single scalar correlation hides. An asymmetry index and a
-    24-category shape taxonomy quantify the directional difference
+    27-category shape taxonomy quantify the directional difference
     and qualitative form of each fitted smooth.
 License: MIT + file LICENSE
 URL: https://github.com/max578/janusplot,
@@ -48,8 +48,6 @@ Suggests:
     testthat (>= 3.0.0),
     vdiffr (>= 1.0.0),
     withr
-Remotes:
-    max578/kernR
 Additional_repositories: https://max578.r-universe.dev
 VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE, roclets = c("rd", "namespace", "collate"))

@@ -2,10 +2,14 @@
 % Please edit documentation in R/shape-sensitivity.R
 \name{janusplot_shape_sensitivity}
 \alias{janusplot_shape_sensitivity}
+\alias{summary.janusplot_sensitivity}
+\alias{plot.janusplot_sensitivity}
 \title{Shape-recognition sensitivity study}
 \usage{
 janusplot_shape_sensitivity(
-  shapes = NULL,
+  shapes = c("linear_up", "linear_down", "convex_up", "concave_up", "convex_down",
+    "concave_down", "s_shape", "u_shape", "inverted_u", "skewed_peak", "broad_peak",
+    "wave", "bimodal", "bi_wave"),
   n_grid = c(50L, 100L, 200L, 500L),
   sigma_grid = c(0.02, 0.05, 0.1, 0.2, 0.4),
   n_rep = 200L,
@@ -14,10 +18,22 @@ janusplot_shape_sensitivity(
   seed = 2026L,
   verbose = interactive()
 )
+
+\method{summary}{janusplot_sensitivity}(object, level = c("fine", "archetype"), ...)
+
+\method{plot}{janusplot_sensitivity}(
+  x,
+  type = c("confusion_fine", "confusion_archetype", "accuracy_grid", "recovery_curves"),
+  ...
+)
 }
 \arguments{
-\item{shapes}{Character vector of ground-truth names from
-\code{\link[=janusplot_shape_sensitivity_shapes]{janusplot_shape_sensitivity_shapes()}}. Default \code{NULL} -> all 14.}
+\item{shapes}{Character vector of ground-truth shape names, any
+subset of the 14 canonical shapes in the default. They span five
+archetypes (\code{monotone_linear}, \code{monotone_curved}, \code{unimodal},
+\code{wave}, \code{multimodal}); \code{chaotic} and \code{degenerate} have no realistic
+deterministic generator. The default is every shape, and \code{NULL} is
+equivalent to the default.}
 
 \item{n_grid}{Integer vector of sample sizes. Default
 \code{c(50L, 100L, 200L, 500L)}.}
@@ -39,9 +55,34 @@ so results are reproducible and cell-permutation-invariant.}
 
 \item{verbose}{Logical. Print progress messages to the console.
 Default is \code{interactive()}.}
+
+\item{object, x}{A \code{janusplot_sensitivity} data frame returned by
+\code{janusplot_shape_sensitivity()}, or a plain data frame with the
+same columns.}
+
+\item{level}{The level at which \code{summary()} scores correctness:
+\code{"fine"} (default, the 27-category label) or \code{"archetype"} (the
+7-family label).}
+
+\item{...}{Unused; present for compatibility with the generics.}
+
+\item{type}{The diagnostic \code{plot()} draws:
+\describe{
+\item{\code{"confusion_fine"}}{27 x (|shapes|) confusion matrix at the
+fine category level -- rows = ground truth, columns = predicted,
+cells coloured by \code{P(pred | truth)}.}
+\item{\code{"confusion_archetype"}}{7 x 7 confusion matrix at the
+archetype level.}
+\item{\code{"accuracy_grid"}}{per-shape heatmap of archetype-level
+accuracy across the \verb{(n, sigma)} design.}
+\item{\code{"recovery_curves"}}{accuracy as a function of sigma,
+one line per sample size, faceted by shape.}
+}}
 }
 \value{
-A data frame with one row per fit. Columns:
+\code{janusplot_shape_sensitivity()} returns a data frame of class
+\code{c("janusplot_sensitivity", "data.frame")} with one row per fit.
+Columns:
 \describe{
 \item{\code{truth}}{Ground-truth shape name.}
 \item{\code{n}}{Sample size for this fit.}
@@ -61,6 +102,12 @@ inflection counts.}
 \item{\code{error}}{\code{"gam_fit_failed"} when \code{mgcv::gam()} errored;
 \code{NA} otherwise.}
 }
+
+\code{summary()} returns a data frame with columns \code{truth}, \code{n}, \code{sigma}
+and \code{accuracy}, one row per cell of the design, where \code{accuracy} is
+the mean correctness at \code{level}.
+
+\code{plot()} returns a \link[ggplot2:ggplot]{ggplot2::ggplot} object.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
@@ -78,6 +125,10 @@ y-range, so signal-to-noise is comparable across shapes).
 archetype (7-family) levels.
 }
 
+The result is a data frame of class \code{janusplot_sensitivity}.
+\code{summary()} aggregates it to a per-cell accuracy table and \code{plot()}
+draws one of four diagnostics.
+
 The function is the package-native implementation of
 \code{simulation/scripts/scenario_4_shape_recognition.R}. A small
 precomputed dataset is shipped as \link{shape_sensitivity_demo} for
@@ -93,16 +144,14 @@ res <- janusplot_shape_sensitivity(
   verbose    = FALSE
 )
 head(res)
-janusplot_shape_sensitivity_summary(res, level = "archetype")
+summary(res, level = "archetype")
+
+# The precomputed demo carries the class, so the methods apply directly.
+data("shape_sensitivity_demo", package = "janusplot")
+head(summary(shape_sensitivity_demo, level = "archetype"))
+plot(shape_sensitivity_demo, "recovery_curves")
 }
 \seealso{
-\code{\link[=janusplot_shape_sensitivity_summary]{janusplot_shape_sensitivity_summary()}},
-\code{\link[=janusplot_shape_sensitivity_plot]{janusplot_shape_sensitivity_plot()}},
-\code{\link[=janusplot_shape_sensitivity_shapes]{janusplot_shape_sensitivity_shapes()}}, \link{shape_sensitivity_demo}.
-
-Other shape-sensitivity:
-\code{\link[=janusplot_shape_sensitivity_plot]{janusplot_shape_sensitivity_plot()}},
-\code{\link[=janusplot_shape_sensitivity_shapes]{janusplot_shape_sensitivity_shapes()}},
-\code{\link[=janusplot_shape_sensitivity_summary]{janusplot_shape_sensitivity_summary()}}
+\link{shape_sensitivity_demo}, \code{\link[=janusplot_shape_hierarchy]{janusplot_shape_hierarchy()}}.
 }
 \concept{shape-sensitivity}
