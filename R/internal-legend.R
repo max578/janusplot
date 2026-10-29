@@ -27,9 +27,12 @@
   thumbs <- do.call(rbind, rows)
   # Panel strip: `label (code)` -- keeps the compact 2-letter code
   # visible next to the long name so readers can cross-reference
-  # cells that render the code.
+  # cells that render the code. Labels past 18 characters put the code
+  # on a second line; on one line they overrun a sixth of a 170 mm page.
   panel_label <- paste0(
-    tax$label, " (", tax$code, ")"
+    tax$label,
+    ifelse(nchar(tax$label) + nchar(tax$code) + 3L > 18L, "\n(", " ("),
+    tax$code, ")"
   )
   names(panel_label) <- tax$category
   thumbs$panel <- panel_label[thumbs$category]
