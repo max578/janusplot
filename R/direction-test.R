@@ -148,7 +148,7 @@
 #'
 #' Both directions are fitted with [mgcv::gam()]. A fit made with
 #' `engine = "gam"` passes its `method`; a fit made with `engine = "bam"`
-#' carries a [mgcv::bam()] method such as `"fREML"`, so the test uses the
+#' carries a [mgcv::bam()] method (`"fREML"` by default), so the test uses the
 #' [mgcv::gam()] default `"REML"` instead. The method used is returned as
 #' `method`.
 #'

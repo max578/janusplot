@@ -150,7 +150,7 @@ draws.
 
 Both directions are fitted with \code{\link[mgcv:gam]{mgcv::gam()}}. A fit made with
 \code{engine = "gam"} passes its \code{method}; a fit made with \code{engine = "bam"}
-carries a \code{\link[mgcv:bam]{mgcv::bam()}} method such as \code{"fREML"}, so the test uses the
+carries a \code{\link[mgcv:bam]{mgcv::bam()}} method (\code{"fREML"} by default), so the test uses the
 \code{\link[mgcv:gam]{mgcv::gam()}} default \code{"REML"} instead. The method used is returned as
 \code{method}.
 
