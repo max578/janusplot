@@ -76,9 +76,9 @@ metric falls below \code{focus_threshold} are washed in grey at
 \code{style$focus_dim_alpha}; the matrix keeps its shape. A visual filter
 only; the fit and its table are unchanged.}
 
-\item{focus_threshold}{A quantile string such as \code{"q90"} (the default,
-taken over the off-diagonal cells) or a single numeric cutoff.
-Ignored when \code{focus_by} is \code{NA}.}
+\item{focus_threshold}{A quantile string, \code{"q90"} by default (taken over
+the off-diagonal cells), or a single numeric cutoff. Ignored when
+\code{focus_by} is \code{NA}.}
 
 \item{axes}{Scale of the drawn axes: \code{"original"} (the default),
 \code{"standardised"} (\code{(x - mean) / sd} per variable, border label

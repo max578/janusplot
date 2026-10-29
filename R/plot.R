@@ -61,9 +61,9 @@
 #'   metric falls below `focus_threshold` are washed in grey at
 #'   `style$focus_dim_alpha`; the matrix keeps its shape. A visual filter
 #'   only; the fit and its table are unchanged.
-#' @param focus_threshold A quantile string such as `"q90"` (the default,
-#'   taken over the off-diagonal cells) or a single numeric cutoff.
-#'   Ignored when `focus_by` is `NA`.
+#' @param focus_threshold A quantile string, `"q90"` by default (taken over
+#'   the off-diagonal cells), or a single numeric cutoff. Ignored when
+#'   `focus_by` is `NA`.
 #' @param axes Scale of the drawn axes: `"original"` (the default),
 #'   `"standardised"` (`(x - mean) / sd` per variable, border label
 #'   `"var (z)"`), `"centred"` (`x - mean`, label `"var (centred)"`) or
