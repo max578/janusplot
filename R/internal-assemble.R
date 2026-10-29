@@ -63,6 +63,12 @@
     } else {
       1.6 * cm
     }
+    # The left strip also holds the longest row label, estimated at 0.55
+    # em per character.
+    if (!is.na(text_pt$labels)) {
+      label_chars <- max(nchar(vapply(vars, display_label, character(1L))))
+      strip_w <- max(strip_w, label_chars * 0.55 * text_pt$labels + 6)
+    }
     if (!is.na(key_pt) && k >= 2L) {
       key <- .key_layout(vars, key_pt)
       strip_w <- max(strip_w, key$width + 6)

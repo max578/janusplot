@@ -72,6 +72,18 @@ test_that("enumerated arguments are matched", {
   expect_error(janusplot_style(palette = "not_a_palette"), "must be one of")
 })
 
+test_that("show_shape_legend defaults to auto and accepts TRUE or FALSE", {
+  expect_identical(janusplot_style()$show_shape_legend, "auto")
+  expect_identical(janusplot_style(show_shape_legend = TRUE)$show_shape_legend,
+                   TRUE)
+  expect_error(janusplot_style(show_shape_legend = "always"), "auto")
+  resolve <- janusplot:::.resolve_shape_legend
+  expect_false(resolve("auto", c("A", "signif")))
+  expect_true(resolve("auto", c("code", "signif")))
+  expect_false(resolve(FALSE, "code"))
+  expect_true(resolve(TRUE, character()))
+})
+
 test_that("logical flags must be a single TRUE or FALSE", {
   for (nm in c("show_data", "show_ci", "show_shape_legend", "show_glossary",
                "show_key", "pair_background")) {

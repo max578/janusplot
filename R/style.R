@@ -108,8 +108,10 @@
 #'   `"density"` draws a kernel density with a rug of the raw values.
 #' @param glyph_style `"ascii"` (the default) or `"unicode"` for the shape
 #'   glyphs, the derivative order labels and the k-check warning sign.
-#' @param show_shape_legend Logical. `TRUE` (the default) attaches the
-#'   shape-categories legend below the matrix.
+#' @param show_shape_legend `"auto"` (the default) attaches the
+#'   shape-categories legend below the matrix when the cells carry the
+#'   two-letter shape code it decodes (`annotations` includes `"code"`);
+#'   `TRUE` always attaches it, `FALSE` never.
 #' @param show_glossary Logical. `TRUE` (the default) attaches a caption
 #'   describing the abbreviations and encodings on the plot.
 #' @param show_key Logical. `TRUE` (the default) draws in the top-left
@@ -181,7 +183,7 @@ janusplot_style <- function(
   label_srt = 45,
   diagonal = c("auto", "blank", "name", "density"),
   glyph_style = c("ascii", "unicode"),
-  show_shape_legend = TRUE,
+  show_shape_legend = "auto",
   show_glossary = TRUE,
   show_key = TRUE,
   pair_background = TRUE,
@@ -204,7 +206,7 @@ janusplot_style <- function(
   .check_strength(background_strength)
   .check_flag(show_data, "show_data")
   .check_flag(show_ci, "show_ci")
-  .check_flag(show_shape_legend, "show_shape_legend")
+  .check_flag_or_auto(show_shape_legend, "show_shape_legend")
   .check_flag(show_glossary, "show_glossary")
   .check_flag(show_key, "show_key")
   .check_flag(pair_background, "pair_background")
@@ -290,6 +292,15 @@ print.janusplot_style <- function(x, ...) {
 # ---------------------------------------------------------------
 
 # NULL, or one of the supported palette names.
+.check_flag_or_auto <- function(x, arg_name, call = rlang::caller_env()) {
+  if (identical(x, "auto")) return(invisible(NULL))
+  if (!is.logical(x) || length(x) != 1L || is.na(x)) {
+    cli::cli_abort("{.arg {arg_name}} must be {.val auto}, TRUE or FALSE.",
+                   call = call)
+  }
+  invisible(NULL)
+}
+
 .check_palette <- function(palette, call = rlang::caller_env()) {
   if (is.null(palette)) return(NULL)
   rlang::arg_match(palette, .palette_choices(), error_call = call)

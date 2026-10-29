@@ -92,6 +92,20 @@ test_that("fill_by, show_asymmetry and signif_glyph map to the view arguments", 
                                             "TRUE or FALSE"))
 })
 
+test_that("the 0.2.0 flags edit the 0.2.0 set when annotations is NULL", {
+  shim_null <- function(...) {
+    janusplot:::.shim_legacy_args(
+      list(...), style = janusplot_style(), colour_by = "nonlinearity",
+      annotations = NULL
+    )
+  }
+  expect_null(shim_null()$view_args$annotations)
+  lifecycle::expect_deprecated(out <- shim_null(show_asymmetry = FALSE))
+  expect_identical(out$view_args$annotations, "signif")
+  lifecycle::expect_deprecated(out <- shim_null(signif_glyph = FALSE))
+  expect_identical(out$view_args$annotations, "A")
+})
+
 test_that("model arguments pass through to janusplot_fit() without a warning", {
   expect_no_warning(
     out <- shim(method = "GCV.Cp", k = 5L, engine = "gam",

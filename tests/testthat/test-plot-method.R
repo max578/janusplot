@@ -96,6 +96,35 @@ test_that("annotations accept the seven names and reject others", {
   expect_error(plot(fit, annotations = 1L), "character vector")
 })
 
+test_that("the default annotations drop A from eight variables", {
+  expect_identical(janusplot:::.default_annotations(7L), c("A", "signif"))
+  expect_identical(janusplot:::.default_annotations(8L), "signif")
+  withr::local_seed(2026L)
+  d <- as.data.frame(matrix(stats::rnorm(60L * 8L), 60L, 8L))
+  names(d) <- paste0("x", 1:8)
+  glossary <- function(p) p$patches$annotation$caption
+  expect_match(glossary(plot(fit_two(d, vars = names(d)[1:3]))),
+               "A = asymmetry index")
+  fit8 <- fit_two(d, vars = names(d))
+  expect_no_match(glossary(plot(fit8)), "A = asymmetry index")
+  expect_match(glossary(plot(fit8, annotations = c("A", "signif"))),
+               "A = asymmetry index")
+})
+
+test_that("the shape legend is attached by default only with the shape code", {
+  fit <- fit_two(make_nonlinear_data(n = 100L))
+  has_legend <- function(p) {
+    identical(ggplot2::get_labs(p)$title, "Shape categories")
+  }
+  expect_false(has_legend(plot(fit)))
+  expect_true(has_legend(plot(fit, annotations = c("code", "signif"))))
+  expect_true(has_legend(plot(fit, style = janusplot_style(
+    show_shape_legend = TRUE
+  ))))
+  expect_false(has_legend(plot(fit, annotations = "code",
+    style = janusplot_style(show_shape_legend = FALSE))))
+})
+
 test_that("display = 'd1' / 'd2' need the order in the fit", {
   d <- make_nonlinear_data(n = 100L)
   fit <- fit_two(d)
@@ -403,12 +432,13 @@ test_that("the corner key shows the first two variables", {
   labels <- key$layers[[2L]]$data$label
   expect_identical(labels[1L], "each cell:\nrow ~ s(column)")
   expect_true(all(c("x1 ~\ns(x2)", "x2 ~\ns(x1)") %in% labels))
-  # Long names are cut with an ellipsis.
-  expect_identical(janusplot:::.truncate_name("Solar.R"), "Solar.R")
-  expect_identical(janusplot:::.truncate_name("total sulfur dioxide"),
-                   paste0("total", intToUtf8(8230L)))
-  expect_identical(janusplot:::.truncate_name("fixed acidity"),
-                   paste0("fixed", intToUtf8(8230L)))
+  # A name past seven characters turns the key generic.
+  expect_identical(janusplot:::.key_names(c("Solar.R", "Ozone")),
+                   c("Solar.R", "Ozone"))
+  expect_identical(janusplot:::.key_names(c("fixed acidity", "pH")),
+                   c("v1", "v2"))
+  expect_identical(janusplot:::.key_names(c("pH", "total sulfur dioxide")),
+                   c("v1", "v2"))
   # show_key = FALSE leaves the corner empty.
   plain <- matrix_grid(plot(fit, style = janusplot_style(
     show_key = FALSE, show_shape_legend = FALSE

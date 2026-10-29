@@ -10,7 +10,7 @@ janusplot(
   adjust = NULL,
   colour_by = "nonlinearity",
   background_by = "pearson",
-  annotations = c("A", "signif"),
+  annotations = NULL,
   order = "original",
   display = "fit",
   group = NULL,
@@ -62,7 +62,10 @@ two-letter shape code, the shape glyph, a warning sign on cells
 flagged by the k-check or capped at the distinct predictor count, the
 rows used, the \code{background_by} correlation of the pair (Pearson when
 \code{background_by = "none"}), printed \code{"r -0.03"}, and the cell's formula,
-printed \code{Temp ~ Ozone}. Default \code{c("A", "signif")}.}
+printed \code{Temp ~ Ozone}. \code{NULL} (the default) picks by matrix size:
+\code{c("A", "signif")} below eight variables, \code{"signif"} from eight,
+where the automatic strip text is at its 5-point floor;
+\code{character()} writes none.}
 
 \item{order}{Order of the variables in the matrix: \code{"original"} (the
 default, the order of \code{x$vars}), \code{"hclust"} (hierarchical clustering

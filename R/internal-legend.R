@@ -3,6 +3,13 @@
 # canonical 1-cm thumbnail splines. Font-independent, publication-
 # ready. Attached below the matrix at full width.
 
+# "auto" attaches the legend only when the cells carry the shape code it
+# decodes.
+.resolve_shape_legend <- function(show_shape_legend, annotations) {
+  if (identical(show_shape_legend, "auto")) return("code" %in% annotations)
+  show_shape_legend
+}
+
 # Build the complete shape-categories legend plot. Renders all rows of
 # .shape_taxonomy() so the plate doubles as a stable reference key
 # readers can navigate back to regardless of which categories appear

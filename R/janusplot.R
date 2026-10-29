@@ -103,7 +103,7 @@ janusplot <- function(
   adjust = NULL,
   colour_by = "nonlinearity",
   background_by = "pearson",
-  annotations = c("A", "signif"),
+  annotations = NULL,
   order = "original",
   display = "fit",
   group = NULL,
@@ -253,6 +253,12 @@ janusplot <- function(
   if ("fill_by" %in% nms) {
     warn("fill_by", with = "janusplot(colour_by = )")
     colour_by <- dots$fill_by
+  }
+  # The two 0.2.0 flags edited the 0.2.0 set, which the size-based
+  # default replaces.
+  if (is.null(annotations) &&
+      any(c("show_asymmetry", "signif_glyph") %in% nms)) {
+    annotations <- c("A", "signif")
   }
   if ("show_asymmetry" %in% nms) {
     warn("show_asymmetry", with = "janusplot(annotations = )")

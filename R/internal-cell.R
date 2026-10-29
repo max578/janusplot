@@ -1266,25 +1266,26 @@
 # Corner key: a two-by-two schematic of the first two variables in the
 # empty top-left corner, headed "each cell: row ~ s(column)". The
 # off-diagonal boxes carry the formula on two lines, the diagonal boxes
-# are grey. Names longer than .key_name_chars() are cut with an
-# ellipsis. Sizes are in points, with text width estimated at 0.5 em per
-# character; the assembly sizes the corner from .key_layout().
+# are grey. When either name is longer than .key_name_chars() the key
+# reads v1 and v2, since a cut name tells the reader nothing. Sizes are
+# in points, with text width estimated at 0.5 em per character; the
+# assembly sizes the corner from .key_layout().
 # ---------------------------------------------------------------
 
 .key_name_chars <- function() 7L
 
 .key_heading <- function() "each cell:\nrow ~ s(column)"
 
-.truncate_name <- function(name, max_chars = .key_name_chars()) {
-  if (nchar(name) <= max_chars) return(name)
-  paste0(trimws(substr(name, 1L, max_chars - 1L), which = "right"),
-         intToUtf8(8230L))
+.key_names <- function(vars, max_chars = .key_name_chars()) {
+  ab <- c(vars[[1L]], vars[[2L]])
+  if (any(nchar(ab) > max_chars)) c("v1", "v2") else ab
 }
 
-# The truncated names and the geometry of the key at `key_pt`, in points.
+# The key names and the geometry of the key at `key_pt`, in points.
 .key_layout <- function(vars, key_pt) {
-  a <- .truncate_name(vars[[1L]])
-  b <- .truncate_name(vars[[2L]])
+  ab <- .key_names(vars)
+  a <- ab[[1L]]
+  b <- ab[[2L]]
   em <- 0.5 * key_pt
   line <- 1.2 * key_pt
   row_w <- max(nchar(c(a, b))) * em + 0.5 * key_pt

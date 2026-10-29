@@ -26,7 +26,7 @@ janusplot_style(
   label_srt = 45,
   diagonal = c("auto", "blank", "name", "density"),
   glyph_style = c("ascii", "unicode"),
-  show_shape_legend = TRUE,
+  show_shape_legend = "auto",
   show_glossary = TRUE,
   show_key = TRUE,
   pair_background = TRUE,
@@ -120,8 +120,10 @@ and \code{"blank"} leave them empty, \code{"name"} writes the variable name,
 \item{glyph_style}{\code{"ascii"} (the default) or \code{"unicode"} for the shape
 glyphs, the derivative order labels and the k-check warning sign.}
 
-\item{show_shape_legend}{Logical. \code{TRUE} (the default) attaches the
-shape-categories legend below the matrix.}
+\item{show_shape_legend}{\code{"auto"} (the default) attaches the
+shape-categories legend below the matrix when the cells carry the
+two-letter shape code it decodes (\code{annotations} includes \code{"code"});
+\code{TRUE} always attaches it, \code{FALSE} never.}
 
 \item{show_glossary}{Logical. \code{TRUE} (the default) attaches a caption
 describing the abbreviations and encodings on the plot.}

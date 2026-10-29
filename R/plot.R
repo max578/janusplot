@@ -57,7 +57,10 @@
 #'   flagged by the k-check or capped at the distinct predictor count, the
 #'   rows used, the `background_by` correlation of the pair (Pearson when
 #'   `background_by = "none"`), printed `"r -0.03"`, and the cell's formula,
-#'   printed `Temp ~ Ozone`. Default `c("A", "signif")`.
+#'   printed `Temp ~ Ozone`. `NULL` (the default) picks by matrix size:
+#'   `c("A", "signif")` below eight variables, `"signif"` from eight,
+#'   where the automatic strip text is at its 5-point floor;
+#'   `character()` writes none.
 #' @param order Order of the variables in the matrix: `"original"` (the
 #'   default, the order of `x$vars`), `"hclust"` (hierarchical clustering
 #'   of absolute Pearson correlations) or `"alphabetical"`. Drawing only;
@@ -96,6 +99,7 @@
 #'   `background_by` is not `"none"`, the group legend when `group` is
 #'   given,
 #'   the shape-categories legend when `style$show_shape_legend` is `TRUE`,
+#'   or `"auto"` and `annotations` include `"code"`,
 #'   a title naming the displayed quantity and the glossary caption when
 #'   `style$show_glossary` is `TRUE`.
 #'
@@ -126,7 +130,7 @@ plot.janusplot_fit <- function(
   colour_by = c("nonlinearity", "asymmetry", "pearson", "spearman", "kendall",
                 "deviance_gap", "none"),
   background_by = c("pearson", "spearman", "kendall", "none"),
-  annotations = c("A", "signif"),
+  annotations = NULL,
   order = c("original", "hclust", "alphabetical"),
   display = c("fit", "d1", "d2"),
   group = NULL,
@@ -157,6 +161,7 @@ plot.janusplot_fit <- function(
     alphabetical = sort(x$vars)
   )
   k_n <- length(vars)
+  annotations <- annotations %||% .default_annotations(k_n)
   tier <- .compact_tier(
     k_n, compact = style$compact,
     compact_threshold = style$compact_threshold,
@@ -229,7 +234,8 @@ plot.janusplot_fit <- function(
                                         text_sizes = text_sizes)
     )
   })
-  shape_legend_plot <- if (isTRUE(style$show_shape_legend)) {
+  shape_legend_plot <- if (.resolve_shape_legend(style$show_shape_legend,
+                                                 annotations)) {
     .build_shape_legend_plot(text_pt = text_sizes$pt$legend,
                              family = style$base_family)
   } else {
@@ -326,6 +332,13 @@ plot.janusplot_fit <- function(
   c("A", "edf", "signif", "code", "shape", "k_warn", "n", "r", "formula")
 }
 
+# From eight variables the automatic strip text sits at its 5-point
+# floor, so the default strip keeps the significance glyph alone; A stays
+# in summary().
+.default_annotations <- function(k) {
+  if (k >= 8L) "signif" else c("A", "signif")
+}
+
 # The background and the whole-cell colour wash paint the same area.
 .check_background_channel <- function(background_by, colour_channel,
                                       call = rlang::caller_env()) {
@@ -342,6 +355,7 @@ plot.janusplot_fit <- function(
 }
 
 .check_annotations <- function(annotations, call = rlang::caller_env()) {
+  if (is.null(annotations)) return(NULL)
   choices <- .annotation_choices()
   if (!is.character(annotations)) {
     cli::cli_abort(

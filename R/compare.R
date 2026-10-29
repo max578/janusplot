@@ -306,7 +306,8 @@ print.janusplot_compare <- function(x, ...) {
 #' @returns A [patchwork][patchwork::patchwork-package] object, which is a
 #'   ggplot: the matrix with its border labels, the group legend when
 #'   `group` is given, the shape-categories legend when
-#'   `style$show_shape_legend` is `TRUE`, a title naming the two fits and
+#'   `style$show_shape_legend` is `TRUE` (`"auto"` leaves it off: the
+#'   compare cells carry no shape code), a title naming the two fits and
 #'   the key caption when `style$show_glossary` is `TRUE`.
 #'
 #' @family smooth-associations
@@ -398,7 +399,8 @@ plot.janusplot_compare <- function(
                                         text_sizes = text_sizes)
     )
   })
-  shape_legend_plot <- if (isTRUE(style$show_shape_legend)) {
+  shape_legend_plot <- if (.resolve_shape_legend(style$show_shape_legend,
+                                                 character())) {
     .build_shape_legend_plot(text_pt = text_sizes$pt$legend,
                              family = style$base_family)
   } else {

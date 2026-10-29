@@ -37,7 +37,8 @@ in \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}}.}
 A \link[patchwork:patchwork-package]{patchwork} object, which is a
 ggplot: the matrix with its border labels, the group legend when
 \code{group} is given, the shape-categories legend when
-\code{style$show_shape_legend} is \code{TRUE}, a title naming the two fits and
+\code{style$show_shape_legend} is \code{TRUE} (\code{"auto"} leaves it off: the
+compare cells carry no shape code), a title naming the two fits and
 the key caption when \code{style$show_glossary} is \code{TRUE}.
 }
 \description{
