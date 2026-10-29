@@ -335,13 +335,15 @@
 # Character and logical adjust variables make mgcv fail on model-frame
 # construction; coerce them to factor so fixed and random-effect terms
 # both work.
-.coerce_adjust_factors <- function(data, vars, adjust, map = NULL) {
+.coerce_adjust_factors <- function(data, vars, adjust, map = NULL,
+                                   quiet = FALSE) {
   adj <- setdiff(intersect(.adjust_vars(adjust), names(data)), vars)
   to_coerce <- adj[vapply(data[adj], function(col) {
     is.character(col) || is.logical(col)
   }, logical(1L))]
   if (!length(to_coerce)) return(data)
   for (nm in to_coerce) data[[nm]] <- factor(data[[nm]])
+  if (quiet) return(data)
   coerced <- .original_names(to_coerce, map)                  # nolint: object_usage_linter.
   cli::cli_inform(c(
     i = "Converted character or logical {.arg adjust} column{?s} {.val {coerced}} to factor."
@@ -351,7 +353,7 @@
 
 # mgcv fails on +/-Inf; treat them as missing so pairwise or listwise
 # deletion removes them and n_used counts only finite rows.
-.drop_infinite <- function(data, vars, adjust, map = NULL) {
+.drop_infinite <- function(data, vars, adjust, map = NULL, quiet = FALSE) {
   cols <- intersect(unique(c(vars, .adjust_vars(adjust))), names(data))
   cols <- cols[vapply(data[cols], is.numeric, logical(1L))]
   n_inf <- vapply(data[cols], function(col) sum(is.infinite(col)),
@@ -359,6 +361,7 @@
   hit <- cols[n_inf > 0L]
   if (!length(hit)) return(data)
   for (nm in hit) data[[nm]][is.infinite(data[[nm]])] <- NA
+  if (quiet) return(data)
   counts <- paste0(.original_names(hit, map), " (", n_inf[hit], ")") # nolint: object_usage_linter.
   cli::cli_warn(c(
     "!" = "Infinite values treated as missing in column{?s}: {counts}.",

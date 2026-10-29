@@ -465,6 +465,65 @@ janusplot_shape_hierarchy <- function() {
 }
 
 # ---------------------------------------------------------------
+# Borderline margin of a label: the smallest absolute gap between an
+# index (M, C or the flat-range ratio) and a cutoff whose crossing by
+# that index alone changes the label .classify_shape() returns. The
+# probe re-runs the classifier with the index set just across each
+# cutoff, so conjunctions and fall-through branches are honoured
+# without restating the rules. NA for an indeterminate label and when
+# no cutoff can change the label (a count-decided label whose
+# flat-range ratio is NA).
+# ---------------------------------------------------------------
+
+.shape_borderline <- function(M, C, n_turn, n_inflect, flat_ratio, cutoffs,
+                              extremum = NA_character_) {
+  if (is.na(M) || is.na(C)) return(NA_real_)
+  label <- .classify_shape(M, C, n_turn, n_inflect, flat_ratio, cutoffs,
+                           extremum = extremum)
+  classify_at <- function(m, c_val, flat) {
+    .classify_shape(m, c_val, n_turn, n_inflect, flat, cutoffs,
+                    extremum = extremum)
+  }
+  m_cuts <- c(cutoffs$mono_strong, cutoffs$mono_mod)
+  c_cuts <- c(cutoffs$curv_low, cutoffs$curv_mod)
+  gaps <- c(
+    .cutoff_gaps(M, c(-m_cuts, m_cuts), label,
+                 function(v) classify_at(v, C, flat_ratio)),
+    .cutoff_gaps(C, c(-c_cuts, c_cuts), label,
+                 function(v) classify_at(M, v, flat_ratio))
+  )
+  if (!is.na(flat_ratio)) {
+    gaps <- c(gaps, .cutoff_gaps(flat_ratio, cutoffs$flat, label,
+                                 function(v) classify_at(M, C, v)))
+  }
+  if (!length(gaps)) NA_real_ else min(gaps)
+}
+
+# Gaps from `value` to those `thresholds` that bound the region of
+# `label` on this index: the label just on the value's side of the
+# threshold is `label` and the label just beyond it is not. A boundary
+# that is not a cutoff (the sign of M or C in a fall-through branch)
+# makes the near-side label differ, so the threshold beyond it does not
+# count. `classify_at(v)` returns the label with the index set to v. A
+# value sitting exactly on a threshold is probed on both sides.
+.cutoff_gaps <- function(value, thresholds, label, classify_at,
+                         step = 1e-8) {
+  gaps <- vapply(thresholds, function(cut) {
+    if (value == cut) {
+      sides <- c(classify_at(cut - step), classify_at(cut + step))
+      bounds <- any(sides != label)
+    } else {
+      towards <- sign(cut - value)
+      near <- classify_at(cut - towards * step)
+      far  <- classify_at(cut + towards * step)
+      bounds <- identical(near, label) && !identical(far, label)
+    }
+    if (bounds) abs(value - cut) else NA_real_
+  }, numeric(1L))
+  gaps[!is.na(gaps)]
+}
+
+# ---------------------------------------------------------------
 # Numerical derivatives on an equally-spaced grid.
 # Central differences inside, forward/backward at the endpoints.
 # ---------------------------------------------------------------
