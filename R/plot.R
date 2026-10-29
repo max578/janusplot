@@ -64,7 +64,8 @@
 #'   two-letter shape code, the shape glyph, a warning sign on cells
 #'   flagged by the k-check or capped at the distinct predictor count, the
 #'   rows used, the `background_by` correlation of the pair (Pearson when
-#'   `background_by = "none"`), printed `"r -0.03"`, and the cell's formula,
+#'   `background_by = "none"`), printed `"r -0.03"` (`"marginal r -0.03"`
+#'   for a fit with `adjust`), and the cell's formula,
 #'   printed `Temp ~ Ozone`. `NULL` (the default) picks by matrix size:
 #'   `c("A", "signif")` below eight variables, `"signif"` from eight,
 #'   where the automatic strip text is at its 5-point floor;
@@ -229,7 +230,8 @@ plot.janusplot_fit <- function(
       y_transform      = axis_transforms[[face$var_y]],
       background       = background_hex[[idx]],
       border_linewidth = border_lw,
-      background_by    = background_by
+      background_by    = background_by,
+      adjusted         = !is.null(x$adjust)
     )
   }
 

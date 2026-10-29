@@ -506,6 +506,8 @@ test_that("a fit with adjust draws no background unless one is asked for", {
   expect_match(caption, "No cell background: the curves are adjusted",
                fixed = TRUE)
   expect_match(caption, "r = Pearson r of the pair, marginal", fixed = TRUE)
+  expect_match(matrix_grid(p)[[7L]]$labels$subtitle, "marginal r ",
+               fixed = TRUE)
   asked <- plot(fit, background_by = "pearson", style = style)
   expect_identical(matrix_grid(asked)[[7L]]$theme$panel.background$fill,
                    janusplot:::.background_hex(fit$pairs[[1L]]$cor_pearson))
@@ -548,6 +550,7 @@ test_that("the strip prints r and the formula on request", {
   face$cor_pearson <- -0.03
   expect_identical(strip(face, c("formula", "A", "r")),
                    sprintf("x2 ~ x1  A %.2f  r -0.03", face$asymmetry_index))
+  expect_identical(strip(face, "r", adjusted = TRUE), "marginal r -0.03")
   expect_s3_class(plot(fit, annotations = c("formula", "r")), "ggplot")
 })
 

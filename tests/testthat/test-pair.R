@@ -284,6 +284,10 @@ test_that("the pair panels take the signed background", {
   p_adj <- janusplot_pair(adjusted, "x1", "x2")
   expect_true(is.na(p_adj[[1L]]$theme$panel.background$fill))
   expect_true(is.na(p_adj[[2L]]$theme$panel.background$fill))
+  # Its strip names the correlation as marginal; the unadjusted one does not.
+  expect_match(p_adj[[1L]]$labels$subtitle, "marginal r ", fixed = TRUE)
+  expect_no_match(janusplot_pair(fit, "x1", "x2")[[1L]]$labels$subtitle,
+                  "marginal", fixed = TRUE)
 })
 
 test_that("many overlay panels share one generic key", {

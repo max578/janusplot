@@ -712,13 +712,14 @@
 # The strip: one line of small grey text above the data area, e.g.
 # "A 0.32  EDF 2.4  **" or, compact, "A 0.32 E 2.4 **". NULL when no
 # annotation applies to the face. `background_by` picks the correlation
-# of the "r" annotation (Pearson when "none"); `wrap` breaks the line
-# after the third item.
+# of the "r" annotation (Pearson when "none"), labelled "marginal r" when
+# the fit is `adjusted`; `wrap` breaks the line after the third item.
 # ---------------------------------------------------------------
 
 .cell_strip_text <- function(face, annotations, glyph_style = "ascii",
                              compact = FALSE, p_adjust = "none",
-                             background_by = "pearson", wrap = FALSE) {
+                             background_by = "pearson", wrap = FALSE,
+                             adjusted = FALSE) {
   parts <- character()
   if ("formula" %in% annotations) {
     parts <- c(parts, sprintf("%s ~ %s", face$var_y, face$var_x))
@@ -735,7 +736,8 @@
   # Adding 0 prints a value that rounds to -0 as 0.00.
   r <- .face_correlation(face, background_by)
   if ("r" %in% annotations && !is.na(r)) {
-    parts <- c(parts, sprintf("r %.2f", round(r, 2L) + 0))
+    parts <- c(parts, sprintf(if (adjusted) "marginal r %.2f" else "r %.2f",
+                             round(r, 2L) + 0))
   }
   if ("n" %in% annotations && !is.na(face$n_used)) {
     parts <- c(parts, sprintf("n %d", as.integer(face$n_used)))
@@ -848,7 +850,8 @@
 # style$annotation_position = "corners".
 .add_corner_annotations <- function(p, face, annotations, style, text_sizes,
                                     p_adjust = "none",
-                                    background_by = "pearson") {
+                                    background_by = "pearson",
+                                    adjusted = FALSE) {
   if (is.na(text_sizes$pt$strip)) return(p)
   family <- style$base_family
 
@@ -877,7 +880,8 @@
   }
   r <- .face_correlation(face, background_by)
   if ("r" %in% annotations && !is.na(r)) {
-    bl_lines <- c(bl_lines, sprintf("r = %.2f", round(r, 2L) + 0))
+    r_fmt <- if (adjusted) "marginal r = %.2f" else "r = %.2f"
+    bl_lines <- c(bl_lines, sprintf(r_fmt, round(r, 2L) + 0))
   }
   if ("n" %in% annotations && !is.na(face$n_used)) {
     bl_lines <- c(bl_lines, sprintf("n = %d", as.integer(face$n_used)))
@@ -960,7 +964,8 @@
   background = NA_character_,
   border_linewidth = .border_linewidth(4L, style$border_width),
   background_by = "pearson",
-  wrap_strip = FALSE
+  wrap_strip = FALSE,
+  adjusted = FALSE
 ) {
   face <- .pair_face(pair, direction)
   tier <- as.integer(tier)
@@ -990,7 +995,7 @@
   on_border <- style$colour_channel == "border" && !is.na(colour)
   strip <- if (style$annotation_position == "strip") {
     .cell_strip_text(face, annotations, style$glyph_style, compact, p_adjust,
-                     background_by, wrap = wrap_strip)
+                     background_by, wrap = wrap_strip, adjusted = adjusted)
   } else {
     NULL
   }
@@ -1067,7 +1072,7 @@
   # Corner annotations -----------------------------------------------------
   if (style$annotation_position == "corners" && length(annotations)) {
     p <- .add_corner_annotations(p, face, annotations, style, text_sizes,
-                                 p_adjust, background_by)
+                                 p_adjust, background_by, adjusted)
   }
   p
 }

@@ -342,7 +342,8 @@ janusplot_pair <- function(
       title         = .pair_formula(face$var_y, face$var_x, fit$adjust,
                                     wrap = wrap_title),
       wrap_strip    = wrap_title,
-      background    = background
+      background    = background,
+      adjusted      = !is.null(fit$adjust)
     )
     .add_pair_axes(p, face, display, text_sizes, style$base_family)
   })

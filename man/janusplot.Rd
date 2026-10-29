@@ -64,7 +64,8 @@ p-value when the fit has \code{p_adjust} other than \code{"none"}), the
 two-letter shape code, the shape glyph, a warning sign on cells
 flagged by the k-check or capped at the distinct predictor count, the
 rows used, the \code{background_by} correlation of the pair (Pearson when
-\code{background_by = "none"}), printed \code{"r -0.03"}, and the cell's formula,
+\code{background_by = "none"}), printed \code{"r -0.03"} (\code{"marginal r -0.03"}
+for a fit with \code{adjust}), and the cell's formula,
 printed \code{Temp ~ Ozone}. \code{NULL} (the default) picks by matrix size:
 \code{c("A", "signif")} below eight variables, \code{"signif"} from eight,
 where the automatic strip text is at its 5-point floor;

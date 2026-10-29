@@ -256,7 +256,9 @@ residual-independence test of direction (`janusplot_direction()`).
   explicitly still draws it, and the glossary labels it marginal.
 * `annotations` accepts `"n"` (the rows used), `"r"` (the background
   correlation, `r -0.03`) and `"formula"` (`Temp ~ Ozone`) beside `"A"`,
-  `"edf"`, `"signif"`, `"code"`, `"shape"` and `"k_warn"`.
+  `"edf"`, `"signif"`, `"code"`, `"shape"` and `"k_warn"`. For a fit with
+  `adjust` the strip prints `marginal r -0.03`: the curves are adjusted,
+  the correlation is not.
 * The top-left corner of the matrix carries a key: a two-by-two schematic
   of the first two variables headed "each cell: row ~ s(column)"
   (`janusplot_style(show_key = )`). When either name is longer than seven
