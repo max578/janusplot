@@ -17,7 +17,9 @@
 #' * [janusplot_fit()] -- fits every ordered pair once and returns the
 #'   fit object (per-pair metrics, per-cell table via `summary()`, flags)
 #'   for custom plotting or downstream analysis.
-#' * [janusplot_direction_test()] -- runs the residual-independence test
+#' * [janusplot_pair()] -- draws the two directions of one pair side by
+#'   side, or overlaid in one z-score panel.
+#' * [janusplot_direction()] -- runs the residual-independence test
 #'   that licenses a directional reading of a pair's asymmetry, and
 #'   abstains where the additive noise model cannot decide.
 #'
@@ -42,7 +44,7 @@
 #' package vignette and accompanying paper for full scope and
 #' limitations (in particular the failure modes under
 #' heteroscedasticity, confounding, and Gaussian-linear DGPs).
-#' [janusplot_direction_test()] supplies the missing half of that
+#' [janusplot_direction()] supplies the missing half of that
 #' procedure: the residual-independence test whose one-sided outcome
 #' is what actually licenses a directional claim.
 #'

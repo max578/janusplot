@@ -1,6 +1,6 @@
 # Residual-independence test for a directional claim.
 #
-# janusplot()'s asymmetry index is a diagnostic: it reports that the two
+# The asymmetry index of a fit is a diagnostic: it reports that the two
 # directions of fit differ, not that one of them is the causal one. Under
 # the additive-noise-model (ANM) identifiability result, a direction is
 # supported only when the residuals of the fit in that direction are
@@ -9,8 +9,9 @@
 # say whether the condition that licenses a directional reading actually
 # holds.
 #
-# Exposed publicly via janusplot_direction_test(). Internals are
-# dot-prefixed.
+# Exposed publicly via janusplot_direction() on a janusplot_fit, with
+# janusplot_direction_test() kept as a deprecated alias on a data frame.
+# Both call .direction_engine(). Internals are dot-prefixed.
 
 # ---------------------------------------------------------------
 # Optional-dependency probe. Isolated in its own function so the
@@ -76,33 +77,31 @@
   })
   dat[idx, , drop = FALSE]
 }
-
 # ---------------------------------------------------------------
 # Fit one direction and return everything the verdict needs.
 # ---------------------------------------------------------------
 
 .direction_fit <- function(dat, x_name, y_name, k, bs, method) {
   fml <- .build_formula(y_name, x_name, .resolve_k(k, x_name), bs, NULL)
-  resolved_method <- if (is.null(method) || identical(method, "auto") ||
-                         identical(method, "default")) {
-    .engine_default_method("gam")
-  } else {
-    method
-  }
-  fit <- .fit_one_gam(fml, dat,
-                      engine = "gam", method = resolved_method,
-                      discrete = FALSE, nthreads = 1L)
-  smry  <- summary(fit)
-  s_row <- which(rownames(smry$s.table) == sprintf("s(%s)", x_name))[1L]
-  if (is.na(s_row)) s_row <- 1L
+  resolved_method <- .resolve_method(method, "gam")
+  model <- .fit_one_gam(fml, dat,
+                        engine = "gam", method = resolved_method,
+                        discrete = FALSE, nthreads = 1L)
+  .direction_summary(model, dat[[x_name]], dat[[y_name]], resolved_method)
+}
+
+# The residuals, EDF and curvature of one fitted direction. The model
+# has a single smooth term, the first row of its s.table.
+.direction_summary <- function(model, x_values, y_values, method) {
+  smry <- summary(model)
   list(
-    fit       = fit,
-    residuals = as.numeric(stats::residuals(fit, type = "response")),
-    edf       = unname(smry$s.table[s_row, "edf"]),
+    fit       = model,
+    residuals = as.numeric(stats::residuals(model, type = "response")),
+    edf       = unname(smry$s.table[1L, "edf"]),
     curvature = .smooth_curvature(
-      as.numeric(stats::fitted(fit)), dat[[x_name]], dat[[y_name]]
+      as.numeric(stats::fitted(model)), x_values, y_values
     ),
-    method    = resolved_method
+    method    = method
   )
 }
 
@@ -115,11 +114,11 @@
 #' @description
 #' `r lifecycle::badge("experimental")`
 #'
-#' [janusplot()] renders a pair twice -- `y ~ s(x)` in one triangle and
-#' `x ~ s(y)` in the other -- and summarises the difference between the
-#' two fits as an asymmetry index. That index is a *diagnostic*: it says
-#' the two directions of fit are not interchangeable, not that either one
-#' is the causal direction.
+#' [janusplot_pair()] draws a pair twice -- `y ~ s(x)` on the left and
+#' `x ~ s(y)` on the right -- and the fit summarises the difference
+#' between the two directions as an asymmetry index. That index is a
+#' *diagnostic*: it says the two directions of fit are not
+#' interchangeable, not that either one is the causal direction.
 #'
 #' This function runs the test that turns the picture into a claim. Under
 #' the additive-noise model `y = f(x) + e` with `e` independent of `x`,
@@ -138,6 +137,30 @@
 #' direction.
 #'
 #' @details
+#' ## What the fit supplies
+#'
+#' The rows are those the pair was fitted on in `fit`: complete on `x`,
+#' `y` and the `adjust` variables, so `n` equals the pair's `n_used`.
+#' Each direction is fitted with the basis dimension that direction used
+#' in `fit` (`k_used_yx` or `k_used_xy` of the pair) and the basis type
+#' `fit$settings$bs`, so the verdict rests on the smooths the matrix
+#' draws.
+#'
+#' Both directions are fitted with [mgcv::gam()]. A fit made with
+#' `engine = "gam"` passes its `method`; a fit made with `engine = "bam"`
+#' carries a [mgcv::bam()] method such as `"fREML"`, so the test uses the
+#' [mgcv::gam()] default `"REML"` instead. The method used is returned as
+#' `method`.
+#'
+#' The test is bivariate. When `fit` was made with an `adjust` formula,
+#' the adjust terms do not enter the two direction fits and a message
+#' says so; only the rows they select carry over.
+#'
+#' When `fit` keeps its models (`keep_fits = TRUE`), was made with
+#' `engine = "gam"` and no `adjust` formula, and `n` does not exceed
+#' `n_max`, the residuals, EDFs and fitted values of the two kept models
+#' are used without refitting. The result is the same as a refit.
+#'
 #' ## The linear-Gaussian exception
 #'
 #' Identifiability fails exactly when the relationship is linear and both
@@ -169,19 +192,14 @@
 #' cause, no feedback, and additive noise, and none of those assumptions
 #' is testable from the pair alone.
 #'
-#' @param data A data frame containing both variables.
-#' @param x Character. Column name of the first variable -- the putative
-#'   cause under the forward hypothesis.
-#' @param y Character. Column name of the second variable -- the putative
-#'   effect under the forward hypothesis. Column names need not be
-#'   syntactic: names with spaces or symbols are accepted and are
-#'   returned and reported as supplied.
-#' @param k Basis dimension passed to [mgcv::s()]. Default `-1L` lets
-#'   `mgcv` choose.
-#' @param bs Character. Spline basis passed to [mgcv::s()]. Default
-#'   `"tp"` (thin-plate regression spline).
-#' @param method Smoothing-parameter selection method passed to
-#'   [mgcv::gam()]. `NULL` (default) uses `"REML"`.
+#' @param fit A `janusplot_fit` object from [janusplot_fit()].
+#' @param x Character. Name of the first variable, one of `fit$vars` --
+#'   the putative cause under the forward hypothesis. For `print()`, a
+#'   `janusplot_direction` object.
+#' @param y Character. Name of the second variable, one of `fit$vars` --
+#'   the putative effect under the forward hypothesis. Names need not be
+#'   syntactic: names with spaces or symbols are returned and reported as
+#'   supplied.
 #' @param alpha Numeric in `(0, 1)`. Significance level for the two
 #'   residual-independence tests. Residuals are called independent when
 #'   the HSIC p-value exceeds `alpha`. Default `0.05`.
@@ -213,7 +231,8 @@
 #'   detects smaller departures from independence, so verdicts at
 #'   different `n` are not directly comparable.
 #'
-#' @returns A named list:
+#' @returns A list of class `janusplot_direction`, printed as the
+#'   verdict, its reason, the two p-values and the rows used:
 #'   \describe{
 #'     \item{`verdict`}{One of `"forward"` (`x` drives `y`),
 #'       `"reverse"` (`y` drives `x`), or `"undecided"`.}
@@ -223,7 +242,7 @@
 #'       `"n_below_min"`. For `"n_below_min"` the p-values, statistics,
 #'       EDFs, curvatures and normality p-values are `NA`.}
 #'     \item{`reason`}{One-paragraph statement of the same ground.}
-#'     \item{`x`, `y`}{The column names, as supplied.}
+#'     \item{`x`, `y`}{The variable names, as supplied.}
 #'     \item{`forward`, `reverse`}{The two hypotheses as printable
 #'       strings, e.g. `"x -> y"`.}
 #'     \item{`p_forward`, `p_reverse`}{HSIC permutation p-values for
@@ -247,7 +266,10 @@
 #'     \item{`alpha`, `gaussian_alpha`, `linear_tol`,
 #'       `n_permutations`, `n_min`, `n_max`}{The settings the verdict
 #'       was reached under.}
+#'     \item{`method`}{The [mgcv::gam()] smoothing-parameter method of
+#'       the two direction fits.}
 #'   }
+#'   `print()` returns its argument invisibly.
 #'
 #' @references
 #' Hoyer, P. O., Janzing, D., Mooij, J. M., Peters, J., &
@@ -264,7 +286,9 @@
 #'   linear non-Gaussian acyclic model for causal discovery. *Journal of
 #'   Machine Learning Research*, **7**, 2003-2030.
 #'
-#' @seealso [janusplot()], [janusplot_data()].
+#' @family smooth-associations
+#' @seealso [janusplot_fit()] for the fit, [janusplot_pair()] for the two
+#'   directions drawn side by side.
 #'
 #' @examples
 #' if (requireNamespace("kernR", quietly = TRUE)) {
@@ -274,43 +298,164 @@
 #'   n <- 200L
 #'   x <- stats::runif(n, -3, 3)
 #'   y <- x^3 / 5 + stats::runif(n, -1, 1)
-#'   d <- data.frame(x = x, y = y)
+#'   fit <- janusplot_fit(data.frame(x = x, y = y), engine = "gam")
 #'
-#'   res <- janusplot_direction_test(d, "x", "y", n_permutations = 199L,
-#'                                   seed = 1L)
-#'   res$verdict      # "forward"
-#'   res$reason
+#'   res <- janusplot_direction(fit, "x", "y", n_permutations = 199L,
+#'                              seed = 2026L)
+#'   res
 #'   c(forward = res$p_forward, reverse = res$p_reverse)
 #'
-#'   # The same pair read the other way round returns "reverse".
-#'   janusplot_direction_test(d, "y", "x", n_permutations = 199L,
-#'                            seed = 1L)$verdict
+#'   # The same pair read the other way round names the other direction.
+#'   janusplot_direction(fit, "y", "x", n_permutations = 199L,
+#'                       seed = 2026L)$verdict
 #' }
 #' @export
-janusplot_direction_test <- function(data, x, y,
-                                     k              = -1L,
-                                     bs             = "tp",
-                                     method         = NULL,
-                                     alpha          = 0.05,
-                                     n_permutations = 500L,
-                                     linear_tol     = 0.01,
-                                     gaussian_alpha = 0.01,
-                                     seed           = NULL,
-                                     n_min          = 30L,
-                                     n_max          = 2000L) {
+janusplot_direction <- function(
+  fit,
+  x,
+  y,
+  alpha = 0.05,
+  n_permutations = 500L,
+  linear_tol = 0.01,
+  gaussian_alpha = 0.01,
+  seed = NULL,
+  n_min = 30L,
+  n_max = 2000L
+) {
+  .check_fit_pair(fit, x, y)
+  .validate_direction_settings(
+    alpha, n_permutations, linear_tol, gaussian_alpha, seed
+  )
+  .validate_n_guards(n_min, n_max)
+
+  # What the fit supplies: rows, basis, method ---------------------------
+  pair <- fit$pairs[[.find_pair(fit, x, y)]]
+  forward_dir <- if (identical(x, pair$var_i)) "yx" else "xy"
+  reverse_dir <- if (forward_dir == "yx") "xy" else "yx"
+  k_forward <- .direction_k(pair[[paste0("k_used_", forward_dir)]])
+  k_reverse <- .direction_k(pair[[paste0("k_used_", reverse_dir)]])
+  is_gam <- identical(fit$settings$engine, "gam")
+  method <- if (is_gam) fit$settings$method else .engine_default_method("gam")
+  if (!is.null(fit$adjust)) {
+    adjust_txt <- paste(deparse(fit$adjust, width.cutoff = 500L), # nolint: object_usage_linter.
+                        collapse = " ")
+    cli::cli_inform(c(
+      i = paste(
+        "The direction test is bivariate: the {.arg adjust} terms of",
+        "{.arg fit} ({.code {adjust_txt}}) do not enter the two fits."
+      )
+    ))
+  }
+  rows <- .cell_rows(fit, x, y)
+  dat <- fit$data[rows, c(x, y), drop = FALSE]
+
+  # Kept models replace the refit when they are the same fits -------------
+  models <- NULL
+  if (is_gam && is.null(fit$adjust) && !is.null(fit$fits) &&
+      length(rows) <= n_max) {
+    ix <- match(x, fit$vars)
+    iy <- match(y, fit$vars)
+    kept <- list(
+      forward = fit$fits[[sprintf("%d_%d", ix, iy)]],
+      reverse = fit$fits[[sprintf("%d_%d", iy, ix)]]
+    )
+    if (!is.null(kept$forward) && !is.null(kept$reverse)) models <- kept
+  }
+
+  .direction_engine(
+    dat, x, y,
+    k_forward = k_forward, k_reverse = k_reverse,
+    bs = fit$settings$bs, method = method,
+    alpha = alpha, n_permutations = n_permutations,
+    linear_tol = linear_tol, gaussian_alpha = gaussian_alpha,
+    seed = seed, n_min = n_min, n_max = n_max,
+    models = models
+  )
+}
+
+# The basis dimension of one direction of a fit; mgcv's default when the
+# fit recorded none.
+.direction_k <- function(k_used) {
+  if (is.null(k_used) || is.na(k_used)) -1L else as.integer(k_used)
+}
+
+#' Deprecated: residual-independence direction test on a data frame
+#'
+#' @description
+#' `r lifecycle::badge("deprecated")`
+#'
+#' `janusplot_direction_test()` was replaced by [janusplot_direction()]
+#' in janusplot 1.0.0, which takes the rows, basis dimension and method
+#' from a [janusplot_fit()] object. This alias runs the same test on the
+#' complete cases of two columns of `data` for one more release.
+#'
+#' @param data A data frame containing both variables.
+#' @param x Character. Column name of the putative cause under the
+#'   forward hypothesis.
+#' @param y Character. Column name of the putative effect under the
+#'   forward hypothesis.
+#' @param k Basis dimension passed to [mgcv::s()]. Default `-1L` lets
+#'   mgcv choose.
+#' @param bs Character. Spline basis passed to [mgcv::s()]. Default
+#'   `"tp"`.
+#' @param method Smoothing-parameter selection method passed to
+#'   [mgcv::gam()]. `NULL` (default) uses `"REML"`.
+#' @inheritParams janusplot_direction
+#'
+#' @returns A `janusplot_direction` object; see [janusplot_direction()].
+#'
+#' @keywords internal
+#' @export
+janusplot_direction_test <- function(
+  data,
+  x,
+  y,
+  k = -1L,
+  bs = "tp",
+  method = NULL,
+  alpha = 0.05,
+  n_permutations = 500L,
+  linear_tol = 0.01,
+  gaussian_alpha = 0.01,
+  seed = NULL,
+  n_min = 30L,
+  n_max = 2000L
+) {
+  lifecycle::deprecate_warn(
+    when = "1.0.0",
+    what = "janusplot_direction_test()",
+    with = "janusplot_direction()",
+    user_env = rlang::caller_env()
+  )
   .validate_direction_args(
     data, x, y, k, bs, alpha, n_permutations, linear_tol, gaussian_alpha, seed
   )
   .validate_n_guards(n_min, n_max)
+  dat <- .complete_pair(data, x, y, NULL)
+  .direction_engine(
+    dat[, c(x, y), drop = FALSE], x, y,
+    k_forward = k, k_reverse = k, bs = bs, method = method,
+    alpha = alpha, n_permutations = n_permutations,
+    linear_tol = linear_tol, gaussian_alpha = gaussian_alpha,
+    seed = seed, n_min = n_min, n_max = n_max
+  )
+}
+
+# ---------------------------------------------------------------
+# The engine both entry points call. `dat` is a two-column data frame
+# of the complete rows under the user's names; `models`, when given,
+# is list(forward, reverse) of mgcv fits on exactly those rows.
+# ---------------------------------------------------------------
+
+.direction_engine <- function(dat, x, y, k_forward, k_reverse, bs, method,
+                              alpha, n_permutations, linear_tol,
+                              gaussian_alpha, seed, n_min, n_max,
+                              models = NULL, call = rlang::caller_env()) {
   n_min <- as.integer(n_min)
   n_max <- as.integer(n_max)
-
-  # Fit on syntactic aliases so column names with spaces or symbols
-  # reach mgcv's formula parser intact; x and y keep the user's names
-  # for the return value and every message.
-  dat <- .complete_pair(data, x, y, NULL)
-  dat <- data.frame(janus_x = dat[[x]], janus_y = dat[[y]])
   n_complete <- nrow(dat)
+
+  # Refusal and the n_min abstention --------------------------------------
   if (n_complete < 20L) {
     # Well-typed arguments, but the method's own requirement -- enough
     # complete cases to fit two smooths and permute a kernel statistic
@@ -318,10 +463,11 @@ janusplot_direction_test <- function(data, x, y,
     # condition rather than returning a verdict it cannot support.
     cli::cli_abort(
       c(
-        "{.arg data} has {n_complete} complete case{?s} on {.val {x}} and {.val {y}}.",
+        "Only {n_complete} complete case{?s} on {.val {x}} and {.val {y}}.",
         i = "At least 20 are needed to fit both directions and permute the HSIC null."
       ),
-      class = c("janusplot_refusal", "orchestra_refusal")
+      class = c("janusplot_refusal", "orchestra_refusal"),
+      call = call
     )
   }
   settings <- list(
@@ -330,7 +476,8 @@ janusplot_direction_test <- function(data, x, y,
     linear_tol     = linear_tol,
     n_permutations = as.integer(n_permutations),
     n_min          = n_min,
-    n_max          = n_max
+    n_max          = n_max,
+    method         = .resolve_method(method, "gam")
   )
   if (n_complete < n_min) {
     return(.direction_result(
@@ -341,31 +488,47 @@ janusplot_direction_test <- function(data, x, y,
   }
   dat <- .direction_subsample(dat, n_max, seed)
   n_used <- nrow(dat)
+  if (n_used < n_complete) models <- NULL
 
   if (!.kernR_available()) {
     cli::cli_abort(c(
-      "{.pkg kernR} is required for {.fn janusplot_direction_test}.",
+      "{.pkg kernR} is required for {.fn janusplot_direction}.",
       i = paste(
         "The residual-independence test is",
         "{.fn kernR::hsic_test}; without it the direction cannot be",
         "licensed, only its fit asymmetry described by {.fn janusplot}."
       ),
       i = "Install with {.code pak::pak(\"max578/kernR\")}."
-    ))
+    ), call = call)
   }
 
-  forward <- .direction_fit(dat, "janus_x", "janus_y", k, bs, method)
-  reverse <- .direction_fit(dat, "janus_y", "janus_x", k, bs, method)
+  # The two direction fits ------------------------------------------------
+  # Fitted on syntactic aliases so column names with spaces or symbols
+  # reach mgcv's formula parser intact; x and y keep the user's names
+  # for the return value and every message.
+  work <- data.frame(janus_x = dat[[x]], janus_y = dat[[y]])
+  if (is.null(models)) {
+    forward <- .direction_fit(work, "janus_x", "janus_y", k_forward, bs,
+                              settings$method)
+    reverse <- .direction_fit(work, "janus_y", "janus_x", k_reverse, bs,
+                              settings$method)
+  } else {
+    forward <- .direction_summary(models$forward, work$janus_x,
+                                  work$janus_y, settings$method)
+    reverse <- .direction_summary(models$reverse, work$janus_y,
+                                  work$janus_x, settings$method)
+  }
 
+  # Independence and the linear-Gaussian detector -------------------------
   seed_forward <- if (is.null(seed)) NULL else as.integer(seed)
   seed_reverse <- if (is.null(seed)) NULL else as.integer(seed) + 1L
   hsic_forward <- kernR::hsic_test(
-    forward$residuals, dat$janus_x,
+    forward$residuals, work$janus_x,
     n_permutations = as.integer(n_permutations),
     alpha = alpha, seed = seed_forward
   )
   hsic_reverse <- kernR::hsic_test(
-    reverse$residuals, dat$janus_y,
+    reverse$residuals, work$janus_y,
     n_permutations = as.integer(n_permutations),
     alpha = alpha, seed = seed_reverse
   )
@@ -374,8 +537,8 @@ janusplot_direction_test <- function(data, x, y,
   independent_reverse <- hsic_reverse$p_value > alpha
 
   normality_p <- c(
-    x                 = .normality_pvalue(dat$janus_x),
-    y                 = .normality_pvalue(dat$janus_y),
+    x                 = .normality_pvalue(work$janus_x),
+    y                 = .normality_pvalue(work$janus_y),
     residuals_forward = .normality_pvalue(forward$residuals),
     residuals_reverse = .normality_pvalue(reverse$residuals)
   )
@@ -390,6 +553,7 @@ janusplot_direction_test <- function(data, x, y,
   fwd_label <- sprintf("%s -> %s", x, y)
   rev_label <- sprintf("%s -> %s", y, x)
 
+  # Verdict ---------------------------------------------------------------
   # Dispatch order matters. The linear-Gaussian case is a structural
   # failure of identifiability, so it is read before the two independence
   # tests: in that regime both directions reproduce the joint
@@ -476,6 +640,38 @@ janusplot_direction_test <- function(data, x, y,
 }
 
 # ---------------------------------------------------------------
+# print() method
+# ---------------------------------------------------------------
+
+#' @rdname janusplot_direction
+#' @param ... Ignored.
+#' @export
+print.janusplot_direction <- function(x, ...) {
+  named <- switch(x$verdict,
+    forward = x$forward,
+    reverse = x$reverse,
+    "no direction"
+  )
+  format_p <- function(p) {
+    if (is.na(p)) "not tested" else sprintf("p = %s", format(signif(p, 3L)))
+  }
+  cli::cat_line(sprintf("janusplot direction test: %s against %s",
+                        x$forward, x$reverse))
+  cli::cat_line(sprintf("verdict: %s (%s), reason %s",
+                        x$verdict, named, x$reason_code))
+  for (line in strwrap(x$reason, width = 72L, indent = 2L, exdent = 2L)) {
+    cli::cat_line(line)
+  }
+  cli::cat_line(sprintf("HSIC residual independence (alpha = %s):",
+                        format(x$alpha)))
+  cli::cat_line(sprintf("  %s  %s", x$forward, format_p(x$p_forward)))
+  cli::cat_line(sprintf("  %s  %s", x$reverse, format_p(x$p_reverse)))
+  cli::cat_line(sprintf("n_used = %d of n = %d complete cases",
+                        as.integer(x$n_used), as.integer(x$n)))
+  invisible(x)
+}
+
+# ---------------------------------------------------------------
 # Assemble the return list. Defaults are the NA fill used when no
 # test was run (n below n_min).
 # ---------------------------------------------------------------
@@ -499,7 +695,7 @@ janusplot_direction_test <- function(data, x, y,
                                 residuals_reverse = NA_real_
                               ),
                               linear_gaussian     = NA) {
-  list(
+  out <- list(
     verdict             = verdict,
     reason_code         = reason_code,
     reason              = reason,
@@ -526,8 +722,10 @@ janusplot_direction_test <- function(data, x, y,
     linear_tol          = settings$linear_tol,
     n_permutations      = settings$n_permutations,
     n_min               = settings$n_min,
-    n_max               = settings$n_max
+    n_max               = settings$n_max,
+    method              = settings$method
   )
+  structure(out, class = c("janusplot_direction", "list"))
 }
 
 .validate_n_guards <- function(n_min, n_max, call = rlang::caller_env()) {
@@ -560,7 +758,7 @@ janusplot_direction_test <- function(data, x, y,
 }
 
 # ---------------------------------------------------------------
-# Argument validation for janusplot_direction_test()
+# Argument validation for janusplot_direction() and its alias
 # ---------------------------------------------------------------
 
 .check_unit_interval <- function(value, arg_name, call) {
@@ -619,6 +817,16 @@ janusplot_direction_test <- function(data, x, y,
   if (!is.character(bs) || length(bs) != 1L || is.na(bs)) {
     cli::cli_abort("{.arg bs} must be a single basis name.", call = call)
   }
+  .validate_direction_settings(
+    alpha, n_permutations, linear_tol, gaussian_alpha, seed, call = call
+  )
+  invisible(NULL)
+}
+
+# The settings shared by janusplot_direction() and the alias.
+.validate_direction_settings <- function(alpha, n_permutations, linear_tol,
+                                         gaussian_alpha, seed,
+                                         call = rlang::caller_env()) {
   .check_unit_interval(alpha, "alpha", call)
   .check_unit_interval(linear_tol, "linear_tol", call)
   .check_unit_interval(gaussian_alpha, "gaussian_alpha", call)
