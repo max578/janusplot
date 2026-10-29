@@ -134,10 +134,24 @@
                                             family = family)))
   }
   if (!is.null(background_plot)) side <- c(side, list(background_plot))
-  # Both bars share one right-hand column, one above the other.
+  # Both bars share one right-hand column, one above the other. With
+  # border labels the column starts level with the first row of cells, so
+  # the last column label can run past its cell without meeting a title.
+  if (length(side) && has_border) {
+    side_col <- patchwork::wrap_plots(
+      c(list(ggplot2::ggplot() + ggplot2::theme_void() +
+               ggplot2::theme(plot.background = ggplot2::element_rect(
+                 fill = NA, colour = NA))), side),
+      ncol    = 1L,
+      heights = grid::unit.c(grid::unit(strip_h, "pt"),
+                             rep(grid::unit(1, "null"), length(side)))
+    )
+  } else if (length(side)) {
+    side_col <- patchwork::wrap_plots(side, ncol = 1L)
+  }
   top_row <- if (length(side)) {
     patchwork::wrap_plots(
-      list(matrix_grid, patchwork::wrap_plots(side, ncol = 1L)),
+      list(matrix_grid, side_col),
       nrow   = 1L,
       widths = grid::unit.c(grid::unit(1, "null"), grid::unit(1, "pt"))
     )
