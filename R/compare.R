@@ -187,9 +187,10 @@ print.janusplot_compare <- function(x, ...) {
   shown <- if (k_n > 8L) c(vars[seq_len(8L)], "...") else vars
   cli::cat_line(sprintf("janusplot comparison: %s against %s",
                         lab[1L], lab[2L]))
-  cli::cat_line(sprintf("%d variables (%s), %d pairs, %d directed cells",
-                        k_n, paste(shown, collapse = ", "),
-                        length(x$fit_a$pairs), nrow(tab)))
+  n_pairs <- length(x$fit_a$pairs)
+  cli::cat_line(sprintf("%d variables (%s), %d %s, %d directed cells",
+                        k_n, paste(shown, collapse = ", "), n_pairs,
+                        if (n_pairs == 1L) "pair" else "pairs", nrow(tab)))
   cli::cat_line(sprintf("adjust: %s = %s, %s = %s",
                         lab[1L], .format_adjust(x$fit_a$adjust),
                         lab[2L], .format_adjust(x$fit_b$adjust)))

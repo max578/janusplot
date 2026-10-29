@@ -336,6 +336,13 @@ test_that("print() has six sections and names the top pair", {
   expect_match(lines[length(lines)], "summary\\(\\).*plot\\(\\)")
 })
 
+test_that("print() says one pair, not one pairs", {
+  fit <- janusplot_fit(make_linear_data(n = 80L)[, 1:2], engine = "gam",
+                       derivatives = integer())
+  lines <- testthat::capture_output_lines(print(fit))
+  expect_match(lines[2L], "^1 pair, 2 directed cells$")
+})
+
 test_that("print() reports flags and the adjust formula", {
   d <- make_linear_data(n = 80L)
   d$x3 <- d$x1

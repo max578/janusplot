@@ -667,7 +667,8 @@ print.janusplot_fit <- function(x, ...) {
   }
   cli::cat_line(sprintf("janusplot fit: %d variables (%s)", k_n,
                         paste(shown, collapse = ", ")))
-  cli::cat_line(sprintf("%d pairs, %d directed cells", n_pairs,
+  cli::cat_line(sprintf("%d %s, %d directed cells", n_pairs,
+                        if (n_pairs == 1L) "pair" else "pairs",
                         k_n * (k_n - 1L)))
   cli::cat_line(sprintf("engine = %s, method = %s, adjust = %s",
                         x$settings$engine, x$settings$method, adjust_txt))

@@ -152,6 +152,14 @@ test_that("shape_changed is NA when a side failed", {
 # print()
 # ---------------------------------------------------------------
 
+test_that("print() says one pair for a two-variable comparison", {
+  d <- make_simpson()
+  cmp <- janusplot_compare(fit_simpson(d, vars = c("x", "y")),
+                           fit_simpson(d, vars = c("x", "y"), adjust = ~ g))
+  lines <- testthat::capture_output_lines(print(cmp))
+  expect_match(lines[2L], "^2 variables \\(x, y\\), 1 pair, 2 directed cells$")
+})
+
 test_that("print() gives the counts, the changed rows and the settings line", {
   cmp <- janusplot_compare(simpson$fit_a, simpson$fit_b,
                            labels = c("marginal", "group-adjusted"))
