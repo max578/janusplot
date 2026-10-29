@@ -44,6 +44,15 @@ reference:
       - janusplot_style
       - janusplot_data
 
+  - title: "Comparing fits"
+    desc: >
+      Two fits of the same variables matched cell by cell, typically a
+      marginal fit against an adjusted one.
+    contents:
+      - janusplot_compare
+      - plot.janusplot_compare
+      - print.janusplot_compare
+
   - title: "Directional licensing"
     desc: >
       The residual-independence test that turns a pair's fit asymmetry

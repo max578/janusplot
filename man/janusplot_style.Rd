@@ -178,7 +178,9 @@ object as \code{style}.
 
 Other smooth-associations:
 \code{\link[=janusplot]{janusplot()}},
+\code{\link[=janusplot_compare]{janusplot_compare()}},
 \code{\link[=janusplot_fit]{janusplot_fit()}},
+\code{\link[=plot.janusplot_compare]{plot.janusplot_compare()}},
 \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}}
 }
 \concept{smooth-associations}

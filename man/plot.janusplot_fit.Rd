@@ -127,7 +127,9 @@ appearance settings, \code{\link[=janusplot]{janusplot()}} for the one-call form
 
 Other smooth-associations:
 \code{\link[=janusplot]{janusplot()}},
+\code{\link[=janusplot_compare]{janusplot_compare()}},
 \code{\link[=janusplot_fit]{janusplot_fit()}},
-\code{\link[=janusplot_style]{janusplot_style()}}
+\code{\link[=janusplot_style]{janusplot_style()}},
+\code{\link[=plot.janusplot_compare]{plot.janusplot_compare()}}
 }
 \concept{smooth-associations}
