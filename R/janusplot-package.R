@@ -14,8 +14,9 @@
 #' # Main functions
 #'
 #' * [janusplot()] -- returns a ggplot of the matrix.
-#' * [janusplot_data()] -- returns the raw GAM fits + per-cell metrics
-#'   (for custom plotting or downstream analysis).
+#' * [janusplot_fit()] -- fits every ordered pair once and returns the
+#'   fit object (per-pair metrics, per-cell table via `summary()`, flags)
+#'   for custom plotting or downstream analysis.
 #' * [janusplot_direction_test()] -- runs the residual-independence test
 #'   that licenses a directional reading of a pair's asymmetry, and
 #'   abstains where the additive noise model cannot decide.

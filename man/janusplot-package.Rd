@@ -18,8 +18,9 @@ non-linearity become visually evident.
 \section{Main functions}{
 \itemize{
 \item \code{\link[=janusplot]{janusplot()}} -- returns a ggplot of the matrix.
-\item \code{\link[=janusplot_data]{janusplot_data()}} -- returns the raw GAM fits + per-cell metrics
-(for custom plotting or downstream analysis).
+\item \code{\link[=janusplot_fit]{janusplot_fit()}} -- fits every ordered pair once and returns the
+fit object (per-pair metrics, per-cell table via \code{summary()}, flags)
+for custom plotting or downstream analysis.
 \item \code{\link[=janusplot_direction_test]{janusplot_direction_test()}} -- runs the residual-independence test
 that licenses a directional reading of a pair's asymmetry, and
 abstains where the additive noise model cannot decide.

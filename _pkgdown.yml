@@ -39,6 +39,7 @@ reference:
     desc: "Render an asymmetric smoothed-association matrix."
     contents:
       - janusplot
+      - janusplot_fit
       - janusplot_data
 
   - title: "Directional licensing"
