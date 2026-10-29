@@ -29,16 +29,16 @@ test_that("k-check diagnostics populate every cell on a normal dataset", {
   }
 })
 
-test_that("with_data table carries the 9 k-check columns", {
+test_that("the per-cell table carries the 9 k-check columns", {
   skip_if_no_mgcv()
   dat <- make_linear_data(n = 200L, seed = 1L)
-  out <- janusplot(dat, vars = c("x1", "x2", "x3"), with_data = TRUE)
+  tbl <- summary(janusplot_fit(dat, vars = c("x1", "x2", "x3")))
   expected <- c("k_prime", "k_index", "k_p", "k_flag",
                 "k_check_status", "k_initial", "k_final",
                 "k_iterations", "k_at_cap")
-  expect_true(all(expected %in% names(out$data)))
-  expect_type(out$data$k_flag, "logical")
-  expect_type(out$data$k_iterations, "integer")
+  expect_true(all(expected %in% names(tbl)))
+  expect_type(tbl$k_flag, "logical")
+  expect_type(tbl$k_iterations, "integer")
 })
 
 # ---------------------------------------------------------------

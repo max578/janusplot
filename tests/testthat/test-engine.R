@@ -1,9 +1,9 @@
 skip_on_cran()  # heavy GAM-fit suite: full on CI, skipped on CRAN for time budget
 
 # Tests for Feature 4 — fitting-engine dispatch (bam vs gam).
-# Covers: both engines produce ggplot + with_data; both agree on
-# linear DGP within EDF tolerance; engine + method columns surface
-# in with_data; public API validation; arg_match guard.
+# Covers: both engines produce a plot and a table; both agree on a
+# linear DGP within EDF tolerance; engine + method columns surface in
+# the table; public API validation; arg_match guard.
 
 skip_if_no_mgcv <- function() {
   testthat::skip_if_not_installed("mgcv")
@@ -13,23 +13,24 @@ skip_if_no_mgcv <- function() {
 # Both engines: end-to-end smoke
 # ---------------------------------------------------------------
 
-test_that("engine = 'bam' (default) produces ggplot + with_data", {
+test_that("engine = 'bam' (default) produces a plot and a table", {
   skip_if_no_mgcv()
   dat <- make_linear_data(150L, seed = 1L)
-  out <- janusplot(dat, vars = c("x1", "x2", "x3"), with_data = TRUE)
-  expect_s3_class(out$plot, "ggplot")
-  expect_true(all(out$data$engine == "bam"))
-  expect_true(all(out$data$method == "fREML"))
+  fit <- janusplot_fit(dat, vars = c("x1", "x2", "x3"))
+  expect_s3_class(plot(fit), "ggplot")
+  tbl <- summary(fit)
+  expect_true(all(tbl$engine == "bam"))
+  expect_true(all(tbl$method == "fREML"))
 })
 
-test_that("engine = 'gam' produces ggplot + with_data with REML method", {
+test_that("engine = 'gam' produces a plot and a table with REML method", {
   skip_if_no_mgcv()
   dat <- make_linear_data(150L, seed = 1L)
-  out <- janusplot(dat, vars = c("x1", "x2", "x3"),
-                   engine = "gam", with_data = TRUE)
-  expect_s3_class(out$plot, "ggplot")
-  expect_true(all(out$data$engine == "gam"))
-  expect_true(all(out$data$method == "REML"))
+  fit <- janusplot_fit(dat, vars = c("x1", "x2", "x3"), engine = "gam")
+  expect_s3_class(plot(fit), "ggplot")
+  tbl <- summary(fit)
+  expect_true(all(tbl$engine == "gam"))
+  expect_true(all(tbl$method == "REML"))
 })
 
 # ---------------------------------------------------------------
@@ -41,10 +42,8 @@ test_that("engine = 'gam' produces ggplot + with_data with REML method", {
 test_that("both engines agree closely (<10% relative shift) on linear DGP", {
   skip_if_no_mgcv()
   dat <- make_linear_data(200L, seed = 1L)
-  bam_data <- janusplot(dat, vars = c("x1", "x2"),
-                        engine = "bam", with_data = TRUE)$data
-  gam_data <- janusplot(dat, vars = c("x1", "x2"),
-                        engine = "gam", with_data = TRUE)$data
+  bam_data <- summary(janusplot_fit(dat, vars = c("x1", "x2"), engine = "bam"))
+  gam_data <- summary(janusplot_fit(dat, vars = c("x1", "x2"), engine = "gam"))
   # fREML (bam) vs REML (gam) differ by a few percent on identical
   # data — this is the documented v0.1.0 -> v0.1.1 numerical shift.
   # Sanity check: relative shift <10%.
@@ -63,10 +62,8 @@ test_that("both engines agree closely (<10% relative shift) on linear DGP", {
 test_that("both engines detect non-linearity on a quadratic DGP (forward direction)", {
   skip_if_no_mgcv()
   dat <- make_nonlinear_data(200L, seed = 2L)
-  bam_d <- janusplot(dat, vars = c("x1", "x2"),
-                     engine = "bam", with_data = TRUE)$data
-  gam_d <- janusplot(dat, vars = c("x1", "x2"),
-                     engine = "gam", with_data = TRUE)$data
+  bam_d <- summary(janusplot_fit(dat, vars = c("x1", "x2"), engine = "bam"))
+  gam_d <- summary(janusplot_fit(dat, vars = c("x1", "x2"), engine = "gam"))
   # Forward direction: x2 ~ s(x1) on x2 = x1^2 + noise. Both
   # engines should easily land EDF > 1.5 in this direction.
   forward_bam <- bam_d[bam_d$var_x == "x1" & bam_d$var_y == "x2", ]
@@ -110,8 +107,7 @@ test_that("discrete = TRUE on engine = gam is silently ignored (gam doesn't use 
 test_that("engine = 'gam' + default method = REML matches v0.1.0 stack", {
   skip_if_no_mgcv()
   dat <- make_linear_data(60L, seed = 1L)
-  d <- janusplot(dat, vars = c("x1", "x2"),
-                 engine = "gam", with_data = TRUE)$data
+  d <- summary(janusplot_fit(dat, vars = c("x1", "x2"), engine = "gam"))
   expect_true(all(d$engine == "gam"))
   expect_true(all(d$method == "REML"))
 })
@@ -149,9 +145,8 @@ test_that("invalid discrete / nthreads error loudly", {
 test_that("explicit method overrides per-engine default", {
   skip_if_no_mgcv()
   dat <- make_linear_data(80L, seed = 1L)
-  d <- janusplot(dat, vars = c("x1", "x2"),
-                 engine = "gam", method = "GCV.Cp",
-                 with_data = TRUE)$data
+  d <- summary(janusplot_fit(dat, vars = c("x1", "x2"),
+                             engine = "gam", method = "GCV.Cp"))
   expect_true(all(d$method == "GCV.Cp"))
 })
 

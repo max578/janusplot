@@ -1,7 +1,7 @@
 # Tests for the single-display derivative view in janusplot().
-# The matrix renders one quantity at a time: "fit", "d1", or "d2".
-# Derivative CI rendering is off by default; opt-in via
-# derivative_ci = "pointwise" or "simultaneous" (Simpson 2018 MC).
+# The matrix renders one quantity at a time: "fit", "d1", or "d2",
+# from derivatives computed at fit time. The band is pointwise by
+# default; derivative_ci = "simultaneous" uses the Simpson (2018) MC.
 
 # ---------------------------------------------------------------
 # Numerical correctness of .derivatives_lpmatrix()
@@ -165,26 +165,18 @@ test_that("derivative estimates drop adjust covariates held at typical values", 
 # janusplot() integration — scalar display
 # ---------------------------------------------------------------
 
-test_that("janusplot(display = 'fit') returns the legacy single-panel cell type", {
+test_that("display = 'fit' renders each cell as a single-panel ggplot", {
   skip_on_cran()
   # Each off-diagonal cell must still be a plain ggplot (not a
   # patchwork) — this is the invariant that keeps legacy visual
   # snapshots interpretable.
   d <- make_linear_data(n = 120L, seed = 1L)
-  f <- janusplot:::.fit_pair(
-    x_name = "x1", y_name = "x2", data_full = d,
-    adjust = NULL, method = "REML", k = -1L, bs = "tp",
-    na_action = "pairwise"
-  )
-  cell <- janusplot:::.build_cell(
-    fit_obj = f, show_data = TRUE, show_ci = TRUE,
-    colour_by = "spearman", palette = "RdBu",
-    signif_glyph = TRUE, annotations = c("edf", "A"),
-    shape_cutoffs = janusplot_shape_cutoffs(),
-    glyph_style = "ascii", asym_val = 0.1,
-    colour_limits = c(-1, 1), is_upper = TRUE,
-    text_sizes = janusplot:::.cell_text_sizes(3L),
-    display = "fit"
+  fit <- janusplot_fit(d, vars = c("x1", "x2"), engine = "gam")
+  cell <- janusplot:::.render_cell(
+    fit$pairs[[1L]], "yx",
+    points = janusplot:::.cell_points(fit, "x1", "x2"),
+    style = janusplot_style(), text_sizes = janusplot:::.cell_text_sizes(3L),
+    annotations = c("edf", "A", "signif"), display = "fit"
   )
   expect_s3_class(cell, "ggplot")
   expect_false(inherits(cell, "patchwork"))
@@ -237,21 +229,19 @@ test_that("n_grid validation is strict and auto-resolves", {
 })
 
 # ---------------------------------------------------------------
-# with_data = TRUE carries a `display` column
+# One fit serves every display; the table carries no view column
 # ---------------------------------------------------------------
 
-test_that("summary table tags display mode on every call", {
+test_that("one fit renders fit, d1 and d2 and its table is display-free", {
   skip_on_cran()
   d <- make_nonlinear_data(n = 120L, seed = 2L)
-  out_fit <- janusplot(d, vars = c("x1", "x2"), with_data = TRUE)
-  out_d1  <- janusplot(d, vars = c("x1", "x2"),
-                       display = "d1", with_data = TRUE)
-  out_d2  <- janusplot(d, vars = c("x1", "x2"),
-                       display = "d2", with_data = TRUE)
-  expect_true("display" %in% colnames(out_fit$data))
-  expect_identical(unique(out_fit$data$display), "fit")
-  expect_identical(unique(out_d1$data$display), "d1")
-  expect_identical(unique(out_d2$data$display), "d2")
+  fit <- janusplot_fit(d, vars = c("x1", "x2"))
+  expect_false("display" %in% colnames(summary(fit)))
+  for (mode in c("fit", "d1", "d2")) {
+    expect_s3_class(plot(fit, display = mode), "ggplot")
+  }
+  expect_match(plot(fit, display = "d1")$patches$annotation$title,
+               "First derivative")
 })
 
 # ---------------------------------------------------------------
@@ -287,8 +277,10 @@ test_that("janusplot_data derivatives validation rejects bad orders", {
 test_that("diagonal = 'density' renders a density+rug ggplot per variable", {
   skip_on_cran()
   d <- make_nonlinear_data(n = 200L, seed = 2L)
-  p <- janusplot(d, vars = c("x1", "x2"), diagonal = "density",
-                 show_shape_legend = FALSE, show_glossary = FALSE)
+  p <- janusplot(d, vars = c("x1", "x2"),
+                 style = janusplot_style(diagonal = "density",
+                                         show_shape_legend = FALSE,
+                                         show_glossary = FALSE))
   expect_true(inherits(p, "ggplot") || inherits(p, "patchwork"))
 
   cell <- janusplot:::.build_density_rug_cell("x1", d$x1)
@@ -307,8 +299,7 @@ test_that("diagonal = 'density' falls back to blank when n < 5", {
 
 test_that("diagonal validation rejects unknown value", {
   skip_on_cran()
-  d <- make_linear_data(n = 60L, seed = 1L)
-  expect_error(janusplot(d, vars = c("x1", "x2"), diagonal = "violin"))
+  expect_error(janusplot_style(diagonal = "violin"))
 })
 
 test_that(".display_title emits the three mode labels", {
@@ -334,8 +325,8 @@ test_that("janusplot display = 'd1' snapshot", {
   p <- janusplot(d, vars = c("x1", "x2"),
                  display = "d1",
                  colour_by = "none",
-                 show_shape_legend = FALSE,
-                 show_glossary = FALSE,
+                 style = janusplot_style(show_shape_legend = FALSE,
+                                         show_glossary = FALSE),
                  engine = "gam")
   vdiffr::expect_doppelganger("matrix-2var-d1-plain", p)
 })
@@ -349,8 +340,8 @@ test_that("janusplot display = 'd1' simultaneous-CI snapshot", {
                    derivative_ci = "simultaneous",
                    derivative_ci_nsim = 500L,
                    colour_by = "none",
-                   show_shape_legend = FALSE,
-                   show_glossary = FALSE,
+                   style = janusplot_style(show_shape_legend = FALSE,
+                                           show_glossary = FALSE),
                    engine = "gam")
   })
   vdiffr::expect_doppelganger("matrix-2var-d1-simultaneous", p)

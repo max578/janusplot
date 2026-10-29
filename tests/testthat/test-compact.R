@@ -120,27 +120,37 @@ test_that("tier 3 (k = 26) renders a ggplot", {
 })
 
 # ---------------------------------------------------------------
-# Backward compatibility: at k < 12, output must be unchanged
-# whether compact is "auto", "always" (forces tier 1) is OFF, or
-# "never". Use the data summary as a proxy — fits + metrics
-# computed are identical across compact settings.
+# Backward compatibility: compact is a rendering-only knob. The
+# same fit renders under every setting and its table is untouched;
+# the tiers differ only in what each cell draws.
 # ---------------------------------------------------------------
 
 test_that("compact setting does not affect fits / metrics (rendering-only knob)", {
   skip_if_no_mgcv()
   dat <- make_linear_data(n = 150L, seed = 1L)
-  d_auto  <- janusplot(dat, vars = c("x1", "x2", "x3"),
-                       compact = "auto", with_data = TRUE)$data
-  d_always <- janusplot(dat, vars = c("x1", "x2", "x3"),
-                        compact = "always", with_data = TRUE)$data
-  d_never  <- janusplot(dat, vars = c("x1", "x2", "x3"),
-                        compact = "never", with_data = TRUE)$data
-  # Strip rendering-only columns; compare the fit-side metrics.
-  cols <- c("edf", "asymmetry_index", "pvalue", "k_prime", "k_index",
+  fit <- janusplot_fit(dat, vars = c("x1", "x2", "x3"))
+  before <- fit$table
+  for (mode in c("auto", "always", "never")) {
+    p <- plot(fit, style = janusplot_style(compact = mode,
+                                           show_shape_legend = FALSE))
+    expect_s3_class(p, "ggplot")
+  }
+  cols <- c("edf", "asymmetry_index", "association_p", "k_prime", "k_index",
             "cor_spearman", "shape_category", "monotonicity_index",
             "convexity_index")
-  expect_identical(d_auto[, cols], d_always[, cols])
-  expect_identical(d_auto[, cols], d_never[, cols])
+  expect_identical(summary(fit)[, cols], before[, cols])
+  # Tier 1 drops the points from every cell; tier 0 keeps them.
+  face <- janusplot:::.pair_face(fit$pairs[[1L]], "yx")
+  points <- janusplot:::.cell_points(fit, face$var_x, face$var_y)
+  geoms <- function(tier) {
+    cell <- janusplot:::.render_cell(
+      fit$pairs[[1L]], "yx", points, style = janusplot_style(),
+      text_sizes = janusplot:::.cell_text_sizes(3L), tier = tier
+    )
+    vapply(cell$layers, function(l) class(l$geom)[1L], character(1L))
+  }
+  expect_true("GeomPoint" %in% geoms(0L))
+  expect_false("GeomPoint" %in% geoms(1L))
 })
 
 # ---------------------------------------------------------------
@@ -148,19 +158,10 @@ test_that("compact setting does not affect fits / metrics (rendering-only knob)"
 # ---------------------------------------------------------------
 
 test_that("invalid compact value errors via arg_match", {
-  expect_error(
-    janusplot(make_linear_data(60L), compact = "sometimes"),
-    "must be one of"
-  )
+  expect_error(janusplot_style(compact = "sometimes"), "must be one of")
 })
 
 test_that("invalid compact_threshold errors loudly", {
-  expect_error(
-    janusplot(make_linear_data(60L), compact_threshold = 0L),
-    "integer >= 2"
-  )
-  expect_error(
-    janusplot(make_linear_data(60L), compact_threshold = "twelve"),
-    "integer >= 2"
-  )
+  expect_error(janusplot_style(compact_threshold = 0L), "integer >= 2")
+  expect_error(janusplot_style(compact_threshold = "twelve"), "integer >= 2")
 })

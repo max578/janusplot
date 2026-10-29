@@ -17,12 +17,11 @@ test_that(".fit_pair carries the mgcv error and reports n_used as unknown", {
   expect_true(is.na(f$edf))
 })
 
-test_that("janusplot(with_data = TRUE) carries the error column and does not over-report n_used", {
+test_that("the per-cell table carries the error column and does not over-report n_used", {
   d <- data.frame(x1 = rep(1, 40), x2 = stats::rnorm(40), x3 = stats::rnorm(40))
-  out <- suppressWarnings(
-    janusplot(d, vars = c("x1", "x2", "x3"), with_data = TRUE)
-  )
-  tbl <- out$data
+  fit <- suppressWarnings(janusplot_fit(d, vars = c("x1", "x2", "x3")))
+  expect_s3_class(plot(fit), "ggplot")
+  tbl <- summary(fit)
   expect_true("error" %in% names(tbl))
   failed_rows <- tbl[tbl$var_x == "x1" | tbl$var_y == "x1", ]
   expect_true(all(!is.na(failed_rows$error)))

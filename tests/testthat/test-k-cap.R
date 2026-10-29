@@ -43,13 +43,12 @@ test_that("x with 6 distinct values fits at the default k with k_used = 6", {
   expect_true(is.finite(p$asymmetry_index))
 })
 
-test_that("janusplot(with_data = TRUE) carries k_requested / k_used / k_capped", {
+test_that("summary(janusplot_fit()) carries k_requested / k_used / k_capped", {
   skip_if_no_mgcv()
   df <- make_six_level_data()
-  out <- suppressMessages(
-    janusplot(df, vars = c("g", "y1"), with_data = TRUE)
-  )
-  tbl <- out$data
+  fit <- suppressMessages(janusplot_fit(df, vars = c("g", "y1")))
+  tbl <- summary(fit)
+  expect_s3_class(plot(fit), "ggplot")
   expect_true(all(c("k_requested", "k_used", "k_capped") %in% names(tbl)))
   row_g <- tbl[tbl$var_x == "g", ]
   expect_identical(row_g$k_used, 6L)
@@ -201,13 +200,10 @@ test_that("janusplot_fit() pairs carry k_capped_yx / k_capped_xy beside A", {
   expect_false(p$k_capped_xy)
 })
 
-test_that("with_data table carries k_capped_yx / k_capped_xy beside A", {
+test_that("the per-cell table carries k_capped_yx / k_capped_xy beside A", {
   skip_if_no_mgcv()
   df <- make_six_level_data()
-  out <- suppressMessages(
-    janusplot(df, vars = c("g", "y1"), with_data = TRUE)
-  )
-  tbl <- out$data
+  tbl <- summary(suppressMessages(janusplot_fit(df, vars = c("g", "y1"))))
   at <- which(names(tbl) == "asymmetry_index")
   expect_identical(names(tbl)[at + 1:2], c("k_capped_yx", "k_capped_xy"))
   # Pair-level: both cells of the pair report the same flags, with _yx
@@ -225,38 +221,34 @@ collect_cell_labels <- function(cell) {
   out
 }
 
-build_k_warn_cell <- function(f) {
-  janusplot:::.build_cell(
-    fit_obj = f, show_data = FALSE, show_ci = FALSE,
-    colour_by = "none", palette = NULL,
-    signif_glyph = FALSE, annotations = "k_warn",
-    shape_cutoffs = janusplot_shape_cutoffs(),
-    glyph_style = "ascii", asym_val = NA_real_,
-    colour_limits = c(NA_real_, NA_real_), is_upper = TRUE,
+build_k_warn_cell <- function(fit, direction, position) {
+  face <- janusplot:::.pair_face(fit$pairs[[1L]], direction)
+  janusplot:::.render_cell(
+    fit$pairs[[1L]], direction,
+    points = janusplot:::.cell_points(fit, face$var_x, face$var_y),
+    style = janusplot_style(show_data = FALSE, show_ci = FALSE,
+                            annotation_position = position),
     text_sizes = janusplot:::.cell_text_sizes(2L),
-    display = "fit"
+    annotations = "k_warn", display = "fit"
   )
 }
 
 test_that("k_warn fires on a capped cell", {
   skip_if_no_mgcv()
   df <- make_six_level_data()
-  f_cap <- janusplot:::.fit_pair(
-    x_name = "g", y_name = "y1", data_full = df,
-    adjust = NULL, method = NULL, k = -1L, bs = "tp",
-    na_action = "pairwise"
-  )
-  expect_true(f_cap$k_capped)
-  # The Wood trifecta cannot flag this cell (fewer than 10 distinct x).
-  expect_false(isTRUE(f_cap$k_check$k_flag))
-  expect_true("!" %in% collect_cell_labels(build_k_warn_cell(f_cap)))
+  fit <- suppressMessages(janusplot_fit(df, vars = c("g", "y1"),
+                                        engine = "gam"))
+  pr <- fit$pairs[[1L]]
+  # _yx is y1 ~ s(g): capped. The Wood trifecta cannot flag this cell
+  # (fewer than 10 distinct x).
+  expect_true(pr$k_capped_yx)
+  expect_false(isTRUE(pr$k_check_yx$k_flag))
+  expect_true("!" %in% collect_cell_labels(build_k_warn_cell(fit, "yx", "corners")))
+  expect_identical(build_k_warn_cell(fit, "yx", "strip")$labels$subtitle, "!")
 
-  f_free <- janusplot:::.fit_pair(
-    x_name = "y1", y_name = "g", data_full = df,
-    adjust = NULL, method = NULL, k = -1L, bs = "tp",
-    na_action = "pairwise"
-  )
-  expect_false(f_free$k_capped)
-  expect_false(isTRUE(f_free$k_check$k_flag))
-  expect_false("!" %in% collect_cell_labels(build_k_warn_cell(f_free)))
+  # _xy is g ~ s(y1): y1 has 120 distinct values, untouched.
+  expect_false(pr$k_capped_xy)
+  expect_false(isTRUE(pr$k_check_xy$k_flag))
+  expect_false("!" %in% collect_cell_labels(build_k_warn_cell(fit, "xy", "corners")))
+  expect_null(build_k_warn_cell(fit, "xy", "strip")$labels$subtitle)
 })

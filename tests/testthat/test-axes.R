@@ -81,19 +81,30 @@ test_that(".label_with_suffix handles every mode correctly", {
 test_that("fits + metrics are byte-identical across axes modes", {
   skip_if_no_mgcv()
   dat <- make_nonlinear_data(n = 200L, seed = 2L)
-  d_orig <- janusplot(dat, axes = "original",     with_data = TRUE)$data
-  d_std  <- janusplot(dat, axes = "standardised", with_data = TRUE)$data
-  d_ctr  <- janusplot(dat, axes = "centred",      with_data = TRUE)$data
-  d_rnk  <- janusplot(dat, axes = "rank",         with_data = TRUE)$data
-  # The fit-side columns must be identical; rendering-only knob.
-  cols <- c("edf", "pvalue", "asymmetry_index", "dev_exp",
+  fit <- janusplot_fit(dat)
+  before <- fit$table
+  cols <- c("edf", "association_p", "asymmetry_index", "dev_exp",
             "cor_pearson", "cor_spearman", "cor_kendall", "tie_ratio",
             "monotonicity_index", "convexity_index",
             "n_turning_points", "n_inflections", "shape_category",
             "k_prime", "k_index", "k_p", "k_flag")
-  expect_identical(d_orig[, cols], d_std[, cols])
-  expect_identical(d_orig[, cols], d_ctr[, cols])
-  expect_identical(d_orig[, cols], d_rnk[, cols])
+  for (mode in c("original", "standardised", "centred", "rank")) {
+    p <- plot(fit, axes = mode, style = janusplot_style(show_shape_legend = FALSE))
+    expect_s3_class(p, "ggplot")
+    # The fit-side columns are untouched by the rendering-only knob.
+    expect_identical(summary(fit)[, cols], before[, cols])
+  }
+  # The transform reaches the drawn curve: a standardised cell has a
+  # curve centred near zero, the original one does not.
+  face <- janusplot:::.pair_face(fit$pairs[[1L]], "yx")
+  points <- janusplot:::.cell_points(fit, face$var_x, face$var_y)
+  tf <- janusplot:::.build_axis_transform(fit$data[[face$var_y]], "standardised")
+  cell <- janusplot:::.render_cell(
+    fit$pairs[[1L]], "yx", points, style = janusplot_style(),
+    text_sizes = janusplot:::.cell_text_sizes(4L), y_transform = tf
+  )
+  line <- cell$layers[[3L]]$data
+  expect_equal(line$fit, tf$fn(face$pred$fit))
 })
 
 # ---------------------------------------------------------------
@@ -115,8 +126,9 @@ test_that("every (k, axes) combination renders without warnings", {
   modes    <- c("original", "standardised", "centred", "rank")
   for (k in k_values) {
     dat <- make_wide_data(k)
+    fit <- expect_silent(janusplot_fit(dat))
     for (m in modes) {
-      p <- expect_silent(janusplot(dat, axes = m))
+      p <- expect_silent(plot(fit, axes = m))
       expect_s3_class(p, "ggplot")
     }
   }
@@ -144,9 +156,10 @@ test_that("border labels carry the mode suffix at every k", {
   skip_if_no_mgcv()
   for (k in c(3L, 12L, 20L)) {
     dat <- make_wide_data(k)
-    g_std  <- janusplot(dat, axes = "standardised", labels = "border")
-    g_rnk  <- janusplot(dat, axes = "rank",         labels = "border")
-    g_orig <- janusplot(dat, axes = "original",     labels = "border")
+    fit <- janusplot_fit(dat)
+    g_std  <- plot(fit, axes = "standardised")
+    g_rnk  <- plot(fit, axes = "rank")
+    g_orig <- plot(fit, axes = "original")
     std_labels  <- collect_label_strings(g_std)
     rnk_labels  <- collect_label_strings(g_rnk)
     orig_labels <- collect_label_strings(g_orig)
@@ -168,8 +181,9 @@ test_that("border labels carry the mode suffix at every k", {
 test_that("tier 3 (k = 26) accepts every axes mode silently", {
   skip_if_no_mgcv()
   dat <- make_wide_data(26L)
+  fit <- janusplot_fit(dat)
   for (m in c("original", "standardised", "centred", "rank")) {
-    p <- janusplot(dat, axes = m)
+    p <- plot(fit, axes = m)
     expect_s3_class(p, "ggplot")
   }
 })
@@ -188,60 +202,33 @@ test_that("invalid axes value errors via arg_match", {
 })
 
 # ---------------------------------------------------------------
-# save_as file output
+# The returned plot saves with ggplot2::ggsave()
 # ---------------------------------------------------------------
 
-test_that("save_as writes PNG / PDF with device from extension", {
+test_that("the returned plot writes PNG / PDF with the device from the extension", {
   skip_if_no_mgcv()
-  testthat::skip_if_not_installed("ggplot2")
   dat <- make_linear_data(60L, seed = 1L)
   tmpdir <- withr::local_tempdir()
+  p <- janusplot(dat, vars = c("x1", "x2", "x3"))
   # PNG + PDF use base R grDevices — always available. SVG needs
   # svglite (ggplot2 dispatches to svglite::svglite for .svg), so
   # it gets its own conditional-skip test below.
   for (ext in c("png", "pdf")) {
     path <- file.path(tmpdir, paste0("matrix.", ext))
-    p <- janusplot(dat, vars = c("x1", "x2", "x3"), save_as = path)
+    ggplot2::ggsave(path, p, width = 6, height = 6)
     expect_true(file.exists(path))
     expect_true(file.size(path) > 100)
-    expect_s3_class(p, "ggplot")
   }
 })
 
-test_that("save_as writes SVG when svglite is available", {
+test_that("the returned plot writes SVG when svglite is available", {
   skip_if_no_mgcv()
   testthat::skip_if_not_installed("svglite")
   dat <- make_linear_data(60L, seed = 1L)
   tmpdir <- withr::local_tempdir()
   path <- file.path(tmpdir, "matrix.svg")
-  p <- janusplot(dat, vars = c("x1", "x2", "x3"), save_as = path)
+  p <- janusplot(dat, vars = c("x1", "x2", "x3"))
+  ggplot2::ggsave(path, p, width = 6, height = 6)
   expect_true(file.exists(path))
-  expect_true(file.size(path) > 100)
-  expect_s3_class(p, "ggplot")
-})
-
-test_that("save_as rejects unknown extensions loudly", {
-  skip_if_no_mgcv()
-  dat <- make_linear_data(60L, seed = 1L)
-  expect_error(
-    janusplot(dat, vars = c("x1", "x2"), save_as = "matrix.xyz"),
-    "Cannot infer image device"
-  )
-  expect_error(
-    janusplot(dat, vars = c("x1", "x2"), save_as = "matrix_no_extension"),
-    "Cannot infer image device"
-  )
-})
-
-test_that("save_as honours width / height / dpi overrides", {
-  skip_if_no_mgcv()
-  dat <- make_linear_data(60L, seed = 1L)
-  tmpdir <- withr::local_tempdir()
-  path <- file.path(tmpdir, "matrix.png")
-  janusplot(dat, vars = c("x1", "x2", "x3"),
-            save_as = path, save_width = 4, save_height = 4, save_dpi = 96)
-  expect_true(file.exists(path))
-  # 4x4 inches at 96 dpi -> 384 x 384 px; allow some slack since
-  # patchwork may add small margins.
   expect_true(file.size(path) > 100)
 })

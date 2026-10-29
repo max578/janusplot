@@ -34,11 +34,11 @@ test_that("janusplot_fit() fits non-syntactic names and restores them", {
   expect_setequal(unique(c(vi, vj)), odd_vars)
 })
 
-test_that("janusplot(with_data = TRUE) restores non-syntactic names", {
+test_that("plot() and summary() restore non-syntactic names", {
   d <- make_odd_names_data()
-  out <- janusplot(d, vars = odd_vars, engine = "gam", with_data = TRUE)
-  expect_s3_class(out$plot, "ggplot")
-  tbl <- out$data
+  fit <- janusplot_fit(d, vars = odd_vars, engine = "gam")
+  expect_s3_class(plot(fit), "ggplot")
+  tbl <- summary(fit)
   expect_setequal(unique(c(tbl$var_x, tbl$var_y)), odd_vars)
   expect_true(all(is.na(tbl$error)))
   expect_true(all(is.finite(tbl$edf)))
@@ -51,9 +51,10 @@ test_that("adjust can reference a non-syntactic column with backticks", {
                         engine = "gam")
   expect_true(all(is.na(vapply(res$pairs, `[[`, character(1L), "error_yx"))))
   expect_true(all(is.finite(vapply(res$pairs, `[[`, numeric(1L), "edf_yx"))))
-  out <- janusplot(d, vars = vv, adjust = ~ s(`site name`, k = 4),
-                   engine = "gam", with_data = TRUE)
-  expect_true(all(is.na(out$data$error)))
+  fit <- janusplot_fit(d, vars = vv, adjust = ~ s(`site name`, k = 4),
+                       engine = "gam")
+  expect_true(all(is.na(summary(fit)$error)))
+  expect_s3_class(plot(fit), "ggplot")
 })
 
 test_that("restored names reach error messages of failed cells", {
@@ -134,7 +135,7 @@ test_that("character adjust columns are coerced to factor with one inform", {
   msgs <- testthat::capture_messages(
     janusplot(d, vars = c("x1", "x2", "x3"),
               adjust = ~ s(site_year, bs = "re") + irrigated,
-              engine = "gam", with_data = TRUE)
+              engine = "gam")
   )
   coerce_msgs <- grep("factor", msgs, value = TRUE)
   expect_length(coerce_msgs, 1L)
@@ -144,13 +145,13 @@ test_that("character adjust columns are coerced to factor with one inform", {
 
 test_that("random-effect terms work on a coerced character column", {
   d <- make_grouped_data()
-  out <- suppressMessages(
-    janusplot(d, vars = c("x1", "x2", "x3"),
-              adjust = ~ s(site_year, bs = "re"),
-              engine = "gam", with_data = TRUE)
+  fit <- suppressMessages(
+    janusplot_fit(d, vars = c("x1", "x2", "x3"),
+                  adjust = ~ s(site_year, bs = "re"), engine = "gam")
   )
-  expect_true(all(is.na(out$data$error)))
-  expect_true(all(is.finite(out$data$edf)))
+  expect_true(all(is.na(summary(fit)$error)))
+  expect_true(all(is.finite(summary(fit)$edf)))
+  expect_s3_class(plot(fit, group = "site_year"), "ggplot")
   res <- suppressMessages(
     janusplot_fit(d, vars = c("x1", "x2"),
                    adjust = ~ s(site_year, bs = "re"),
@@ -189,16 +190,19 @@ test_that("infinite values are treated as missing with one warning", {
                    c(78L, 77L, 79L))
 })
 
-test_that("janusplot() drops infinite values and reports n_used", {
+test_that("janusplot_fit() drops infinite values and plot() draws those rows", {
   d <- make_linear_data(n = 80L)
   d$x2[1:4] <- Inf
   expect_warning(
-    out <- janusplot(d, vars = c("x1", "x2"), engine = "gam",
-                     with_data = TRUE),
+    fit <- janusplot_fit(d, vars = c("x1", "x2"), engine = "gam"),
     "x2"
   )
-  expect_true(all(out$data$n_used == 76L))
-  expect_true(all(is.na(out$data$error)))
+  tbl <- summary(fit)
+  expect_true(all(tbl$n_used == 76L))
+  expect_true(all(is.na(tbl$error)))
+  expect_length(janusplot:::.cell_rows(fit, "x1", "x2"), 76L)
+  expect_silent(p <- plot(fit))
+  expect_s3_class(p, "ggplot")
 })
 
 test_that("na_action = 'complete' also drops infinite rows", {
@@ -248,17 +252,18 @@ test_that("janusplot() renders a matrix with a sparse pair", {
   d <- make_disjoint_data()
   d$x2[1:3] <- d$x1[1:3] <- 1
   w <- testthat::capture_warnings(
-    out <- janusplot(d, engine = "gam", with_data = TRUE)
+    fit <- janusplot_fit(d, engine = "gam")
   )
   expect_length(w, 1L)
   expect_match(w, "n = 3", fixed = TRUE)
-  expect_s3_class(out$plot, "ggplot")
-  tbl <- out$data
+  expect_silent(p <- plot(fit))
+  expect_s3_class(p, "ggplot")
+  tbl <- summary(fit)
   sparse <- (tbl$var_x %in% c("x1", "x2")) & (tbl$var_y %in% c("x1", "x2"))
   expect_true(all(tbl$n_used[sparse] == 3L))
   expect_true(all(is.finite(tbl$edf[!sparse])))
   f <- withr::local_tempfile(fileext = ".png")
-  expect_no_error(ggplot2::ggsave(f, out$plot, width = 5, height = 5))
+  expect_no_error(ggplot2::ggsave(f, p, width = 5, height = 5))
 })
 
 test_that("failed and sparse cells share one warning", {
@@ -315,16 +320,17 @@ test_that("identical and collinear columns route through the failed-cell path", 
   expect_true(is.finite(p14$edf_yx))
 })
 
-test_that("janusplot() carries the collinearity message in its table", {
+test_that("the per-cell table carries the collinearity message", {
   d <- make_collinear_data()
   names(d)[2L] <- "x1 copy"
   expect_warning(
-    out <- janusplot(d, engine = "gam", with_data = TRUE),
+    fit <- janusplot_fit(d, engine = "gam"),
     "failed to fit"
   )
-  expect_s3_class(out$plot, "ggplot")
-  row <- out$data[out$data$var_x == "x1" & out$data$var_y == "x1 copy", ]
+  expect_s3_class(plot(fit), "ggplot")
+  tbl <- summary(fit)
+  row <- tbl[tbl$var_x == "x1" & tbl$var_y == "x1 copy", ]
   expect_match(row$error, "`x1 copy`", fixed = TRUE)
   expect_match(row$error, "identical")
-  expect_true(all(is.finite(out$data$edf[out$data$var_y == "x4"])))
+  expect_true(all(is.finite(tbl$edf[tbl$var_y == "x4"])))
 })
