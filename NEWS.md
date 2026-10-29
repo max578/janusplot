@@ -1,8 +1,393 @@
-# janusplot (development version)
+# janusplot 1.0.0
 
-* Column names that are not syntactic R names, such as `"grain yield (t/ha)"`,
-  `"N-rate %"` or `"2019_yield"`, no longer fail every cell. `janusplot()` and
-  `janusplot_data()` fit them under internal aliases and report the original
+janusplot 1.0.0 fits once and draws many times: `janusplot_fit()` fits every
+ordered pair of variables once, and `plot()`, `summary()` and every view
+below read that object without refitting. Three comparisons build on it:
+the two directions of a pair side by side (`janusplot_pair()`), a marginal
+fit against an adjusted one (`janusplot_compare()`), and the
+residual-independence test of direction (`janusplot_direction()`).
+
+## Breaking changes
+
+* `janusplot()` no longer takes appearance arguments; they live in
+  `janusplot_style()`, passed as `style`. The function has fourteen
+  formals: `data`, `vars`, `adjust`, the view arguments `colour_by`,
+  `background_by`, `annotations`, `order`, `display`, `group`, `focus_by`,
+  `focus_threshold`, `axes`, `style`, and `...`, which goes to
+  `janusplot_fit()` and then to mgcv. The 0.2.0 names (`show_data`,
+  `show_ci`, `palette`, `show_shape_legend`, `glyph_style`, `labels`,
+  `diagonal`, `label_srt`, `label_cex`, `text_scale_diag`,
+  `text_scale_off_diag`, `show_glossary`, `glossary_scale`, `compact`,
+  `compact_threshold`, `compact_levels`, `focus_dim_alpha`, `fill_by`,
+  `show_asymmetry`, `signif_glyph`) are accepted through `...` for one
+  release, each with a `lifecycle` deprecation warning, and are removed
+  in 1.1.0. Arguments after `adjust` must be named.
+
+  ```r
+  # 0.2.0
+  janusplot(d, show_data = FALSE, palette = "magma", label_srt = 90)
+
+  # 1.0.0
+  janusplot(d, style = janusplot_style(show_data = FALSE, palette = "magma",
+                                       label_srt = 90))
+  ```
+
+* The default cell encodes non-linearity (EDF minus 1) on the panel
+  border and tints the panel background by the pair's signed Pearson
+  correlation, in place of Pearson r washed over the whole cell.
+  `colour_by` defaults to `"nonlinearity"`; its channel is
+  `janusplot_style(colour_channel = )`: `"border"` (the default), `"tile"`
+  (a bottom-right corner tile) or `"fill"` (the whole cell at alpha 0.45).
+  A background with the fill channel is an error naming both settings, so
+  the 0.2.0 look needs `background_by = "none"`. `colour_by = "edf"` is
+  mapped to `"nonlinearity"` with a deprecation message for one release.
+
+  ```r
+  # 0.2.0 (default look)
+  janusplot(d)
+
+  # 1.0.0: the same look
+  janusplot(d, colour_by = "pearson", background_by = "none",
+            style = janusplot_style(colour_channel = "fill"))
+  ```
+
+* `with_data = TRUE` is gone. `summary()` on a `janusplot_fit` object
+  returns the per-cell table. Given to `janusplot()`, `with_data = TRUE`
+  still returns `list(plot, data)` with a deprecation warning for one
+  release.
+
+  ```r
+  # 0.2.0
+  out <- janusplot(d, with_data = TRUE)
+  out$plot
+  out$data
+
+  # 1.0.0
+  fit <- janusplot_fit(d)
+  plot(fit)
+  summary(fit)
+  ```
+
+* `pvalue_yx` / `pvalue_xy` in `$pairs` and `pvalue` in the per-cell
+  table are renamed `association_p_yx` / `association_p_xy` and
+  `association_p`; the adjusted values sit beside them.
+
+  ```r
+  # 0.2.0
+  out <- janusplot_data(d)
+  out$pairs[[1]]$pvalue_yx
+  janusplot(d, with_data = TRUE)$data$pvalue
+
+  # 1.0.0
+  fit <- janusplot_fit(d)
+  fit$pairs[[1]]$association_p_yx
+  summary(fit)$association_p
+  summary(fit)$association_p_adj
+  ```
+
+* `save_as`, `save_width`, `save_height` and `save_dpi` are gone;
+  `ggplot2::ggsave()` writes the returned plot. The shim calls it once
+  with a deprecation warning for one release.
+
+  ```r
+  # 0.2.0
+  janusplot(d, save_as = "matrix.png", save_dpi = 300)
+
+  # 1.0.0
+  p <- janusplot(d)
+  ggplot2::ggsave("matrix.png", p, width = 6, height = 6, dpi = 300)
+  ```
+
+* `labels = "diagonal"` is gone; `janusplot_style(labels = )` takes
+  `"border"` or `"none"`, and the shim draws `"diagonal"` as `"border"`
+  with a message. `janusplot_style(diagonal = "name")` still writes the
+  variable names on the diagonal.
+
+  ```r
+  # 0.2.0
+  janusplot(d, labels = "diagonal")
+
+  # 1.0.0
+  janusplot(d, style = janusplot_style(labels = "none", diagonal = "name"))
+  ```
+
+* `janusplot_shape_sensitivity_shapes()`, `janusplot_shape_sensitivity_summary()`
+  and `janusplot_shape_sensitivity_plot()` are removed, with no alias.
+  `janusplot_shape_sensitivity()` runs the sweep over every ground-truth
+  shape by default (the 14 names are the default of its `shapes` argument,
+  and `shapes = NULL` means the same) and returns a data frame of class
+  `janusplot_sensitivity`; `summary()` and `plot()` on that object do what
+  the two helpers did, with the same `level` and `type` arguments.
+
+  ```r
+  # 0.2.0
+  janusplot_shape_sensitivity_shapes()
+  res <- janusplot_shape_sensitivity(shapes = janusplot_shape_sensitivity_shapes())
+  janusplot_shape_sensitivity_summary(res, level = "archetype")
+  janusplot_shape_sensitivity_plot(res, "recovery_curves")
+
+  # 1.0.0
+  eval(formals(janusplot_shape_sensitivity)$shapes)
+  res <- janusplot_shape_sensitivity()
+  summary(res, level = "archetype")
+  plot(res, "recovery_curves")
+  ```
+
+* `janusplot_direction_test(data, x, y, k, bs, method, ...)` is replaced by
+  `janusplot_direction(fit, x, y, ...)`, which reads the rows, the basis
+  dimension, the basis type and the method from a `janusplot_fit` object.
+  The old name runs the same engine on the complete cases of two columns
+  of `data` for one release, with a `lifecycle` deprecation warning, and
+  returns the same object.
+
+  ```r
+  # 0.2.0
+  res <- janusplot_direction_test(d, "x", "y", k = 10L, seed = 1L)
+
+  # 1.0.0
+  fit <- janusplot_fit(d, k = 10L, engine = "gam")
+  res <- janusplot_direction(fit, "x", "y", seed = 1L)
+  ```
+
+* `janusplot_fit()` computes first and second derivatives at fit time
+  (`derivatives = 1:2`), so `n_grid = NULL` resolves to 200 evaluation
+  points where `janusplot_data()` used 100 without derivatives. The shape
+  indices and counts are computed on this grid, so labels near a cutoff
+  can differ from 0.2.0. `derivatives = integer()` restores the 100-point
+  grid.
+* The cutoffs `mono_nonmono`, `mono_s` and `curv_strong` of
+  `janusplot_shape_cutoffs()` are deprecated in 1.0.0. The classifier
+  never read them, so passing them had no effect on any label. They raise
+  a deprecation warning once per session, are dropped from the returned
+  list before validation and no longer appear among the defaults or in
+  the documentation. Classification is unchanged.
+
+  ```r
+  # 0.2.0: accepted and ignored
+  janusplot_shape_cutoffs(curv_strong = 0.6)
+
+  # 1.0.0: the same call warns once and returns the defaults
+  janusplot_shape_cutoffs(curv_strong = 0.6)
+  ```
+
+* Every off-diagonal cell `[r, c]` of the matrix drawn by `plot()`,
+  `janusplot()` and `plot()` on a `janusplot_compare` object now shows
+  `vars[r] ~ s(vars[c])`: the row variable on the vertical axis against the
+  column variable on the horizontal axis. In 0.x the column variable was the
+  response in the upper triangle, so a 0.x figure and a 1.0.0 figure of the
+  same data show each pair's two curves in swapped cells. The new layout
+  matches `pairs()` and GGally, so the labels name each cell's axes.
+  `summary(fit)$position` follows the drawing: `"upper"` is now the
+  `_xy` cell.
+
+  ```r
+  # 0.2.0: cell [Ozone, Temp] showed Temp ~ s(Ozone)
+  # 1.0.0: cell [Ozone, Temp] shows Ozone ~ s(Temp)
+  janusplot(airquality[, c("Ozone", "Temp")])
+  ```
+
+* `janusplot_style()` replaces `label_cex`, `text_scale_diag`,
+  `text_scale_off_diag` and `glossary_scale` with one `text_size` knob.
+  Given to `janusplot()`, the old names map to the matching `text_size`
+  element with a deprecation warning; the sizes are close to the 0.2.0
+  ones, not identical.
+
+  ```r
+  # 0.2.0
+  janusplot(d, label_cex = 1.2, glossary_scale = 0.8)
+
+  # 1.0.0
+  janusplot(d, style = janusplot_style(text_size = list(labels = 12,
+                                                        glossary = 7)))
+  ```
+
+* `annotations` defaults to `NULL`, which writes `c("A", "signif")` in a
+  strip above each cell below eight variables and the significance glyph
+  alone from eight, where the strip text is at its 5-point floor. 0.2.0
+  wrote `c("edf", "A")` in the bottom-left corner.
+  `janusplot_style(annotation_position = "corners")` puts the annotations
+  back inside the panel.
+* The shape-categories legend is attached by default only when the cells
+  carry the shape code: `janusplot_style(show_shape_legend = "auto")` draws
+  it when `annotations` include `"code"`. Set `show_shape_legend = TRUE` to
+  attach it always, as in 0.2.0.
+* `janusplot_data()` is deprecated: it forwards every argument to
+  `janusplot_fit()` with a soft deprecation message and is removed in
+  1.1.0. Its fourth and later positional arguments follow
+  `janusplot_fit()`'s order (`k`, `bs`, `engine`, `method`, ...), so
+  arguments beyond `adjust` should be named.
+* The per-cell table drops `display` and `colour_value`; both are
+  view-level choices that belong to the plot, not to the data.
+* `janusplot_direction()` fits each direction with the basis dimension
+  that direction used in the fit (`k_used_yx` or `k_used_xy` of the pair)
+  and the fit's `bs`, so the verdict rests on the smooths the matrix
+  draws. Its rows are the pair's own rows in `fit$data`, so `n` equals the
+  pair's `n_used`. A fit made with `engine = "bam"` carries a `bam()`
+  method (`"fREML"` by default); the two direction fits then use `gam()`
+  with its default `"REML"`, and the method used is returned as `method`.
+
+## New features
+
+* `janusplot_fit()` fits every ordered pair once and returns a
+  `janusplot_fit` object: `$vars`, `$pairs` (one element per unordered
+  pair, the fields `janusplot_data()` returned plus the ones below),
+  `$table` (one row per directed cell), `$data` (the cleaned copy of the
+  columns used, under the original names), `$adjust`, `$settings` (every
+  fit setting as resolved), `$flags` (`failed`, `k_capped`, `k_flagged`,
+  `sparse`), `$fits` (the mgcv objects when `keep_fits = TRUE`) and
+  `$call`. `print()` lists the variables, the cell count, the engine and
+  method, the flags and the five largest asymmetries; `summary()` returns
+  `$table`.
+* `plot()` on a `janusplot_fit` object draws the matrix from the stored
+  fit without refitting: `colour_by` (`"nonlinearity"`, `"asymmetry"`,
+  `"pearson"`, `"spearman"`, `"kendall"`, `"deviance_gap"`, `"none"`),
+  `background_by`, `annotations`, `order`, `display`, `group`,
+  `focus_by`, `focus_threshold`, `axes` and `style`. Unknown names in
+  `...` are an error. The non-linearity colour scale runs from 0 to the
+  observed maximum with a floor of 1, so a wholly linear matrix shows pale
+  borders rather than a degenerate scale.
+* `plot()` and `janusplot()` gain `background_by` (`"pearson"`,
+  `"spearman"`, `"kendall"` or `"none"`): each cell's background is tinted
+  by the pair's signed correlation, white at 0 and deeper blue or red
+  towards -1 and 1, with a colour bar marked at 0.
+  `janusplot_style(background_palette = , background_strength = )` set the
+  palette and the depth at |r| = 1. Left unset, the background is Pearson
+  for a marginal fit and absent for a fit with `adjust`, whose curves are
+  adjusted while the correlation is marginal; `background_by` set
+  explicitly still draws it, and the glossary labels it marginal.
+* `annotations` accepts `"n"` (the rows used), `"r"` (the background
+  correlation, `r -0.03`) and `"formula"` (`Temp ~ Ozone`) beside `"A"`,
+  `"edf"`, `"signif"`, `"code"`, `"shape"` and `"k_warn"`.
+* The top-left corner of the matrix carries a key: a two-by-two schematic
+  of the first two variables headed "each cell: row ~ s(column)"
+  (`janusplot_style(show_key = )`). When either name is longer than seven
+  characters, the key reads `v1` and `v2`.
+* `janusplot_style()` collects every appearance knob into one validated
+  object with a `print()` method listing the values changed from their
+  defaults.
+* `janusplot_style(text_size = )` sets every text in points: `"auto"`
+  scales with the variable count and keeps the strip at 5 points or more, a
+  number sets a base size, and a named list sets `strip`, `labels`,
+  `diagonal`, `legend`, `key`, `glossary`, `title` or `axis` one by one,
+  where `NULL` removes that text. `border_width`, `curve_width` and
+  `base_family` complete the publication settings; the default coloured
+  border is twice as thick as before.
+* `group =` colours the raw points of every cell by a factor, character
+  or logical column of `fit$data` with `janusplot_style(group_palette = )`
+  (`"Okabe-Ito"` by default, resolved through
+  `grDevices::palette.colors()`), with one legend below the matrix. The
+  column never enters the model; an error names a column that is absent
+  or has more than `group_max_levels` levels.
+* Cells with more than `janusplot_style(density_threshold = )` rows
+  (2000 by default) draw the raw points as a light grey binned density
+  (`ggplot2::geom_bin2d()`, 40 bins) instead of points.
+* `p_adjust = c("none", "BH", "holm")` adjusts the smooth F-test p-values
+  once across the `k(k - 1)` directed cells with `stats::p.adjust()`.
+  `association_p_adj` columns (and `association_p_adj_yx` / `_xy` fields)
+  hold the result, equal to the raw values under `"none"`; the `signif`
+  glyph reads the adjusted value.
+* `directional_complexity` is the signed version of the asymmetry index,
+  `(EDF_yx - EDF_xy) / (EDF_yx + EDF_xy)`, positive when the fit of the
+  later variable on the earlier one is the more complex direction; each
+  table row carries it signed for that cell, and `asymmetry_index` is its
+  magnitude.
+* `shape_borderline` gives the smallest gap between a shape index and a
+  classification cutoff whose crossing by that index alone would change
+  the label (`M` and `C` against their cutoffs, the flat-range ratio
+  against `flat`), on the index's own scale. A label decided by the
+  turning-point and inflection counts (`u_shape` and the other
+  single-extremum labels, the waves) reports its gap to the `flat`
+  cutoff; the value is `NA` only for an `indeterminate` label or a
+  missing flat-range ratio. Small values mark labels a slightly different
+  smooth would have moved.
+* `janusplot_pair(fit, x, y)` draws the two directions of a pair side by
+  side: `y ~ s(x)` on the left and `x ~ s(y)` on the right, whichever order
+  the fit stored the pair in. Each panel carries its raw points, band and
+  curve, axis titles and tick labels, the model formula with the fit's
+  `adjust` terms as its title, and a strip of the pair's statistics.
+  `display = "d1"` and `"d2"` draw the derivative of each smooth, and
+  `group` colours the points with a legend below the panels.
+* `janusplot_pair()` draws any number of pairs: `x` and `y` as vectors, or
+  a two-column data frame of pairs. Each pair is a block of two panels set
+  close together, the blocks stack top to bottom (`nrow` blocks per stack)
+  and the stacks sit side by side (`ncol` stacks), sharing text sizes and
+  one legend. The panels take the signed correlation background
+  (`janusplot_style(pair_background = )`) for a fit without `adjust`.
+
+  ```r
+  fit <- janusplot_fit(airquality[, c("Ozone", "Temp", "Wind")])
+  janusplot_pair(fit, c("Temp", "Wind"), c("Ozone", "Ozone"))
+  ```
+
+* `janusplot_pair(display = "both")` overlays the two curves in one panel
+  in the z-score plane of the pair's rows: `y ~ s(x)` in the curve colour
+  and `x ~ s(y)` in orange with its axes swapped into the plane, under a
+  strip giving `A` and both EDFs and glyphs by direction, and a key naming
+  each colour by its formula.
+* `janusplot_compare()` matches every directed cell of two `janusplot_fit`
+  objects over the same variables by name and returns a
+  `janusplot_compare` object whose `$table` gives, per cell, both `n_used`,
+  both EDFs and their difference, both asymmetry indices and their
+  difference, both shape labels and archetypes, and whether each changed
+  (`NA` when either fit failed). Differences are the second fit minus the
+  first; nothing is refitted. `print()` counts the directed cells and
+  pairs whose shape label changed, lists those cells with shape, EDF and
+  `A` before and after, and names any fit setting other than `adjust`
+  (engine, method, `k`, `bs`, `n_grid`, shape cutoffs) that also differs.
+  `plot()` draws the matrix with both curves in every cell: the first fit
+  as a grey dashed curve, the second as the solid curve with its band over
+  its raw points, optionally coloured by `group`. The strip reads
+  `EDF a -> b` and a red border marks the cells whose shape label changed.
+  The comparison reports how sensitive each fitted shape is to the
+  adjustment.
+
+  ```r
+  vars  <- c("bill_length_mm", "bill_depth_mm", "flipper_length_mm",
+             "body_mass_g")
+  fit_a <- janusplot_fit(palmerpenguins::penguins, vars)
+  fit_b <- janusplot_fit(palmerpenguins::penguins, vars, adjust = ~ species)
+  cmp   <- janusplot_compare(fit_a, fit_b,
+                             labels = c("marginal", "species-adjusted"))
+  cmp
+  plot(cmp, group = "species")
+  ```
+
+* `janusplot_direction()` returns a `janusplot_direction` object with a
+  `print()` method giving the verdict and the direction it names, the
+  reason, the two HSIC p-values labelled by direction and `n_used` of `n`.
+  The test is bivariate: when the fit was made with an `adjust` formula
+  the adjust terms do not enter the two direction fits, and a message
+  says so; only the rows they select carry over.
+* When the fit keeps its models (`keep_fits = TRUE`), was made with
+  `engine = "gam"` and no `adjust` formula, and no subsample is drawn,
+  `janusplot_direction()` reads the residuals, EDFs and fitted values of
+  the kept models instead of refitting; the result is identical to the
+  refit.
+* `janusplot_shape_sensitivity()` returns a `janusplot_sensitivity` data
+  frame. `summary(x, level = c("fine", "archetype"))` aggregates it to one
+  mean-accuracy row per `(truth, n, sigma)` cell and
+  `plot(x, type = c("confusion_fine", "confusion_archetype", "accuracy_grid",
+  "recovery_curves"))` draws the four diagnostics. Both methods read only
+  the result columns, so a plain data frame with those columns works when
+  the method is called by name. The shipped `shape_sensitivity_demo` data
+  carry the class: they are regenerated by `data-raw/shape_sensitivity_demo.R`
+  through the new runner with the same seed (2026), and every row is
+  unchanged.
+* Three shape categories are added, `skewed_trough`, `broad_trough` and
+  `rippled_trough`, bringing the taxonomy to 27 categories. The taxonomy
+  is now closed under reflecting `y`: replacing `y` with `-y` maps every
+  single-extremum category onto its mirror, and the peak family was the
+  only one that lacked its reflection. The new categories belong to the
+  `unimodal` archetype, carry the codes `st`, `bt` and `rt`, and appear in
+  the shape legend as reflections of the peak thumbnails.
+* `janusplot_shape_metrics()` gains an `extremum_type` component
+  (`"minimum"`, `"maximum"` or `NA`).
+
+## Bug fixes and robustness
+
+* Column names that are not syntactic R names (`"grain yield (t/ha)"`,
+  `"N-rate %"`, `"2019_yield"`) no longer fail every cell. `janusplot_fit()`
+  and `janusplot()` fit them under internal aliases and report the original
   names in labels, returned tables and messages; `adjust` refers to them with
   backticks.
 * Character and logical columns named in `adjust` are converted to factor
@@ -12,115 +397,86 @@
   A warning gives the number removed per column, and `n_used` counts only the
   rows that remain.
 * A pair sharing fewer than 5 complete rows is still drawn as an "n < 5" cell
-  while the rest of the matrix renders, and the per-matrix warning now lists
+  while the rest of the matrix renders, and the per-matrix warning lists
   every such pair with its shared-row count. An error is raised only when no
   pair reaches 5 rows.
 * Identical or exactly collinear column pairs are detected before fitting. Their
   cells fail with a message naming both columns and the cause, in place of an
   uninformative error from the model fit.
-
-* `janusplot()` and `janusplot_data()` now fit predictors with fewer than
-  10 distinct values at the default `k`. For each ordered pair the basis
-  dimension is capped at the number of distinct predictor values in that
-  pair's complete rows, so low-cardinality axes such as fertiliser rates
-  no longer fail, and a per-variable `k` no longer fails when pairwise
-  deletion leaves a pair with fewer distinct values than the chosen `k`.
-  Capped cells are named in one message per call, and the `auto_refit_k`
-  refit stays within the cap.
-
-* Each fit now records `k_requested`, `k_used` and `k_capped`. They appear
-  per direction in `janusplot_data()$pairs` (`k_requested_yx`,
-  `k_used_yx`, `k_capped_yx` and their `_xy` counterparts) and per cell
-  in the `with_data = TRUE` table.
-
+* Predictors with fewer than 10 distinct values are fitted at the default
+  `k`. For each ordered pair the basis dimension is capped at the number of
+  distinct predictor values in that pair's complete rows, so a fertiliser
+  rate with five levels no longer fails, and a per-variable `k` no longer
+  fails when pairwise deletion leaves a pair with fewer distinct values
+  than the chosen `k`. Capped cells are named in one message per call, and
+  the `auto_refit_k` refit stays within the cap.
+* Each fit records `k_requested`, `k_used` and `k_capped`. They appear per
+  direction in `fit$pairs` (`k_requested_yx`, `k_used_yx`, `k_capped_yx` and
+  their `_xy` counterparts) and per cell in `summary(fit)`.
 * Capping the basis dimension in one direction inflates the asymmetry
-  index A. Every pair-level output now carries `k_capped_yx` and
+  index A. Every pair-level output carries `k_capped_yx` and
   `k_capped_xy` beside A, the `"k_warn"` annotation also marks capped
   cells, and the documentation states that A is unreliable when either
   direction is capped.
-
 * With a random effect in `adjust` (`s(g, bs = "re")` or a factor smooth
   `bs = "fs"`), the fitted curve, its confidence band and the derivative
-  curves are now predicted at the population level. Previously they were
-  predicted at the most frequent group and carried that group's random
-  effect and band width.
-
-* `janusplot_data()` gained `prediction_reference_yx` and
+  curves are predicted at the population level. 0.2.0 predicted them at
+  the most frequent group, with that group's random effect and band width.
+* `fit$pairs` gains `prediction_reference_yx` and
   `prediction_reference_xy`, recording for each `adjust` variable the
   value or level held fixed on the prediction grid, or that it was
   excluded as a random effect. Each internal fit carries the same record.
-
-* `colour_by = "deviance_gap"` now encodes a gap: the deviance explained by
+* `colour_by = "deviance_gap"` encodes a gap: the deviance explained by
   the smooth minus the deviance explained by the straight-line fit of the
-  same ordered pair, bounded in [0, 1]. Previously it showed deviance
-  explained. The legend reads "Dev. gap". Deviance explained remains in
-  `dev_exp`; the gap was added as `deviance_gap` in the
-  `janusplot(with_data = TRUE)` table and as `deviance_gap_yx` /
-  `deviance_gap_xy` in `janusplot_data()`.
-
-* `janusplot_direction_test()` gained `n_min` (default 30) and `n_max`
+  same ordered pair, bounded in [0, 1]. 0.2.0 showed deviance explained.
+  The legend reads "Dev. gap". Deviance explained remains in `dev_exp`;
+  the gap is `deviance_gap` in `summary(fit)` and `deviance_gap_yx` /
+  `deviance_gap_xy` in `fit$pairs`.
+* `janusplot_direction()` takes `n_min` (default 30) and `n_max`
   (default 2000). Below `n_min` complete cases the verdict is
   `"undecided"` with reason `"n below n_min"`; above `n_max` rows are
   subsampled reproducibly, seeded by `seed` or by 2026 when `seed` is
   `NULL`, without changing the global random-number state. The rows used
   are returned as `n_used`.
-
-* `janusplot_direction_test()` now accepts column names with spaces or
-  symbols and reports them as supplied.
-
-* The `janusplot_data()` documentation now states the `_yx` / `_xy`
-  convention: `_yx` is the fit `vars[j] ~ s(vars[i])` (upper triangle,
-  row `i`, column `j`) and `_xy` is `vars[i] ~ s(vars[j])` (lower
-  triangle).
-
-## Shape classification
-
-* A curve with a single turning point is now labelled by the type of
-  that extremum, read from the sign of the first derivative on either
-  side of it. A minimum gives `u_shape`, `skewed_trough`, `broad_trough` or
+* `janusplot_direction()` accepts column names with spaces or symbols and
+  reports them as supplied.
+* The `janusplot_fit()` documentation states the `_yx` / `_xy`
+  convention: `_xy` is the fit `vars[i] ~ s(vars[j])` for `i < j` (upper
+  triangle, row `i`, column `j`) and `_yx` is `vars[j] ~ s(vars[i])`
+  (lower triangle).
+* A curve with a single turning point is labelled by the type of that
+  extremum, read from the sign of the first derivative on either side of
+  it. A minimum gives `u_shape`, `skewed_trough`, `broad_trough` or
   `rippled_trough` for 0, 1, 2 or 3+ inflections; a maximum gives
-  `inverted_u`, `skewed_peak`, `broad_peak` or `rippled_peak`.
-  Previously `skewed_peak`, `broad_peak` and `rippled_peak` were applied
-  to minima as well as maxima, and a density-weighted convexity index
-  could flip `u_shape` and `inverted_u`.
-* Three categories were added, `skewed_trough`, `broad_trough` and
-  `rippled_trough`, bringing the taxonomy to 27 categories. The
-  taxonomy is now closed under reflecting `y`: replacing `y` with `-y`
-  maps every single-extremum category onto its mirror, and the peak
-  family was the only one that lacked its reflection. The new
-  categories belong to the `unimodal` archetype, carry the codes `st`,
-  `bt` and `rt`, and appear in the shape legend as reflections of the
-  peak thumbnails.
-* `janusplot_shape_metrics()` gained an `extremum_type` component
-  (`"minimum"`, `"maximum"` or `NA`).
-* The `skewed_peak` and `rippled_peak` legend thumbnails were redrawn
-  so that each one is classified as its own category.
-
-## Deprecated
-
-* The `mono_nonmono`, `mono_s` and `curv_strong` cutoffs of
-  `janusplot_shape_cutoffs()` were deprecated. The classifier never
-  read them, so passing them had no effect on any label. They now
-  raise a deprecation warning, are dropped from the returned list and
-  no longer appear among the defaults or in the documentation.
-  Classification is unchanged.
-
-## Shape-sensitivity study
-
+  `inverted_u`, `skewed_peak`, `broad_peak` or `rippled_peak`. 0.2.0
+  applied `skewed_peak`, `broad_peak` and `rippled_peak` to minima as well
+  as maxima, and a density-weighted convexity index could flip `u_shape`
+  and `inverted_u`.
+* The `skewed_peak` and `rippled_peak` legend thumbnails are redrawn so
+  that each one is classified as its own category.
 * The `wave` and `bi_wave` ground-truth generators of
-  `janusplot_shape_sensitivity()` were corrected. Both carried a
+  `janusplot_shape_sensitivity()` are corrected. Both carried a
   quarter-period phase shift that placed a trough at each end of
   `[0, 1]`, so `wave` had a single interior maximum (a broad peak) and
   `bi_wave` had three interior extrema (a bimodal curve). They now use
   zero phase: `wave` has one maximum and one minimum, and `bi_wave` has
   four interior extrema.
-* `shape_sensitivity_demo` was regenerated with the recorded seed
-  (2026) under the corrected generator and the extremum-type
-  classifier. `wave` recovery rose from 0% to 96.9% exact and 97.8% by
-  archetype, which lifted the overall figures from 70.1% to 86.2% exact
-  and from 76.9% to 93.1% by archetype. The other five shapes are
-  unchanged. The shape-recognition-sensitivity vignette was updated to
-  match, including a corrected verdict for hypothesis H2.
+* `shape_sensitivity_demo` is regenerated with the recorded seed (2026)
+  under the corrected generator and the extremum-type classifier. `wave`
+  recovery rose from 0% to 96.9% exact and 97.8% by archetype, which
+  lifted the overall figures from 70.1% to 86.2% exact and from 76.9% to
+  93.1% by archetype. The other five shapes are unchanged. The
+  shape-recognition-sensitivity vignette is updated to match, including a
+  corrected verdict for hypothesis H2.
+* Derivative cells keep the dashed zero line inside the panel: the
+  y-range is expanded to include 0 with `ggplot2::expand_limits()` when
+  the curve and its band sit entirely on one side, so a monotone cell no
+  longer loses the reference line off the panel edge.
+* `print()` on a fit or a comparison of two variables reads "1 pair".
+* `DESCRIPTION` drops the `Remotes:` field, which a CRAN submission cannot
+  carry. `kernR (>= 0.8.0)` stays in `Suggests:` and resolves through
+  `Additional_repositories: https://max578.r-universe.dev`.
+* `DESCRIPTION` names the 27-category shape taxonomy.
 
 # janusplot 0.2.0
 
