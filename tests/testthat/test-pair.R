@@ -211,6 +211,10 @@ test_that("blocks fill stacks of nrow, side by side, in one aligned grid", {
   expect_length(cells, 30L)
   is_spacer <- vapply(cells, inherits, logical(1L), "spacer")
   expect_identical(which(is_spacer), c(29L, 30L))
+  # The two panels of a block sit close; the space goes between blocks.
+  margin_pt <- function(cell) as.numeric(cell$theme$plot.margin)
+  expect_equal(margin_pt(cells[[1L]]), c(4, 1, 4, 11))
+  expect_equal(margin_pt(cells[[2L]]), c(4, 11, 4, 1))
   # The first block of the second stack is the sixth pair, in row 1.
   expect_identical(
     vapply(cells[3:4], cell_title, character(1L)),

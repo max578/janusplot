@@ -268,10 +268,19 @@ janusplot_pair <- function(
 # The blocks in stacks of stacks$nrow, top to bottom, the stacks side by
 # side, laid out as one grid of panels so that patchwork aligns every
 # panel, axis and title across the stacks. Cells past the last block are
-# spacers. One block is returned as it is.
+# spacers. One block is returned as it is. The two panels of a block sit
+# close and the space goes between blocks, so each pair reads as a unit.
 .stack_blocks <- function(blocks, stacks) {
   n <- length(blocks)
   per <- length(blocks[[1L]])
+  if (per == 2L) {
+    blocks <- lapply(blocks, function(block) {
+      list(block[[1L]] +
+             ggplot2::theme(plot.margin = ggplot2::margin(4, 1, 4, 11)),
+           block[[2L]] +
+             ggplot2::theme(plot.margin = ggplot2::margin(4, 11, 4, 1)))
+    })
+  }
   if (n == 1L) {
     if (per == 1L) return(blocks[[1L]][[1L]])
     return(patchwork::wrap_plots(blocks[[1L]], nrow = 1L))
