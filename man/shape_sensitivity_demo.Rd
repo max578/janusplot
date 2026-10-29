@@ -5,9 +5,9 @@
 \alias{shape_sensitivity_demo}
 \title{Precomputed shape-recognition sensitivity results (demo)}
 \format{
-A data frame with 2160 rows and 14 columns -- see the
-"Value" section of \code{\link[=janusplot_shape_sensitivity]{janusplot_shape_sensitivity()}} for the
-column schema.
+A data frame of class \code{c("janusplot_sensitivity", "data.frame")}
+with 2160 rows and 14 columns -- see the "Value" section of
+\code{\link[=janusplot_shape_sensitivity]{janusplot_shape_sensitivity()}} for the column schema.
 }
 \usage{
 shape_sensitivity_demo
@@ -18,7 +18,10 @@ Raw output from a small-footprint invocation of
 sensitivity API and regenerate every figure in the
 \code{shape-recognition-sensitivity} vignette without having to re-run
 the sweep themselves. Regenerated via
-\code{data-raw/shape_sensitivity_demo.R}.
+\code{data-raw/shape_sensitivity_demo.R}, which runs the design below
+through \code{\link[=janusplot_shape_sensitivity]{janusplot_shape_sensitivity()}}, so the object carries the
+\code{janusplot_sensitivity} class and \code{summary()} and \code{plot()} apply to
+it directly.
 
 Design:
 \itemize{
@@ -37,12 +40,10 @@ of y-range.
 \examples{
 data("shape_sensitivity_demo", package = "janusplot")
 head(shape_sensitivity_demo)
-janusplot_shape_sensitivity_plot(shape_sensitivity_demo,
-                                 "recovery_curves")
+plot(shape_sensitivity_demo, "recovery_curves")
 }
 \seealso{
-\code{\link[=janusplot_shape_sensitivity]{janusplot_shape_sensitivity()}},
-\code{\link[=janusplot_shape_sensitivity_plot]{janusplot_shape_sensitivity_plot()}},
-\code{\link[=janusplot_shape_sensitivity_summary]{janusplot_shape_sensitivity_summary()}}.
+\code{\link[=janusplot_shape_sensitivity]{janusplot_shape_sensitivity()}} and its \code{summary()} and
+\code{plot()} methods.
 }
 \keyword{datasets}

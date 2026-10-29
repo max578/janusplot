@@ -6,7 +6,10 @@
 #' sensitivity API and regenerate every figure in the
 #' `shape-recognition-sensitivity` vignette without having to re-run
 #' the sweep themselves. Regenerated via
-#' `data-raw/shape_sensitivity_demo.R`.
+#' `data-raw/shape_sensitivity_demo.R`, which runs the design below
+#' through [janusplot_shape_sensitivity()], so the object carries the
+#' `janusplot_sensitivity` class and `summary()` and `plot()` apply to
+#' it directly.
 #'
 #' Design:
 #' \itemize{
@@ -22,17 +25,15 @@
 #'   \item **Seed**: 2026.
 #' }
 #'
-#' @format A data frame with 2160 rows and 14 columns -- see the
-#'   "Value" section of [janusplot_shape_sensitivity()] for the
-#'   column schema.
+#' @format A data frame of class `c("janusplot_sensitivity", "data.frame")`
+#'   with 2160 rows and 14 columns -- see the "Value" section of
+#'   [janusplot_shape_sensitivity()] for the column schema.
 #'
-#' @seealso [janusplot_shape_sensitivity()],
-#'   [janusplot_shape_sensitivity_plot()],
-#'   [janusplot_shape_sensitivity_summary()].
+#' @seealso [janusplot_shape_sensitivity()] and its `summary()` and
+#'   `plot()` methods.
 #'
 #' @examples
 #' data("shape_sensitivity_demo", package = "janusplot")
 #' head(shape_sensitivity_demo)
-#' janusplot_shape_sensitivity_plot(shape_sensitivity_demo,
-#'                                  "recovery_curves")
+#' plot(shape_sensitivity_demo, "recovery_curves")
 "shape_sensitivity_demo"
