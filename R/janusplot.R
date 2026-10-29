@@ -1045,261 +1045,31 @@ janusplot <- function(
 }
 
 
-#' Raw GAM fits and per-cell metrics for a smoothed-association matrix
+#' Deprecated: raw GAM fits and per-cell metrics
 #'
 #' @description
-#' `r lifecycle::badge("experimental")`
+#' `r lifecycle::badge("deprecated")`
 #'
-#' Companion to [janusplot()] returning the raw list of GAM fits plus
-#' per-cell metrics (EDF, F-test p-value, deviance explained, deviance
-#' gap over a straight line, asymmetry index, pairwise correlations,
-#' shape descriptors) without constructing the ggplot. Useful for custom rendering or downstream analysis.
+#' `janusplot_data()` was renamed [janusplot_fit()] in janusplot 1.0.0 and
+#' forwards every argument to it. The result is the `janusplot_fit`
+#' object described there: `pvalue_yx` and `pvalue_xy` are now
+#' `association_p_yx` and `association_p_xy`, and first and second
+#' derivatives are computed by default.
 #'
-#' @inheritParams janusplot
-#' @param keep_fits Logical. If `TRUE`, retain full [mgcv::gam()] model
-#'   objects in the return (large memory footprint for `k` above ~15).
-#'   Default `FALSE` -- retains summary metrics and prediction grids only.
-#' @param derivatives Integer vector of derivative orders to compute
-#'   on every pair (subset of `1:2`). Default `integer()` -- no
-#'   derivatives. Unlike `janusplot()`, the data companion can
-#'   return multiple orders from a single call for programmatic
-#'   analysis; pass `c(1L, 2L)` to surface both.
-#' @param shape_cutoffs Named list of classification thresholds used to
-#'   map the continuous shape indices (`monotonicity_index`,
-#'   `convexity_index`) into discrete
-#'   `shape_category` labels. Defaults from [janusplot_shape_cutoffs()].
+#' @inheritDotParams janusplot_fit -x -object
 #'
-#' @returns A list with components:
-#' \describe{
-#'   \item{`vars`}{Character vector of variables used, in plotted order.}
-#'   \item{`pairs`}{List of per-pair results, one per unordered pair
-#'     `i < j`. Suffixes name the direction of fit: `_yx` is the fit
-#'     `vars[j] ~ s(vars[i])` (`var_j` regressed on `var_i`), drawn in
-#'     the upper triangle at row `i`, column `j`; `_xy` is the fit
-#'     `vars[i] ~ s(vars[j])`, drawn in the lower triangle at row `j`,
-#'     column `i`. Each element has `i`, `j`,
-#'     `var_i`, `var_j`, `fit_yx`, `fit_xy` (NULL if `keep_fits = FALSE`),
-#'     `pred_yx`, `pred_xy` (data frames with `x`, `fit`, `se`, `lo`,
-#'     `hi`), `edf_yx`, `edf_xy`, `pvalue_yx`, `pvalue_xy`, `dev_exp_yx`,
-#'     `dev_exp_xy` (deviance explained by the smooth),
-#'     `deviance_gap_yx`, `deviance_gap_xy` (deviance explained by the
-#'     smooth minus that of the straight-line fit of the same direction
-#'     with the same `adjust` terms, bounded in `[0, 1]`), `n_used`,
-#'     `asymmetry_index`, plus Pearson /
-#'     Spearman / Kendall correlations (`cor_pearson`, `cor_spearman`,
-#'     `cor_kendall`), the maximum tie ratio across `x` and `y`
-#'     (`tie_ratio`), and per-direction shape descriptors
-#'     (`monotonicity_index_yx`, `convexity_index_yx`,
-#'     `monotonicity_index_xy`, `convexity_index_xy`,
-#'     `n_turning_yx`, `n_inflect_yx`, `n_turning_xy`,
-#'     `n_inflect_xy`, `shape_yx`, `shape_xy`).
-#'     The basis dimension of each direction is recorded as
-#'     `k_requested_yx` / `k_requested_xy` (the requested `k`, with `-1`
-#'     resolved to mgcv's default for `bs`), `k_used_yx` / `k_used_xy`
-#'     (the basis dimension of the returned fit, after the cap at the
-#'     number of distinct predictor values in the pair's rows and any
-#'     `auto_refit_k` refit) and `k_capped_yx` / `k_capped_xy` (`TRUE`
-#'     when that cap reduced the request; listed beside
-#'     `asymmetry_index`). A is unreliable when either direction of the
-#'     pair had its basis dimension capped at the number of distinct
-#'     predictor values.
-#'     `prediction_reference_yx` and `prediction_reference_xy` are data
-#'     frames with one row per `adjust` variable and columns
-#'     `variable`, `reference` and `value`, recording what each
-#'     variable was held at on the prediction grid: the mean of a
-#'     numeric covariate (also in `value`), the most frequent level of
-#'     a fixed factor, or `"excluded (random effect)"` when the
-#'     variable enters only through random-effect smooths, which are
-#'     dropped so the curve and band are population-level. They have
-#'     zero rows when `adjust` is `NULL`.
-#'     When `derivatives` is non-empty, each pair additionally
-#'     carries `deriv_yx` and `deriv_xy`, each a named list keyed by
-#'     order (`"1"`, `"2"`) whose entries are data frames with
-#'     columns `x`, `fit`, `se`, `lo`, `hi`, `ci_type` matching the
-#'     schema of `pred_yx` / `pred_xy`. The `ci_type` column records
-#'     whether the `lo` / `hi` columns are `"pointwise"` (default),
-#'     `"simultaneous"` (Ruppert--Wand--Carroll / Simpson 2018
-#'     critical-multiplier bands), or `"none"`. When
-#'     `derivative_ci = "simultaneous"`, each derivative frame also
-#'     carries a `"crit_multiplier"` attribute giving the MC-derived
-#'     critical multiplier used.
-#'     See [janusplot_shape_metrics()] for the definition of the
-#'     monotonicity and convexity indices.}
-#'   \item{`call`}{Match call.}
-#' }
+#' @returns A `janusplot_fit` object; see [janusplot_fit()]. Its `call`
+#'   component records the `janusplot_data()` call as made.
 #'
-#' @family smooth-associations
-#' @seealso [janusplot()] for the ggplot front-end,
-#'   [janusplot_shape_metrics()] for the shape-metric primitives.
-#'
-#' @examples
-#' # Per-pair fits + metrics on a small mtcars slice
-#' out <- janusplot_data(mtcars[, c("mpg", "hp", "wt")])
-#' out$pairs[[1L]]$asymmetry_index
-#' out$pairs[[1L]]$cor_spearman
-#' out$pairs[[1L]]$shape_yx
+#' @keywords internal
 #' @export
-janusplot_data <- function(
-    data,
-    vars = NULL,
-    adjust = NULL,
-    method = NULL,
-    k = -1L,
-    bs = "tp",
-    na_action = c("pairwise", "complete"),
-    parallel = FALSE,
-    keep_fits = FALSE,
-    derivatives = integer(),
-    derivative_ci = c("pointwise", "none", "simultaneous"),
-    derivative_ci_nsim = 1000L,
-    n_grid = NULL,
-    shape_cutoffs = janusplot_shape_cutoffs(),
-    k_check_thresholds = NULL,
-    auto_refit_k       = FALSE,
-    k_max_iter         = 2L,
-    engine             = c("bam", "gam"),
-    discrete           = FALSE,
-    nthreads           = 1L,
-    ...) {
-  na_action     <- rlang::arg_match(na_action)
-  derivative_ci <- rlang::arg_match(derivative_ci)
-  engine        <- rlang::arg_match(engine)
-  .validate_shared_scalars( # nolint: object_usage_linter.
-    discrete, nthreads, auto_refit_k, k_max_iter, derivative_ci_nsim
+janusplot_data <- function(...) {
+  lifecycle::deprecate_soft(
+    when = "1.0.0",
+    what = "janusplot_data()",
+    with = "janusplot_fit()"
   )
-  nthreads <- as.integer(nthreads)
-  .validate_inputs(data, vars, adjust, na_action)
-  vars <- .resolve_vars(data, vars)
-  k_thresholds <- k_check_thresholds %||% .default_k_thresholds()   # nolint: object_usage_linter.
-  .validate_k_thresholds(k_thresholds)                              # nolint: object_usage_linter.
-  k_max_iter <- as.integer(k_max_iter)
-
-  if (length(derivatives)) {
-    if (!is.numeric(derivatives) || anyNA(derivatives)) {
-      cli::cli_abort(
-        "{.arg derivatives} must be an integer vector of orders in 1:2."
-      )
-    }
-    derivatives <- as.integer(derivatives)
-    if (any(derivatives < 1L | derivatives > 2L)) {
-      cli::cli_abort(
-        "{.arg derivatives} entries must be in 1:2 \u2014 higher orders are not supported."
-      )
-    }
-    if (anyDuplicated(derivatives)) {
-      cli::cli_abort("{.arg derivatives} must not contain duplicates.")
-    }
-  }
-
-  derivative_ci_nsim <- as.integer(derivative_ci_nsim)
-
-  if (!is.null(n_grid)) {
-    if (!is.numeric(n_grid) || length(n_grid) != 1L ||
-        !is.finite(n_grid) || n_grid < 10) {
-      cli::cli_abort(
-        "{.arg n_grid} must be a single finite number >= 10 or NULL."
-      )
-    }
-    n_grid <- as.integer(n_grid)
-  } else {
-    n_grid <- if (length(derivatives)) 200L else 100L
-  }
-
-  fits <- .fit_all_pairs(
-    data = data, vars = vars, adjust = adjust,
-    method = method, k = k, bs = bs,
-    na_action = na_action, parallel = parallel,
-    n_grid = n_grid, derivatives = derivatives,
-    derivative_ci = derivative_ci,
-    derivative_ci_nsim = derivative_ci_nsim,
-    k_check_thresholds = k_thresholds,
-    auto_refit_k = auto_refit_k,
-    k_max_iter = k_max_iter,
-    engine = engine, discrete = discrete, nthreads = nthreads, ...
-  )
-
-  .warn_failed_cells(fits)
-  .inform_k_capped(fits)
-  .summarise_k_check(fits, k_thresholds, auto_refit_k)              # nolint: object_usage_linter.
-
-  k_n <- length(vars)
-  pairs_out <- list()
-  for (i in seq_len(k_n - 1L)) {
-    for (j in (i + 1L):k_n) {
-      f_yx <- fits[[sprintf("%d_%d", i, j)]]   # y = vars[j] ~ s(vars[i])
-      f_xy <- fits[[sprintf("%d_%d", j, i)]]   # y = vars[i] ~ s(vars[j])
-      shape_yx <- .classify_shape(
-        f_yx$shape$monotonicity_index, f_yx$shape$convexity_index,
-        f_yx$shape$n_turning_points, f_yx$shape$n_inflections,
-        f_yx$shape$flat_range_ratio, shape_cutoffs,
-        extremum = f_yx$shape$extremum_type
-      )
-      shape_xy <- .classify_shape(
-        f_xy$shape$monotonicity_index, f_xy$shape$convexity_index,
-        f_xy$shape$n_turning_points, f_xy$shape$n_inflections,
-        f_xy$shape$flat_range_ratio, shape_cutoffs,
-        extremum = f_xy$shape$extremum_type
-      )
-      corr <- f_yx$corr %||% f_xy$corr
-      pairs_out[[length(pairs_out) + 1L]] <- list(
-        i                      = i,
-        j                      = j,
-        var_i                  = vars[i],
-        var_j                  = vars[j],
-        fit_yx                 = if (keep_fits) f_yx$fit else NULL,
-        fit_xy                 = if (keep_fits) f_xy$fit else NULL,
-        pred_yx                = f_yx$pred,
-        pred_xy                = f_xy$pred,
-        edf_yx                 = f_yx$edf,
-        edf_xy                 = f_xy$edf,
-        pvalue_yx              = f_yx$pvalue,
-        pvalue_xy              = f_xy$pvalue,
-        dev_exp_yx             = f_yx$dev_exp,
-        dev_exp_xy             = f_xy$dev_exp,
-        deviance_gap_yx        = f_yx$deviance_gap %||% NA_real_,
-        deviance_gap_xy        = f_xy$deviance_gap %||% NA_real_,
-        n_used                 = min(f_yx$n_used, f_xy$n_used),
-        asymmetry_index        = .compute_asymmetry_index(f_yx$edf, f_xy$edf),
-        k_capped_yx            = isTRUE(f_yx$k_capped),
-        k_capped_xy            = isTRUE(f_xy$k_capped),
-        cor_pearson            = corr$cor_pearson,
-        cor_spearman           = corr$cor_spearman,
-        cor_kendall            = corr$cor_kendall,
-        tie_ratio              = corr$tie_ratio,
-        monotonicity_index_yx  = f_yx$shape$monotonicity_index,
-        convexity_index_yx     = f_yx$shape$convexity_index,
-        monotonicity_index_xy  = f_xy$shape$monotonicity_index,
-        convexity_index_xy     = f_xy$shape$convexity_index,
-        n_turning_yx           = f_yx$shape$n_turning_points,
-        n_inflect_yx           = f_yx$shape$n_inflections,
-        n_turning_xy           = f_xy$shape$n_turning_points,
-        n_inflect_xy           = f_xy$shape$n_inflections,
-        shape_yx           = shape_yx,
-        shape_xy           = shape_xy,
-        shape_code_yx      = .shape_lookup(shape_yx, "code"),
-        shape_code_xy      = .shape_lookup(shape_xy, "code"),
-        shape_archetype_yx = .shape_lookup(shape_yx, "archetype"),
-        shape_archetype_xy = .shape_lookup(shape_xy, "archetype"),
-        shape_monotonic_yx = .shape_lookup(shape_yx, "monotonic"),
-        shape_monotonic_xy = .shape_lookup(shape_xy, "monotonic"),
-        shape_linear_yx    = .shape_lookup(shape_yx, "linear"),
-        shape_linear_xy    = .shape_lookup(shape_xy, "linear"),
-        deriv_yx           = f_yx$deriv,
-        deriv_xy           = f_xy$deriv,
-        prediction_reference_yx = f_yx$prediction_reference,
-        prediction_reference_xy = f_xy$prediction_reference,
-        k_check_yx         = f_yx$k_check,
-        k_check_xy         = f_xy$k_check,
-        k_requested_yx     = f_yx$k_requested,
-        k_requested_xy     = f_xy$k_requested,
-        k_used_yx          = f_yx$k_used,
-        k_used_xy          = f_xy$k_used,
-        engine             = f_yx$engine %||% f_xy$engine %||% NA_character_,
-        method             = f_yx$method %||% f_xy$method %||% NA_character_,
-        error_yx           = f_yx$error %||% NA_character_,
-        error_xy           = f_xy$error %||% NA_character_
-      )
-    }
-  }
-  list(vars = vars, pairs = pairs_out, call = match.call())
+  out <- janusplot_fit(...)
+  out$call <- match.call()
+  out
 }

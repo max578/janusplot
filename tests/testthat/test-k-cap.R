@@ -29,7 +29,7 @@ find_pair <- function(res, a, b) {
 test_that("x with 6 distinct values fits at the default k with k_used = 6", {
   skip_if_no_mgcv()
   df <- make_six_level_data()
-  res <- suppressMessages(janusplot_data(df, vars = c("g", "y1")))
+  res <- suppressMessages(janusplot_fit(df, vars = c("g", "y1")))
   p <- find_pair(res, "g", "y1")
   # _yx is y1 ~ s(g): capped
   expect_true(is.na(p$error_yx))
@@ -75,7 +75,7 @@ test_that("per-variable k is capped by the pair's own distinct count", {
     data.frame(x = x, y = y, z = z)
   })
   res <- suppressMessages(
-    janusplot_data(df, vars = c("x", "y", "z"), k = list(x = 8L))
+    janusplot_fit(df, vars = c("x", "y", "z"), k = list(x = 8L))
   )
   p_xy <- find_pair(res, "x", "y")
   expect_true(is.na(p_xy$error_yx))
@@ -103,7 +103,7 @@ test_that("a predictor with 20+ distinct values is untouched by the cap", {
     gam = c(yx = 8.45126642275399, xy = 2.33492074760016)
   )
   for (eng in names(fixture)) {
-    expect_no_message(res <- janusplot_data(df, engine = eng))
+    expect_no_message(res <- janusplot_fit(df, engine = eng))
     p <- res$pairs[[1L]]
     expect_false(p$k_capped_yx)
     expect_false(p$k_capped_xy)
@@ -124,7 +124,7 @@ test_that("one inform per call names the capped variables and k used", {
       contv = stats::rnorm(n)
     )
   })
-  msgs <- testthat::capture_messages(janusplot_data(df))
+  msgs <- testthat::capture_messages(janusplot_fit(df))
   cap_msgs <- msgs[grepl("basis dimension", msgs)]
   expect_length(cap_msgs, 1L)
   expect_match(cap_msgs, "dose6")
@@ -142,7 +142,7 @@ test_that("cap is resolved for other bases (cr, ps)", {
   df <- make_six_level_data()
   for (b in c("cr", "ps")) {
     res <- suppressMessages(
-      janusplot_data(df, vars = c("g", "y1"), bs = b, engine = "gam")
+      janusplot_fit(df, vars = c("g", "y1"), bs = b, engine = "gam")
     )
     p <- find_pair(res, "g", "y1")
     expect_true(is.finite(p$edf_yx))
@@ -160,7 +160,7 @@ test_that("auto_refit_k doubling never exceeds the distinct-value cap", {
     data.frame(x = x, y = sin(3 * x) + stats::rnorm(n, sd = 0.2))
   })
   res <- suppressMessages(
-    janusplot_data(df, auto_refit_k = TRUE, k_max_iter = 4L)
+    janusplot_fit(df, auto_refit_k = TRUE, k_max_iter = 4L)
   )
   p <- res$pairs[[1L]]
   # 25 distinct x values: the loop doubles 10 -> 20 and stops before 40.
@@ -177,7 +177,7 @@ test_that("a predictor below the basis minimum is not reported as capped", {
     data.frame(b2 = rep(c(0, 1), length.out = n), y = stats::rnorm(n))
   })
   msgs <- testthat::capture_messages(
-    res <- suppressWarnings(janusplot_data(df))
+    res <- suppressWarnings(janusplot_fit(df))
   )
   expect_false(any(grepl("basis dimension", msgs)))
   p <- res$pairs[[1L]]
@@ -189,10 +189,10 @@ test_that("a predictor below the basis minimum is not reported as capped", {
 # The cap travels beside the asymmetry index
 # ---------------------------------------------------------------
 
-test_that("janusplot_data() pairs carry k_capped_yx / k_capped_xy beside A", {
+test_that("janusplot_fit() pairs carry k_capped_yx / k_capped_xy beside A", {
   skip_if_no_mgcv()
   df <- make_six_level_data()
-  res <- suppressMessages(janusplot_data(df, vars = c("g", "y1")))
+  res <- suppressMessages(janusplot_fit(df, vars = c("g", "y1")))
   p <- res$pairs[[1L]]
   nm <- names(p)
   at <- which(nm == "asymmetry_index")

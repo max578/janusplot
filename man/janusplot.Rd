@@ -561,6 +561,6 @@ janusplot(df, display = "d1", derivative_ci = "simultaneous")
 \code{\link[=janusplot_data]{janusplot_data()}} for the raw per-cell fits + metrics.
 
 Other smooth-associations:
-\code{\link[=janusplot_data]{janusplot_data()}}
+\code{\link[=janusplot_fit]{janusplot_fit()}}
 }
 \concept{smooth-associations}

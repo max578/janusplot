@@ -2,291 +2,101 @@
 % Please edit documentation in R/janusplot.R
 \name{janusplot_data}
 \alias{janusplot_data}
-\title{Raw GAM fits and per-cell metrics for a smoothed-association matrix}
+\title{Deprecated: raw GAM fits and per-cell metrics}
 \usage{
-janusplot_data(
-  data,
-  vars = NULL,
-  adjust = NULL,
-  method = NULL,
-  k = -1L,
-  bs = "tp",
-  na_action = c("pairwise", "complete"),
-  parallel = FALSE,
-  keep_fits = FALSE,
-  derivatives = integer(),
-  derivative_ci = c("pointwise", "none", "simultaneous"),
-  derivative_ci_nsim = 1000L,
-  n_grid = NULL,
-  shape_cutoffs = janusplot_shape_cutoffs(),
-  k_check_thresholds = NULL,
-  auto_refit_k = FALSE,
-  k_max_iter = 2L,
-  engine = c("bam", "gam"),
-  discrete = FALSE,
-  nthreads = 1L,
-  ...
-)
+janusplot_data(...)
 }
 \arguments{
-\item{data}{A data frame with numeric columns to include. Column
-names need not be syntactic (\code{"grain yield (t/ha)"},
-\code{"2019_yield"}): they are fitted under internal \code{\link[=make.names]{make.names()}}
-aliases and reported under their original names in labels,
-returned tables and messages.}
-
-\item{vars}{Character vector of column names to use. \code{NULL} (default)
-uses all numeric columns in \code{data}. Non-numeric columns trigger an
-error listing offenders. Two columns that are identical or exactly
-collinear (absolute correlation 1) are not fitted against each
-other: both cells fail with a message naming the columns.}
-
-\item{adjust}{A one-sided formula RHS giving additional covariates
-and/or random effects to include in every pairwise GAM. For example,
-\code{adjust = ~ s(age) + s(site, bs = "re")} fits
-\code{gam(y ~ s(x) + s(age) + s(site, bs = "re"))} for each pair.
-Default \code{NULL} fits unadjusted pairwise smooths. Non-syntactic
-column names are referenced with backticks, e.g.
-\code{adjust = ~ s(`site name`, bs = "re")}. Character and logical
-\code{adjust} columns are converted to factor before fitting, with a
-message naming them. The curve, its
-confidence band and its derivatives are predicted at the
-population level: random-effect smooths (\code{bs = "re"} and factor
-smooths \code{bs = "fs"}) are excluded from prediction, numeric
-covariates are held at their mean over the rows used by the pair,
-and fixed factors at their most frequent level.
-\code{\link[=janusplot_data]{janusplot_data()}} records these values per pair as
-\code{prediction_reference_yx} / \code{prediction_reference_xy}, where
-\verb{_yx} is the upper-triangle fit \code{vars[j] ~ s(vars[i])} (\code{i < j})
-and \verb{_xy} the lower-triangle fit \code{vars[i] ~ s(vars[j])}.}
-
-\item{method}{Smoothing-parameter estimation method passed to
-the chosen fitting backend. Default \code{NULL} resolves
-per-engine: \code{"fREML"} for \code{engine = "bam"} (mgcv's
-recommended at scale), \code{"REML"} for \code{engine = "gam"}
-(the v0.1.0 behaviour). Pass any valid mgcv method string
-to override.}
-
-\item{k}{Integer, or named list mapping variable names to integers.
-Basis dimension for \code{s()}. Default \code{-1L} (mgcv's automatic choice,
-10 for the \code{"tp"}, \code{"ts"}, \code{"cr"}, \code{"cs"}, \code{"cc"}, \code{"ps"}, \code{"cp"} and
-\code{"bs"} bases). For each ordered pair the effective basis dimension
-is capped at the number of distinct predictor values in that pair's
-complete rows, since mgcv cannot fit a basis larger than that:
-\code{k_used = min(k, n_distinct)}. Capped cells are named in one message
-per call and recorded as \code{k_requested}, \code{k_used} and \code{k_capped}. A
-predictor with fewer distinct values than the smallest basis mgcv
-accepts (3 for \code{"tp"}) is not capped, and its cells fail with
-mgcv's error.}
-
-\item{bs}{Basis type for \code{s()}. Default \code{"tp"} (thin plate).}
-
-\item{na_action}{One of \code{"pairwise"} (default; per-cell complete
-observations) or \code{"complete"} (listwise; all cells use the same
-rows). Infinite values (\code{Inf}, \code{-Inf}) count as missing, and a
-warning gives the number removed per column.
-A pair sharing fewer than 5 complete rows is drawn as an empty
-"n < 5" cell, keeps its shared-row count in \code{n_used} and is listed
-in a warning; an error is raised only when no pair reaches 5 rows.}
-
-\item{parallel}{Logical. If \code{TRUE}, use \code{future.apply::future_mapply()}
-to fit pairs in parallel. Requires the \code{future.apply} package and a
-user-configured \code{future::plan()}. Default \code{FALSE}.}
-
-\item{keep_fits}{Logical. If \code{TRUE}, retain full \code{\link[mgcv:gam]{mgcv::gam()}} model
-objects in the return (large memory footprint for \code{k} above ~15).
-Default \code{FALSE} -- retains summary metrics and prediction grids only.}
-
-\item{derivatives}{Integer vector of derivative orders to compute
-on every pair (subset of \code{1:2}). Default \code{integer()} -- no
-derivatives. Unlike \code{janusplot()}, the data companion can
-return multiple orders from a single call for programmatic
-analysis; pass \code{c(1L, 2L)} to surface both.}
-
-\item{derivative_ci}{One of \code{"none"} (default), \code{"pointwise"}, or
-\code{"simultaneous"}. Controls whether -- and how -- a 95\%
-confidence ribbon is drawn underneath the derivative curve when
-\code{display \%in\% c("d1", "d2")}. Ignored when \code{display = "fit"}.
-\itemize{
-\item \code{"none"} -- no ribbon. The curve and the zero reference line
-are all you see. Default, because pointwise ribbons overshoot
-nominal coverage as a joint region and can invite
-over-reading of local features.
-\item \code{"pointwise"} -- 95\% pointwise ribbon from
-\eqn{\sqrt{\mathrm{diag}(D V_p D^\top)}} (Wood 2017 section 7.2.4).
-Valid marginally; not a simultaneous statement.
-\item \code{"simultaneous"} -- 95\% simultaneous band via the Monte Carlo
-construction of Ruppert, Wand & Carroll (2003) popularised for
-GAMs by Simpson (2018, \emph{Frontiers Ecol. Evol.} 6:149): draw
-\eqn{B} samples \eqn{\tilde{\boldsymbol\beta} \sim
-  \mathcal{N}(\hat{\boldsymbol\beta}, V_p)}, compute
-\eqn{\max_x |D_i(\tilde{\boldsymbol\beta} -
-  \hat{\boldsymbol\beta})| / \mathrm{se}_i}, and use the
-\eqn{(1-\alpha)} quantile as a critical multiplier on the
-pointwise SE. Valid for feature localisation ("where is
-\eqn{\hat f'(x)} significantly non-zero").
-}}
-
-\item{derivative_ci_nsim}{Integer. Number of Monte Carlo samples
-used when \code{derivative_ci = "simultaneous"}. Default \code{1000L} --
-a compromise between coverage accuracy (Simpson 2018 uses
-10000) and CPU budget across every pair in a medium-sized
-matrix. Ignored for any other \code{derivative_ci}.}
-
-\item{n_grid}{Integer or \code{NULL}. Number of equally-spaced points
-used to evaluate each fitted smooth (and its derivatives).
-Default \code{NULL} resolves to \code{100} when \code{display = "fit"} and
-\code{200} otherwise, because finite-difference second derivatives
-visibly degrade below \eqn{\sim 150} points on moderate-\code{k}
-smooths. Supplying \code{n_grid} directly overrides both defaults.
-Larger grids shift the numerical shape-metric values
-(\eqn{M}, \eqn{C}, turning / inflection counts) slightly
-because they are computed on this same grid. Shapes and
-asymmetry are the primary reading; \code{M}, \code{C} and the counts are
-secondary diagnostics and the grid-induced drift is tolerable.}
-
-\item{shape_cutoffs}{Named list of classification thresholds used to
-map the continuous shape indices (\code{monotonicity_index},
-\code{convexity_index}) into discrete
-\code{shape_category} labels. Defaults from \code{\link[=janusplot_shape_cutoffs]{janusplot_shape_cutoffs()}}.}
-
-\item{k_check_thresholds}{Named list giving the three flag-criterion
-thresholds used by \code{mgcv::k.check()}-style basis-dimension
-diagnostics. Required entries: \code{edf_ratio} (Wood's
-\eqn{\widehat{\mathrm{edf}}/k'} ratio above which the smooth is
-too close to its basis cap), \code{k_index} (residual-difference
-variance ratio below which the basis appears underspecified), and
-\code{p} (the simulation p-value below which the basis-deficiency
-signal is significant). Defaults -- \code{edf_ratio = 0.9}, \code{k_index = 1.0},
-\code{p = 0.05} -- track \code{mgcv::gam.check()} and Wood (2017) section 5.9.}
-
-\item{auto_refit_k}{Logical. If \code{TRUE}, every cell whose Wood
-trifecta flags an underfit is refit with a doubling-k loop until
-either the flag clears, the per-cell unique-x cap is reached, or
-\code{k_max_iter} iterations have passed. Default \code{FALSE} -- the
-diagnostic (\code{k_check_status}, \code{k_flag}, \code{k_prime}, \code{k_index},
-\code{k_p}) is always computed and surfaced regardless of this flag,
-but the refit is opt-in because it can multiply wall time on
-pathological data.}
-
-\item{k_max_iter}{Integer. Maximum number of doublings allowed
-per cell when \code{auto_refit_k = TRUE}. Default \code{2L} (so a cell
-that starts at the \code{mgcv} default \code{k = 10} will visit at most
-\code{k = 20} and then \code{k = 40}, capped by the per-cell unique-x
-limit). Ignored when \code{auto_refit_k = FALSE}.}
-
-\item{engine}{One of \code{"bam"} (default, \strong{new in v0.1.1}) or
-\code{"gam"}. Selects mgcv's fitting backend:
-\itemize{
-\item \code{"bam"} -- \code{\link[mgcv:bam]{mgcv::bam()}}. Block-Lanczos solve + fREML
-estimation + lower memory. ~3-10x speedup at janusplot's
-scale (k = 15-25 vars, 600+ pairwise fits per call). The
-\strong{default}, and the one non-byte-identical change in
-v0.1.1: fREML differs from REML by ~1-3\% in EDF on
-identical data, so the asymmetry index may shift by
-similar amounts vs v0.1.0 output. Recoverable verbatim
-via \code{engine = "gam"}.
-\item \code{"gam"} -- \code{\link[mgcv:gam]{mgcv::gam()}}. The v0.1.0 backend. Use for
-backward-compat reproduction, very small n (< 200) where
-bam's setup overhead exceeds its solve gain, or
-methodologically sensitive contexts that require REML
-rather than fREML.
-}}
-
-\item{discrete}{Logical. \code{bam}-only opt-in to mgcv's
-covariate-discretisation optimisation. Further ~2-5x
-speedup at the cost of small (sub-pixel at typical
-janusplot resolution) prediction-shift. Default \code{FALSE}.
-Ignored when \code{engine = "gam"}.}
-
-\item{nthreads}{Integer. \code{bam}-only intra-fit threading.
-Default \code{1L} to avoid oversubscription when combined with
-\code{parallel = TRUE} (\code{future.apply} fans out pair fits
-across cores; nthreads > 1 within each pair would
-double-book CPUs). Raise above 1 only when \code{parallel = FALSE}. Ignored when \code{engine = "gam"}.}
-
-\item{...}{Additional arguments passed to \code{\link[mgcv:gam]{mgcv::gam()}}.}
+\item{...}{
+  Arguments passed on to \code{\link{janusplot_fit}}
+  \describe{
+    \item{\code{data}}{A data frame. Column names need not be syntactic; fits run
+under internal aliases and every result reports the original names.}
+    \item{\code{vars}}{Character vector of numeric column names to fit, in matrix
+order. \code{NULL} (the default) takes every numeric column of \code{data}.
+Identical or exactly collinear columns are not fitted against each
+other; their cells are listed in \code{flags$failed}.}
+    \item{\code{adjust}}{One-sided formula of covariates and random effects added
+to every pairwise model, for example \code{~ s(age) + s(site, bs = "re")}.
+\code{NULL} (the default) fits unadjusted smooths. Character and logical
+\code{adjust} columns are converted to factor before fitting. Predictions
+hold numeric covariates at their mean and fixed factors at their
+most frequent level, and exclude random-effect smooths, so the curve
+and its band are population-level.}
+    \item{\code{k}}{Basis dimension for \code{s()}: a single integer, or a named list
+of integers keyed by variable name. \code{-1L} (the default) leaves the
+choice to mgcv. Each cell's basis is capped at the number of distinct
+predictor values in its rows; capped cells are listed in
+\code{flags$k_capped} and recorded as \code{k_requested}, \code{k_used} and
+\code{k_capped}.}
+    \item{\code{bs}}{Basis type for \code{s()}; \code{"tp"} (thin plate) by default.}
+    \item{\code{engine}}{\code{"bam"} (the default) fits with \code{\link[mgcv:bam]{mgcv::bam()}}, \code{"gam"}
+with \code{\link[mgcv:gam]{mgcv::gam()}}. The two differ in their default \code{method} and by
+about one to three percent in EDF on the same data.}
+    \item{\code{method}}{Smoothing-parameter estimation method passed to mgcv.
+\code{NULL} (the default) resolves to \code{"fREML"} for \code{engine = "bam"} and
+\code{"REML"} for \code{engine = "gam"}.}
+    \item{\code{na_action}}{\code{"pairwise"} (the default) fits each cell on the rows
+complete for its own variables and the \code{adjust} columns;
+\code{"complete"} first drops every row with a missing value in any fitted
+or adjusting column. Infinite values count as missing and are
+reported in a warning. A pair sharing fewer than 5 complete rows is
+not fitted and is listed in \code{flags$sparse}; an error is raised only
+when no pair reaches 5 rows.}
+    \item{\code{n_grid}}{Number of equally spaced points at which each smooth and
+its derivatives are evaluated, at least 10. \code{NULL} (the default)
+resolves to \code{200L} when \code{derivatives} is non-empty and \code{100L}
+otherwise.}
+    \item{\code{derivatives}}{Integer vector of derivative orders to compute for
+every cell, a subset of \code{1:2}. The default \code{1:2} computes both;
+\code{integer()} computes none.}
+    \item{\code{derivative_ci}}{The band stored with each derivative curve:
+\code{"pointwise"} (the default), \code{"none"} or \code{"simultaneous"}. Simultaneous
+bands use the Monte Carlo critical multiplier of Ruppert, Wand and
+Carroll (2003) as applied to GAMs by Simpson (2018).}
+    \item{\code{derivative_ci_nsim}}{Number of Monte Carlo draws for
+\code{derivative_ci = "simultaneous"}; \code{1000L} by default and at least 100.}
+    \item{\code{p_adjust}}{Multiplicity adjustment of the smooth F-test p-values
+across the \code{k(k - 1)} directed cells: \code{"none"} (the default), \code{"BH"}
+or \code{"holm"}, applied once with \code{\link[stats:p.adjust]{stats::p.adjust()}}. Raw and adjusted
+values are both kept.}
+    \item{\code{shape_cutoffs}}{Named list of classification thresholds, from
+\code{\link[=janusplot_shape_cutoffs]{janusplot_shape_cutoffs()}}, mapping the shape indices to a
+\code{shape_category} label.}
+    \item{\code{k_check_thresholds}}{Named list with entries \code{edf_ratio},
+\code{k_index} and \code{p} for the basis-dimension diagnostic that follows
+\code{\link[mgcv:k.check]{mgcv::k.check()}}. \code{NULL} (the default) uses \code{edf_ratio = 0.9},
+\code{k_index = 1} and \code{p = 0.05}.}
+    \item{\code{auto_refit_k}}{Logical. When \code{TRUE}, a cell flagged by the k-check
+is refitted with a doubled basis until the flag clears, the
+distinct-value cap is reached or \code{k_max_iter} doublings have run.
+The diagnostic is computed either way; the default is \code{FALSE}.}
+    \item{\code{k_max_iter}}{Maximum number of doublings per cell when
+\code{auto_refit_k = TRUE}; \code{2L} by default.}
+    \item{\code{discrete}}{Logical. Passes mgcv's covariate discretisation to
+\code{\link[mgcv:bam]{mgcv::bam()}}; \code{FALSE} by default and ignored for \code{engine = "gam"}.}
+    \item{\code{nthreads}}{Integer. Threads used inside each \code{\link[mgcv:bam]{mgcv::bam()}} fit;
+\code{1L} by default, which avoids oversubscription under
+\code{parallel = TRUE}. Ignored for \code{engine = "gam"}.}
+    \item{\code{parallel}}{Logical. When \code{TRUE}, pairs are fitted with
+\code{future.apply::future_mapply()} under the user's \code{future::plan()};
+\code{FALSE} by default.}
+    \item{\code{keep_fits}}{Logical. When \code{TRUE}, the mgcv model objects are kept
+in \verb{$fits} and as \code{fit_yx} / \code{fit_xy} of every pair; \code{FALSE} (the
+default) keeps metrics and prediction grids only.}
+  }}
 }
 \value{
-A list with components:
-\describe{
-\item{\code{vars}}{Character vector of variables used, in plotted order.}
-\item{\code{pairs}}{List of per-pair results, one per unordered pair
-\code{i < j}. Suffixes name the direction of fit: \verb{_yx} is the fit
-\code{vars[j] ~ s(vars[i])} (\code{var_j} regressed on \code{var_i}), drawn in
-the upper triangle at row \code{i}, column \code{j}; \verb{_xy} is the fit
-\code{vars[i] ~ s(vars[j])}, drawn in the lower triangle at row \code{j},
-column \code{i}. Each element has \code{i}, \code{j},
-\code{var_i}, \code{var_j}, \code{fit_yx}, \code{fit_xy} (NULL if \code{keep_fits = FALSE}),
-\code{pred_yx}, \code{pred_xy} (data frames with \code{x}, \code{fit}, \code{se}, \code{lo},
-\code{hi}), \code{edf_yx}, \code{edf_xy}, \code{pvalue_yx}, \code{pvalue_xy}, \code{dev_exp_yx},
-\code{dev_exp_xy} (deviance explained by the smooth),
-\code{deviance_gap_yx}, \code{deviance_gap_xy} (deviance explained by the
-smooth minus that of the straight-line fit of the same direction
-with the same \code{adjust} terms, bounded in \verb{[0, 1]}), \code{n_used},
-\code{asymmetry_index}, plus Pearson /
-Spearman / Kendall correlations (\code{cor_pearson}, \code{cor_spearman},
-\code{cor_kendall}), the maximum tie ratio across \code{x} and \code{y}
-(\code{tie_ratio}), and per-direction shape descriptors
-(\code{monotonicity_index_yx}, \code{convexity_index_yx},
-\code{monotonicity_index_xy}, \code{convexity_index_xy},
-\code{n_turning_yx}, \code{n_inflect_yx}, \code{n_turning_xy},
-\code{n_inflect_xy}, \code{shape_yx}, \code{shape_xy}).
-The basis dimension of each direction is recorded as
-\code{k_requested_yx} / \code{k_requested_xy} (the requested \code{k}, with \code{-1}
-resolved to mgcv's default for \code{bs}), \code{k_used_yx} / \code{k_used_xy}
-(the basis dimension of the returned fit, after the cap at the
-number of distinct predictor values in the pair's rows and any
-\code{auto_refit_k} refit) and \code{k_capped_yx} / \code{k_capped_xy} (\code{TRUE}
-when that cap reduced the request; listed beside
-\code{asymmetry_index}). A is unreliable when either direction of the
-pair had its basis dimension capped at the number of distinct
-predictor values.
-\code{prediction_reference_yx} and \code{prediction_reference_xy} are data
-frames with one row per \code{adjust} variable and columns
-\code{variable}, \code{reference} and \code{value}, recording what each
-variable was held at on the prediction grid: the mean of a
-numeric covariate (also in \code{value}), the most frequent level of
-a fixed factor, or \code{"excluded (random effect)"} when the
-variable enters only through random-effect smooths, which are
-dropped so the curve and band are population-level. They have
-zero rows when \code{adjust} is \code{NULL}.
-When \code{derivatives} is non-empty, each pair additionally
-carries \code{deriv_yx} and \code{deriv_xy}, each a named list keyed by
-order (\code{"1"}, \code{"2"}) whose entries are data frames with
-columns \code{x}, \code{fit}, \code{se}, \code{lo}, \code{hi}, \code{ci_type} matching the
-schema of \code{pred_yx} / \code{pred_xy}. The \code{ci_type} column records
-whether the \code{lo} / \code{hi} columns are \code{"pointwise"} (default),
-\code{"simultaneous"} (Ruppert--Wand--Carroll / Simpson 2018
-critical-multiplier bands), or \code{"none"}. When
-\code{derivative_ci = "simultaneous"}, each derivative frame also
-carries a \code{"crit_multiplier"} attribute giving the MC-derived
-critical multiplier used.
-See \code{\link[=janusplot_shape_metrics]{janusplot_shape_metrics()}} for the definition of the
-monotonicity and convexity indices.}
-\item{\code{call}}{Match call.}
-}
+A \code{janusplot_fit} object; see \code{\link[=janusplot_fit]{janusplot_fit()}}. Its \code{call}
+component records the \code{janusplot_data()} call as made.
 }
 \description{
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 
-Companion to \code{\link[=janusplot]{janusplot()}} returning the raw list of GAM fits plus
-per-cell metrics (EDF, F-test p-value, deviance explained, deviance
-gap over a straight line, asymmetry index, pairwise correlations,
-shape descriptors) without constructing the ggplot. Useful for custom rendering or downstream analysis.
+\code{janusplot_data()} was renamed \code{\link[=janusplot_fit]{janusplot_fit()}} in janusplot 1.0.0 and
+forwards every argument to it. The result is the \code{janusplot_fit}
+object described there: \code{pvalue_yx} and \code{pvalue_xy} are now
+\code{association_p_yx} and \code{association_p_xy}, and first and second
+derivatives are computed by default.
 }
-\examples{
-# Per-pair fits + metrics on a small mtcars slice
-out <- janusplot_data(mtcars[, c("mpg", "hp", "wt")])
-out$pairs[[1L]]$asymmetry_index
-out$pairs[[1L]]$cor_spearman
-out$pairs[[1L]]$shape_yx
-}
-\seealso{
-\code{\link[=janusplot]{janusplot()}} for the ggplot front-end,
-\code{\link[=janusplot_shape_metrics]{janusplot_shape_metrics()}} for the shape-metric primitives.
-
-Other smooth-associations:
-\code{\link[=janusplot]{janusplot()}}
-}
-\concept{smooth-associations}
+\keyword{internal}

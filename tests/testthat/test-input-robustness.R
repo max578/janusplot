@@ -1,5 +1,5 @@
 # Each behaviour lives in the shared fitting internals; tests cover
-# both janusplot() and janusplot_data().
+# both janusplot() and janusplot_fit().
 
 make_odd_names_data <- function(n = 80L, seed = 11L) {
   withr::with_seed(seed, {
@@ -21,9 +21,9 @@ make_odd_names_data <- function(n = 80L, seed = 11L) {
 
 odd_vars <- c("grain yield (t/ha)", "N-rate %", "2019_yield", "a b", "a.b")
 
-test_that("janusplot_data() fits non-syntactic names and restores them", {
+test_that("janusplot_fit() fits non-syntactic names and restores them", {
   d <- make_odd_names_data()
-  res <- janusplot_data(d, vars = odd_vars, engine = "gam")
+  res <- janusplot_fit(d, vars = odd_vars, engine = "gam")
   expect_identical(res$vars, odd_vars)
   err <- c(vapply(res$pairs, `[[`, character(1L), "error_yx"),
            vapply(res$pairs, `[[`, character(1L), "error_xy"))
@@ -47,7 +47,7 @@ test_that("janusplot(with_data = TRUE) restores non-syntactic names", {
 test_that("adjust can reference a non-syntactic column with backticks", {
   d <- make_odd_names_data()
   vv <- c("grain yield (t/ha)", "N-rate %", "2019_yield")
-  res <- janusplot_data(d, vars = vv, adjust = ~ `site name`,
+  res <- janusplot_fit(d, vars = vv, adjust = ~ `site name`,
                         engine = "gam")
   expect_true(all(is.na(vapply(res$pairs, `[[`, character(1L), "error_yx"))))
   expect_true(all(is.finite(vapply(res$pairs, `[[`, numeric(1L), "edf_yx"))))
@@ -60,7 +60,7 @@ test_that("restored names reach error messages of failed cells", {
   d <- make_odd_names_data()
   d[["a b"]] <- 1
   expect_warning(
-    res <- janusplot_data(d, vars = c("a b", "a.b", "N-rate %"),
+    res <- janusplot_fit(d, vars = c("a b", "a.b", "N-rate %"),
                           engine = "gam"),
     "failed to fit"
   )
@@ -73,7 +73,7 @@ test_that("restored names reach error messages of failed cells", {
 
 test_that("syntactic names take a no-op path with identical results", {
   d <- make_linear_data(n = 80L)
-  res <- janusplot_data(d, engine = "gam")
+  res <- janusplot_fit(d, engine = "gam")
   # same data reached via the internal aliasing helper is unchanged
   al <- janusplot:::.alias_columns(d, names(d), NULL)
   expect_identical(al$data, d)
@@ -84,7 +84,7 @@ test_that("syntactic names take a no-op path with identical results", {
 
 test_that("per-variable k lists keyed by non-syntactic names are honoured", {
   d <- make_odd_names_data()
-  res <- janusplot_data(d, vars = c("N-rate %", "a b"), engine = "gam",
+  res <- janusplot_fit(d, vars = c("N-rate %", "a b"), engine = "gam",
                         k = list(`N-rate %` = 5L))
   p <- res$pairs[[1L]]
   expect_identical(p$var_i, "N-rate %")
@@ -126,7 +126,7 @@ make_grouped_data <- function(n = 90L, seed = 12L) {
 test_that("character adjust columns are coerced to factor with one inform", {
   d <- make_grouped_data()
   expect_message(
-    res <- janusplot_data(d, vars = c("x1", "x2", "x3"),
+    res <- janusplot_fit(d, vars = c("x1", "x2", "x3"),
                           adjust = ~ site_year, engine = "gam"),
     "site_year"
   )
@@ -152,7 +152,7 @@ test_that("random-effect terms work on a coerced character column", {
   expect_true(all(is.na(out$data$error)))
   expect_true(all(is.finite(out$data$edf)))
   res <- suppressMessages(
-    janusplot_data(d, vars = c("x1", "x2"),
+    janusplot_fit(d, vars = c("x1", "x2"),
                    adjust = ~ s(site_year, bs = "re"),
                    engine = "bam", keep_fits = TRUE)
   )
@@ -163,7 +163,7 @@ test_that("factor adjust columns trigger no coercion message", {
   d <- make_grouped_data()
   d$site_year <- factor(d$site_year)
   msgs <- testthat::capture_messages(
-    janusplot_data(d, vars = c("x1", "x2"),
+    janusplot_fit(d, vars = c("x1", "x2"),
                    adjust = ~ s(site_year, bs = "re"), engine = "gam")
   )
   expect_false(any(grepl("factor", msgs)))
@@ -174,7 +174,7 @@ test_that("infinite values are treated as missing with one warning", {
   d$x1[c(3L, 9L)] <- c(Inf, -Inf)
   d$x3[5L] <- Inf
   w <- testthat::capture_warnings(
-    res <- janusplot_data(d, vars = c("x1", "x2", "x3"), engine = "gam")
+    res <- janusplot_fit(d, vars = c("x1", "x2", "x3"), engine = "gam")
   )
   expect_length(w, 1L)
   expect_match(w, "x1")
@@ -205,7 +205,7 @@ test_that("na_action = 'complete' also drops infinite rows", {
   d <- make_linear_data(n = 80L)
   d$x3[2L] <- -Inf
   res <- suppressWarnings(
-    janusplot_data(d, vars = c("x1", "x2", "x3"), na_action = "complete",
+    janusplot_fit(d, vars = c("x1", "x2", "x3"), na_action = "complete",
                    engine = "gam")
   )
   expect_true(all(vapply(res$pairs, `[[`, integer(1L), "n_used") == 79L))
@@ -229,7 +229,7 @@ make_disjoint_data <- function(n = 80L, seed = 13L) {
 test_that("a pair with no shared rows warns once and leaves other cells intact", {
   d <- make_disjoint_data()
   w <- testthat::capture_warnings(
-    res <- janusplot_data(d, engine = "gam")
+    res <- janusplot_fit(d, engine = "gam")
   )
   expect_length(w, 1L)
   expect_match(w, "fewer than 5")
@@ -264,7 +264,7 @@ test_that("janusplot() renders a matrix with a sparse pair", {
 test_that("failed and sparse cells share one warning", {
   d <- make_disjoint_data()
   d$x4 <- 1
-  w <- testthat::capture_warnings(janusplot_data(d, engine = "gam"))
+  w <- testthat::capture_warnings(janusplot_fit(d, engine = "gam"))
   expect_length(w, 1L)
   expect_match(w, "failed to fit")
   expect_match(w, "fewer than 5")
@@ -273,7 +273,7 @@ test_that("failed and sparse cells share one warning", {
 test_that("an error is raised only when every pair has fewer than 5 rows", {
   d <- data.frame(a = c(1:4, rep(NA, 6)), b = c(rep(NA, 6), 1:4),
                   c = c(1, NA, 2, NA, 3, NA, 4, NA, 5, NA))
-  expect_error(janusplot_data(d, engine = "gam"), "fewer than 5")
+  expect_error(janusplot_fit(d, engine = "gam"), "fewer than 5")
   expect_error(janusplot(d, engine = "gam"), "fewer than 5")
 })
 
@@ -292,7 +292,7 @@ make_collinear_data <- function(n = 60L, seed = 14L) {
 test_that("identical and collinear columns route through the failed-cell path", {
   d <- make_collinear_data()
   w <- testthat::capture_warnings(
-    res <- janusplot_data(d, engine = "gam")
+    res <- janusplot_fit(d, engine = "gam")
   )
   expect_length(w, 1L)
   expect_match(w, "failed to fit")

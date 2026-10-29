@@ -22,7 +22,7 @@ make_site_data <- function(modal_site = 1L, seed = 2026L) {
 }
 
 curve_yx <- function(d, adjust) {
-  out <- janusplot_data(d, vars = c("x", "y"), adjust = adjust)
+  out <- janusplot_fit(d, vars = c("x", "y"), adjust = adjust)
   out$pairs[[1L]]
 }
 

@@ -29,9 +29,9 @@ test_that("janusplot(with_data = TRUE) carries the error column and does not ove
   expect_true(all(is.na(failed_rows$n_used)))
 })
 
-test_that("janusplot_data() carries error_yx/error_xy into pairs_out", {
+test_that("janusplot_fit() carries error_yx/error_xy into pairs_out", {
   d <- data.frame(x1 = rep(1, 40), x2 = stats::rnorm(40), x3 = stats::rnorm(40))
-  res <- suppressWarnings(janusplot_data(d, vars = c("x1", "x2", "x3")))
+  res <- suppressWarnings(janusplot_fit(d, vars = c("x1", "x2", "x3")))
   pair_x1_x2 <- res$pairs[[which(vapply(
     res$pairs, function(p) p$var_i == "x1" && p$var_j == "x2", logical(1L)
   ))]]
@@ -44,7 +44,7 @@ test_that("janusplot_data() carries error_yx/error_xy into pairs_out", {
 test_that("a failed cell emits a warning naming the failure", {
   d <- data.frame(x1 = rep(1, 40), x2 = stats::rnorm(40), x3 = stats::rnorm(40))
   expect_warning(
-    janusplot_data(d, vars = c("x1", "x2", "x3")),
+    janusplot_fit(d, vars = c("x1", "x2", "x3")),
     "failed to fit"
   )
 })

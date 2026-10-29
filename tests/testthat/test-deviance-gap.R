@@ -3,7 +3,7 @@
 
 test_that("the gap is near zero on a linear pair with high deviance explained", {
   d <- make_linear_data(n = 200L)
-  pr <- janusplot_data(d, vars = c("x1", "x2"))$pairs[[1L]]
+  pr <- janusplot_fit(d, vars = c("x1", "x2"))$pairs[[1L]]
   expect_gt(pr$dev_exp_yx, 0.5)
   expect_lt(pr$deviance_gap_yx, 0.02)
   expect_lt(pr$deviance_gap_xy, 0.02)
@@ -11,7 +11,7 @@ test_that("the gap is near zero on a linear pair with high deviance explained", 
 
 test_that("the gap equals the smooth's minus the line's deviance explained", {
   d <- make_nonlinear_data(n = 200L)
-  pr <- janusplot_data(d, vars = c("x1", "x2"), engine = "gam")$pairs[[1L]]
+  pr <- janusplot_fit(d, vars = c("x1", "x2"), engine = "gam")$pairs[[1L]]
   r2_line <- summary(stats::lm(x2 ~ x1, data = d))$r.squared
   expect_equal(pr$deviance_gap_yx, pr$dev_exp_yx - r2_line,
                tolerance = 1e-6)
@@ -36,7 +36,7 @@ test_that("colour_by = 'deviance_gap' encodes the gap, not deviance explained", 
 
 test_that("the gap is computed under adjustment with the same terms", {
   d <- make_nonlinear_data(n = 200L)
-  pr <- janusplot_data(d, vars = c("x1", "x2"), adjust = ~ s(x4),
+  pr <- janusplot_fit(d, vars = c("x1", "x2"), adjust = ~ s(x4),
                        engine = "gam")$pairs[[1L]]
   lin <- mgcv::gam(x2 ~ x1 + s(x4), data = d, method = "REML")
   expect_equal(pr$deviance_gap_yx,

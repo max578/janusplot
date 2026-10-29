@@ -156,13 +156,13 @@ test_that("explicit method overrides per-engine default", {
 })
 
 # ---------------------------------------------------------------
-# janusplot_data() carries engine + method on every pair.
+# janusplot_fit() carries engine + method on every pair.
 # ---------------------------------------------------------------
 
 test_that("janusplot_data carries engine + method per pair", {
   skip_if_no_mgcv()
   dat <- make_linear_data(80L, seed = 1L)
-  res <- janusplot_data(dat, vars = c("x1", "x2", "x3"),
+  res <- janusplot_fit(dat, vars = c("x1", "x2", "x3"),
                         engine = "gam")
   for (p in res$pairs) {
     expect_identical(p$engine, "gam")

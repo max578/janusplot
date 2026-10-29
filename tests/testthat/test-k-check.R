@@ -16,7 +16,7 @@ skip_if_no_mgcv <- function() {
 test_that("k-check diagnostics populate every cell on a normal dataset", {
   skip_if_no_mgcv()
   dat <- make_linear_data(n = 200L, seed = 1L)
-  res <- janusplot_data(dat, vars = c("x1", "x2", "x3"))
+  res <- janusplot_fit(dat, vars = c("x1", "x2", "x3"))
   expect_true(length(res$pairs) > 0L)
   for (p in res$pairs) {
     expect_named(p$k_check_yx,
@@ -58,7 +58,7 @@ test_that("k-check marks discrete-x cells with < 10 unique values as unreliable"
       y2 = stats::rnorm(n)
     )
   })
-  res <- janusplot_data(df, vars = c("g", "y1", "y2"), k = 6L)
+  res <- janusplot_fit(df, vars = c("g", "y1", "y2"), k = 6L)
   # Cells where g is the predictor (i.e. s(g)) should be unreliable.
   statuses <- character()
   for (p in res$pairs) {
@@ -88,7 +88,7 @@ test_that("auto_refit_k = FALSE does not refit even on flagged cells", {
       z  = stats::rnorm(n)
     )
   })
-  res <- janusplot_data(df, vars = c("x", "y", "z"))
+  res <- janusplot_fit(df, vars = c("x", "y", "z"))
   for (p in res$pairs) {
     expect_equal(p$k_check_yx$k_iterations, 0L)
     expect_equal(p$k_check_xy$k_iterations, 0L)
@@ -107,9 +107,9 @@ test_that("auto_refit_k = TRUE doubles k on flagged cells, respects k_max_iter",
       y = sin(3 * x) + stats::rnorm(n, sd = 0.2)
     )
   })
-  res_no  <- janusplot_data(df, vars = c("x", "y"),
+  res_no  <- janusplot_fit(df, vars = c("x", "y"),
                             auto_refit_k = FALSE)
-  res_yes <- janusplot_data(df, vars = c("x", "y"),
+  res_yes <- janusplot_fit(df, vars = c("x", "y"),
                             auto_refit_k = TRUE, k_max_iter = 2L)
   was_flagged <- FALSE
   for (p in res_no$pairs) {
@@ -139,7 +139,7 @@ test_that("k_max_iter = 0 disables refit even with auto_refit_k = TRUE", {
       y = sin(3 * x) + stats::rnorm(n, sd = 0.2)
     )
   })
-  res <- janusplot_data(df, vars = c("x", "y"),
+  res <- janusplot_fit(df, vars = c("x", "y"),
                         auto_refit_k = TRUE, k_max_iter = 0L)
   for (p in res$pairs) {
     expect_equal(p$k_check_yx$k_iterations, 0L)
@@ -161,17 +161,17 @@ test_that("k_check_thresholds defaults match Wood (2017) and gam.check()", {
 test_that("invalid k_check_thresholds errors loudly", {
   dat <- make_linear_data(n = 60L, seed = 1L)
   expect_error(
-    janusplot_data(dat, vars = c("x1", "x2"),
+    janusplot_fit(dat, vars = c("x1", "x2"),
                    k_check_thresholds = list(edf_ratio = 0.9)),
     "missing entries"
   )
   expect_error(
-    janusplot_data(dat, vars = c("x1", "x2"),
+    janusplot_fit(dat, vars = c("x1", "x2"),
                    k_check_thresholds = list(edf_ratio = -1, k_index = 1, p = 0.05)),
     "positive finite"
   )
   expect_error(
-    janusplot_data(dat, vars = c("x1", "x2"),
+    janusplot_fit(dat, vars = c("x1", "x2"),
                    k_check_thresholds = "edf_ratio = 0.9"),
     "named list"
   )
@@ -180,11 +180,11 @@ test_that("invalid k_check_thresholds errors loudly", {
 test_that("invalid auto_refit_k / k_max_iter error loudly", {
   dat <- make_linear_data(n = 60L, seed = 1L)
   expect_error(
-    janusplot_data(dat, vars = c("x1", "x2"), auto_refit_k = NA),
+    janusplot_fit(dat, vars = c("x1", "x2"), auto_refit_k = NA),
     "TRUE or FALSE"
   )
   expect_error(
-    janusplot_data(dat, vars = c("x1", "x2"), k_max_iter = -1),
+    janusplot_fit(dat, vars = c("x1", "x2"), k_max_iter = -1),
     "non-negative integer"
   )
 })

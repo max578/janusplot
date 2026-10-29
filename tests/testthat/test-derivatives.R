@@ -49,9 +49,9 @@ test_that("simultaneous bands are wider than pointwise, critical >= 1.96", {
     y <- sin(x) + stats::rnorm(n, sd = 0.2)
   })
   d <- data.frame(x = x, y = y)
-  pw  <- janusplot_data(d, derivatives = 1L,
+  pw  <- janusplot_fit(d, derivatives = 1L,
                         derivative_ci = "pointwise")
-  sim <- janusplot_data(d, derivatives = 1L,
+  sim <- janusplot_fit(d, derivatives = 1L,
                         derivative_ci = "simultaneous",
                         derivative_ci_nsim = 2000L)
   dfp <- pw$pairs[[1L]]$deriv_yx[["1"]]
@@ -70,7 +70,7 @@ test_that("simultaneous bands are wider than pointwise, critical >= 1.96", {
 test_that("derivative_ci = 'none' returns pointwise lo/hi but is tagged none", {
   skip_on_cran()
   d <- make_nonlinear_data(n = 150L, seed = 2L)
-  out <- janusplot_data(d, vars = c("x1", "x2"),
+  out <- janusplot_fit(d, vars = c("x1", "x2"),
                         derivatives = 1L, derivative_ci = "none")
   df <- out$pairs[[1L]]$deriv_yx[["1"]]
   expect_identical(unique(df$ci_type), "none")
@@ -229,9 +229,9 @@ test_that("n_grid validation is strict and auto-resolves", {
   d <- make_linear_data(n = 60L, seed = 1L)
   expect_error(janusplot(d, vars = c("x1", "x2"), n_grid = 5))
   expect_error(janusplot(d, vars = c("x1", "x2"), n_grid = "fifty"))
-  out <- janusplot_data(d, vars = c("x1", "x2"))
+  out <- janusplot_fit(d, vars = c("x1", "x2"), derivatives = integer())
   expect_identical(nrow(out$pairs[[1L]]$pred_yx), 100L)
-  out2 <- janusplot_data(d, vars = c("x1", "x2"), derivatives = 1L)
+  out2 <- janusplot_fit(d, vars = c("x1", "x2"), derivatives = 1L)
   expect_identical(nrow(out2$pairs[[1L]]$pred_yx), 200L)
   expect_identical(nrow(out2$pairs[[1L]]$deriv_yx[["1"]]), 200L)
 })
@@ -255,13 +255,13 @@ test_that("summary table tags display mode on every call", {
 })
 
 # ---------------------------------------------------------------
-# janusplot_data() surfaces derivatives (multi-order allowed)
+# janusplot_fit() surfaces derivatives (multi-order allowed)
 # ---------------------------------------------------------------
 
 test_that("janusplot_data surfaces deriv_yx / deriv_xy with ci_type tag", {
   skip_on_cran()
   d <- make_nonlinear_data(n = 120L, seed = 2L)
-  out <- janusplot_data(d, vars = c("x1", "x2"),
+  out <- janusplot_fit(d, vars = c("x1", "x2"),
                         derivatives = c(1L, 2L),
                         derivative_ci = "pointwise")
   p   <- out$pairs[[1L]]
@@ -275,8 +275,8 @@ test_that("janusplot_data surfaces deriv_yx / deriv_xy with ci_type tag", {
 test_that("janusplot_data derivatives validation rejects bad orders", {
   skip_on_cran()
   d <- make_linear_data(n = 60L, seed = 1L)
-  expect_error(janusplot_data(d, vars = c("x1", "x2"), derivatives = 3L))
-  expect_error(janusplot_data(d, vars = c("x1", "x2"),
+  expect_error(janusplot_fit(d, vars = c("x1", "x2"), derivatives = 3L))
+  expect_error(janusplot_fit(d, vars = c("x1", "x2"),
                               derivatives = c(1L, 1L)))
 })
 

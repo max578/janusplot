@@ -13,7 +13,7 @@ test_that("asymmetry index near zero on pure-linear DGP", {
   x3 <- 0.5 * x1 + stats::rnorm(n, sd = 0.5)
   d  <- data.frame(x1 = x1, x2 = x2, x3 = x3)
 
-  out <- janusplot_data(d)
+  out <- janusplot_fit(d)
   a   <- vapply(out$pairs, function(p) p$asymmetry_index, numeric(1L))
 
   # Cap deliberately generous — this is a canary, not a
@@ -35,7 +35,7 @@ test_that("EDF recovers near 1 on linear DGP within REML bounce", {
   x2 <- 1.5 * x1 + stats::rnorm(n, sd = 0.4)
   d  <- data.frame(x1 = x1, x2 = x2)
 
-  out  <- janusplot_data(d)
+  out  <- janusplot_fit(d)
   edfs <- c(out$pairs[[1L]]$edf_yx, out$pairs[[1L]]$edf_xy)
 
   expect_true(
