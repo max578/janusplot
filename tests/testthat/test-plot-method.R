@@ -33,7 +33,8 @@ test_that("plot() returns a patchwork, which is a ggplot", {
   expect_s3_class(p, "patchwork")
   expect_identical(
     names(formals(janusplot:::plot.janusplot_fit)),
-    c("x", "colour_by", "annotations", "order", "display", "group",
+    c("x", "colour_by", "background_by", "annotations", "order", "display",
+      "group",
       "focus_by", "focus_threshold", "axes", "style", "...")
   )
 })
@@ -43,6 +44,7 @@ test_that("every colour_by value builds under every channel", {
   for (cb in janusplot:::.colour_choices()) {
     for (ch in c("border", "tile", "fill")) {
       p <- plot(fit, colour_by = cb,
+                background_by = if (ch == "fill") "none" else "pearson",
                 style = janusplot_style(colour_channel = ch,
                                         show_shape_legend = FALSE))
       expect_s3_class(p, "ggplot")
@@ -125,7 +127,7 @@ test_that("order = 'hclust' and 'alphabetical' reorder the drawing only", {
   idx <- janusplot:::.cell_index(fit$pairs, expected)
   pr <- fit$pairs[[1L]]
   expect_identical(
-    idx$key[idx$pair == 1L & idx$direction == "yx"],
+    idx$key[idx$pair == 1L & idx$direction == "xy"],
     sprintf("%d_%d", match(pr$var_i, expected), match(pr$var_j, expected))
   )
   p_h <- plot(fit, order = "hclust", style = janusplot_style(show_shape_legend = FALSE))
@@ -204,8 +206,8 @@ test_that("the significance glyph follows the fit's p_adjust", {
   d <- make_nonlinear_data(n = 120L)
   raw  <- fit_two(d, vars = c("x1", "x2", "x3", "x4"))
   holm <- fit_two(d, vars = c("x1", "x2", "x3", "x4"), p_adjust = "holm")
-  faces_raw  <- lapply(raw$pairs, janusplot:::.pair_face, direction = "yx")
-  faces_holm <- lapply(holm$pairs, janusplot:::.pair_face, direction = "yx")
+  faces_raw  <- lapply(raw$pairs, janusplot:::.pair_face, direction = "xy")
+  faces_holm <- lapply(holm$pairs, janusplot:::.pair_face, direction = "xy")
   g_raw  <- vapply(faces_raw, janusplot:::.face_signif, character(1L),
                    p_adjust = "none")
   g_adj  <- vapply(faces_holm, janusplot:::.face_signif, character(1L),
@@ -241,7 +243,7 @@ test_that("the colour channels paint the cell as documented", {
   fit <- fit_two(make_nonlinear_data(n = 120L))
   border <- render_face(fit, colour = "#FDE725FF")
   expect_identical(border$theme$panel.border$colour, "#FDE725FF")
-  expect_identical(border$theme$panel.border$linewidth, 1.2)
+  expect_identical(border$theme$panel.border$linewidth, 2.4)
   tile <- render_face(fit, colour = "#FDE725FF",
                       style = janusplot_style(colour_channel = "tile"))
   expect_identical(tile$theme$panel.border$colour, "grey55")
@@ -313,23 +315,223 @@ test_that("derivative cells keep the zero line inside the panel", {
 # vdiffr snapshots of the default cell on the three canonical cases
 # ---------------------------------------------------------------
 
+# The default cell as plot() draws it: border colour, Pearson background.
+render_default <- function(fit, colour) {
+  render_face(fit, colour = colour,
+              background = janusplot:::.background_hex(
+                fit$pairs[[1L]]$cor_pearson, "RdBu", 0.35
+              ))
+}
+
 test_that("default cell on linear recovery matches snapshot", {
   skip_if_not_installed("vdiffr")
   fit <- fit_two(make_linear_data(n = 150L, seed = 1L))
   vdiffr::expect_doppelganger("cell-default-linear",
-                              render_face(fit, colour = "#440154FF"))
+                              render_default(fit, "#440154FF"))
 })
 
 test_that("default cell on quadratic detection matches snapshot", {
   skip_if_not_installed("vdiffr")
   fit <- fit_two(make_nonlinear_data(n = 200L, seed = 2L))
   vdiffr::expect_doppelganger("cell-default-quadratic",
-                              render_face(fit, colour = "#FDE725FF"))
+                              render_default(fit, "#FDE725FF"))
 })
 
 test_that("default cell on sinusoidal detection matches snapshot", {
   skip_if_not_installed("vdiffr")
   fit <- fit_two(make_nonlinear_data(n = 200L, seed = 2L), vars = c("x1", "x3"))
   vdiffr::expect_doppelganger("cell-default-sinusoidal",
-                              render_face(fit, colour = "#21908CFF"))
+                              render_default(fit, "#21908CFF"))
+})
+
+# ---------------------------------------------------------------
+# Orientation, the corner key and the correlation background
+# ---------------------------------------------------------------
+
+# The matrix grid of plot(): the first member of the top row.
+matrix_grid <- function(p) p$patches$plots[[1L]]
+
+# The curve layer of a matrix cell, and its data.
+cell_curve_layer <- function(cell) {
+  Filter(function(l) inherits(l$geom, "GeomLine"), cell$layers)[[1L]]
+}
+cell_curve <- function(cell) cell_curve_layer(cell)$data
+
+# The members of a patchwork: a wrap of patchworks keeps them all in
+# $patches$plots; otherwise the last member is the object itself.
+patch_members <- function(p) {
+  members <- p$patches$plots
+  if (!inherits(p, "plot_filler")) members <- c(members, list(p))
+  members
+}
+
+# The face of the first pair whose response is `response`.
+face_by_response <- function(fit, response) {
+  pr <- fit$pairs[[1L]]
+  janusplot:::.pair_face(pr, if (identical(pr$var_j, response)) "yx" else "xy")
+}
+
+test_that("every cell is row ~ s(column)", {
+  d <- withr::with_seed(11L, {
+    x <- stats::runif(300L, -3, 3)
+    data.frame(x = x, y = x^2 + stats::rnorm(300L, sd = 0.5))
+  })
+  fit <- janusplot_fit(d, engine = "gam", derivatives = integer())
+  tab <- summary(fit)
+  # y = x^2 is non-linear one way only.
+  expect_gt(tab$edf[tab$var_y == "y"], 3)
+  expect_lt(tab$edf[tab$var_y == "x"], 1.5)
+  p <- plot(fit, style = janusplot_style(show_shape_legend = FALSE))
+  grid <- matrix_grid(p)
+  # The 3 x 3 grid with its label row and column, by row: the cell at
+  # (row y, column x) is member 8 and carries y ~ s(x).
+  y_on_x <- face_by_response(fit, "y")
+  expect_equal(cell_curve(grid[[8L]])$fit, y_on_x$pred$fit)
+  expect_equal(range(cell_curve(grid[[8L]])$x), range(d$x))
+  x_on_y <- face_by_response(fit, "x")
+  expect_equal(cell_curve(grid[[6L]])$fit, x_on_y$pred$fit)
+  expect_equal(range(cell_curve(grid[[6L]])$x), range(d$y))
+  # The table names the upper cell x ~ s(y).
+  expect_identical(tab$position[tab$var_y == "x"], "upper")
+  expect_identical(tab$position[tab$var_y == "y"], "lower")
+})
+
+test_that("the corner key shows the first two variables", {
+  fit <- fit_two(make_linear_data(n = 80L), vars = c("x1", "x2", "x3"))
+  st <- janusplot_style(show_shape_legend = FALSE)
+  key <- matrix_grid(plot(fit, style = st))[[1L]]
+  labels <- key$layers[[2L]]$data$label
+  expect_identical(labels[1L], "each cell:\nrow ~ s(column)")
+  expect_true(all(c("x1 ~\ns(x2)", "x2 ~\ns(x1)") %in% labels))
+  # Long names are cut with an ellipsis.
+  expect_identical(janusplot:::.truncate_name("Solar.R"), "Solar.R")
+  expect_identical(janusplot:::.truncate_name("total sulfur dioxide"),
+                   paste0("total", intToUtf8(8230L)))
+  expect_identical(janusplot:::.truncate_name("fixed acidity"),
+                   paste0("fixed", intToUtf8(8230L)))
+  # show_key = FALSE leaves the corner empty.
+  plain <- matrix_grid(plot(fit, style = janusplot_style(
+    show_key = FALSE, show_shape_legend = FALSE
+  )))
+  expect_length(plain[[1L]]$layers, 0L)
+})
+
+test_that("the background blends from white by the signed correlation", {
+  hex <- janusplot:::.background_hex
+  expect_identical(hex(0), "#FFFFFF")
+  blend <- function(end, at) {
+    v <- grDevices::colorRamp(c("white", end))(at)
+    grDevices::rgb(v[, 1L], v[, 2L], v[, 3L], maxColorValue = 255)
+  }
+  expect_identical(hex(1), blend("#B2182B", 0.35))
+  expect_identical(hex(-1), blend("#2166AC", 0.35))
+  expect_identical(hex(-0.5, "PuOr", 1), blend("#542788", 0.5))
+  expect_identical(hex(NA_real_), NA_character_)
+
+  fit <- fit_two(make_nonlinear_data(n = 120L), vars = c("x1", "x2", "x3"))
+  p <- plot(fit, style = janusplot_style(show_shape_legend = FALSE))
+  grid <- matrix_grid(p)
+  # Cell (row x1, column x2) has the Pearson r of the pair (x1, x2).
+  expect_identical(grid[[7L]]$theme$panel.background$fill,
+                   hex(fit$pairs[[1L]]$cor_pearson))
+  # One bar per matrix, over [-1, 1] with a labelled tick at 0.
+  bars <- patch_members(p$patches$plots[[2L]])
+  bar <- bars[[length(bars)]]
+  fill <- bar$scales$get_scales("fill")
+  expect_identical(fill$breaks, c(-1, 0, 1))
+  expect_identical(fill$limits, c(-1, 1))
+  expect_identical(fill$name, "Background\n(Pearson r)")
+
+  # Spearman picks the other correlation; "none" draws nothing.
+  sp <- matrix_grid(plot(fit, background_by = "spearman",
+                         style = janusplot_style(show_shape_legend = FALSE)))
+  expect_identical(sp[[7L]]$theme$panel.background$fill,
+                   hex(fit$pairs[[1L]]$cor_spearman))
+  none <- plot(fit, background_by = "none",
+               style = janusplot_style(show_shape_legend = FALSE))
+  expect_true(is.na(matrix_grid(none)[[7L]]$theme$panel.background$fill))
+  expect_false(any(vapply(patch_members(none$patches$plots[[2L]]),
+                          function(b) {
+                            identical(b$scales$get_scales("fill")$name,
+                                      "Background\n(Pearson r)")
+                          }, logical(1L))))
+  expect_error(plot(fit, background_by = "rank"), "must be one of")
+})
+
+test_that("the background and the fill channel are refused together", {
+  fit <- fit_two(make_linear_data(n = 80L))
+  err <- expect_error(
+    plot(fit, style = janusplot_style(colour_channel = "fill"))
+  )
+  expect_match(conditionMessage(err), "background_by")
+  expect_match(conditionMessage(err), "colour_channel")
+  expect_s3_class(
+    plot(fit, colour_by = "pearson", background_by = "none",
+         style = janusplot_style(colour_channel = "fill")),
+    "ggplot"
+  )
+})
+
+test_that("the strip prints r and the formula on request", {
+  fit <- fit_two(make_nonlinear_data(n = 120L))
+  face <- janusplot:::.pair_face(fit$pairs[[1L]], "yx")
+  strip <- janusplot:::.cell_strip_text
+  expect_identical(strip(face, "formula"), "x2 ~ x1")
+  expect_identical(strip(face, "r"),
+                   sprintf("r %.2f", fit$pairs[[1L]]$cor_pearson))
+  expect_identical(strip(face, "r", background_by = "kendall"),
+                   sprintf("r %.2f", fit$pairs[[1L]]$cor_kendall))
+  expect_identical(strip(face, "r", background_by = "none"),
+                   sprintf("r %.2f", fit$pairs[[1L]]$cor_pearson))
+  face$cor_pearson <- -0.001
+  expect_identical(strip(face, "r"), "r 0.00")
+  face$cor_pearson <- -0.03
+  expect_identical(strip(face, c("formula", "A", "r")),
+                   sprintf("x2 ~ x1  A %.2f  r -0.03", face$asymmetry_index))
+  expect_s3_class(plot(fit, annotations = c("formula", "r")), "ggplot")
+})
+
+test_that("text_size reaches every text of the matrix", {
+  fit <- fit_two(make_nonlinear_data(n = 120L), vars = c("x1", "x2", "x3"))
+  p <- plot(fit, style = janusplot_style(
+    show_shape_legend = FALSE,
+    text_size = list(strip = 7, title = NULL, glossary = NULL, key = NULL)
+  ))
+  grid <- matrix_grid(p)
+  expect_identical(grid[[7L]]$theme$plot.subtitle$size, 7)
+  expect_null(p$patches$annotation$title)
+  expect_null(p$patches$annotation$caption)
+  expect_length(grid[[1L]]$layers, 0L)
+  # Border labels in points.
+  label <- grid[[2L]]$layers[[1L]]$aes_params$size
+  expect_equal(label * ggplot2::.pt, 10)
+  # No text at all still draws the cells.
+  bare <- plot(fit, style = janusplot_style(text_size = NULL,
+                                            show_shape_legend = FALSE))
+  bare_grid <- matrix_grid(bare)
+  expect_s3_class(bare_grid[[7L]]$theme$plot.subtitle, "element_blank")
+  expect_length(bare_grid[[2L]]$layers, 0L)
+  expect_identical(layer_geoms(bare_grid[[7L]]),
+                   c("GeomPoint", "GeomRibbon", "GeomLine"))
+  # The coloured border and the curve take their widths in points.
+  wide <- matrix_grid(plot(fit, style = janusplot_style(
+    border_width = 4, curve_width = 1, show_shape_legend = FALSE
+  )))
+  expect_equal(wide[[7L]]$theme$panel.border$linewidth, 4 / ggplot2::.pt)
+  expect_equal(cell_curve_layer(wide[[7L]])$aes_params$linewidth,
+               1 / ggplot2::.pt)
+})
+
+test_that("janusplot() passes background_by and has 14 formals", {
+  expect_identical(
+    names(formals(janusplot)),
+    c("data", "vars", "adjust", "colour_by", "background_by", "annotations",
+      "order", "display", "group", "focus_by", "focus_threshold", "axes",
+      "style", "...")
+  )
+  d <- make_linear_data(n = 80L)
+  p <- janusplot(d, vars = c("x1", "x2"), engine = "gam",
+                 background_by = "none",
+                 style = janusplot_style(show_shape_legend = FALSE))
+  expect_true(is.na(matrix_grid(p)[[6L]]$theme$panel.background$fill))
 })

@@ -41,7 +41,7 @@ test_that("labels accepts label_srt = 90 and label_srt = 0", {
 test_that("labels rejects unknown value and non-numeric label_srt", {
   expect_error(janusplot_style(labels = "bogus"), class = "rlang_error")
   expect_error(janusplot_style(label_srt = "45"), regexp = "numeric")
-  expect_error(janusplot_style(label_cex = -1), regexp = "positive|> 0")
+  expect_error(janusplot_style(border_width = -1), regexp = "positive|> 0")
 })
 
 test_that("janusplot respects order = 'alphabetical'", {
@@ -122,29 +122,23 @@ test_that("janusplot rejects unknown palette", {
                class = "rlang_error")
 })
 
-test_that("janusplot accepts split text_scale_diag / text_scale_off_diag", {
+test_that("janusplot accepts text_size as a number, a list or NULL", {
   d <- make_linear_data(n = 80L)
-  expect_s3_class(
-    janusplot(d, vars = c("x1", "x2"),
-              style = janusplot_style(text_scale_diag = 0.5,
-                                      text_scale_off_diag = 1.2)),
-    "ggplot"
-  )
-  expect_s3_class(
-    janusplot(d, vars = c("x1", "x2"),
-              style = janusplot_style(text_scale_diag = 1.4,
-                                      text_scale_off_diag = 0.7)),
-    "ggplot"
-  )
+  for (ts in list(7, list(diagonal = 6, strip = 9), NULL)) {
+    expect_s3_class(
+      janusplot(d, vars = c("x1", "x2"),
+                style = janusplot_style(text_size = ts, diagonal = "name")),
+      "ggplot"
+    )
+  }
 })
 
-test_that("janusplot text-scale args reject non-positive or invalid values", {
-  expect_error(janusplot_style(text_scale_diag = 0), class = "rlang_error")
-  expect_error(janusplot_style(text_scale_diag = -1), class = "rlang_error")
-  expect_error(janusplot_style(text_scale_off_diag = "big"),
-               class = "rlang_error")
-  expect_error(janusplot_style(text_scale_off_diag = c(1, 2)),
-               class = "rlang_error")
+test_that("janusplot text_size rejects non-positive or invalid values", {
+  expect_error(janusplot_style(text_size = 0), "text_size")
+  expect_error(janusplot_style(text_size = -1), "text_size")
+  expect_error(janusplot_style(text_size = "big"), "text_size")
+  expect_error(janusplot_style(text_size = c(1, 2)), "text_size")
+  expect_error(janusplot_style(text_size = list(diagonal = 0)), "diagonal")
 })
 
 test_that(".check_parallel_plan informs on sequential plan", {
@@ -187,33 +181,31 @@ test_that("janusplot show_glossary validation", {
                class = "rlang_error")
 })
 
-test_that("janusplot glossary_scale accepts positive multipliers", {
+test_that("janusplot glossary size accepts points or NULL", {
   d <- make_linear_data(n = 80L)
   expect_s3_class(janusplot(d, vars = c("x1", "x2"),
-                            style = janusplot_style(glossary_scale = 0.7)),
+                            style = janusplot_style(
+                              text_size = list(glossary = 6)
+                            )),
                   "ggplot")
-  expect_s3_class(janusplot(d, vars = c("x1", "x2"),
-                            style = janusplot_style(glossary_scale = 1.5)),
-                  "ggplot")
+  p <- janusplot(d, vars = c("x1", "x2"),
+                 style = janusplot_style(text_size = list(glossary = NULL)))
+  expect_null(p$patches$annotation$caption)
 })
 
-test_that("janusplot glossary_scale validation", {
-  expect_error(janusplot_style(glossary_scale = 0), class = "rlang_error")
-  expect_error(janusplot_style(glossary_scale = -1), class = "rlang_error")
-  expect_error(janusplot_style(glossary_scale = "big"), class = "rlang_error")
-})
-
-test_that(".cell_text_sizes applies diag and off_diag scales independently", {
+test_that(".cell_text_sizes sets the strip and diagonal sizes independently", {
   base <- janusplot:::.cell_text_sizes(4)
-  off2 <- janusplot:::.cell_text_sizes(4, text_scale_off_diag = 2)
-  dia2 <- janusplot:::.cell_text_sizes(4, text_scale_diag = 2)
-  # off_diag scale doubles n_edf / glyph but leaves diag untouched
-  expect_equal(off2$n_edf, base$n_edf * 2)
-  expect_equal(off2$glyph, base$glyph * 2)
-  expect_equal(off2$diag,  base$diag)
-  # diag scale doubles diag but leaves n_edf untouched
-  expect_equal(dia2$diag,  base$diag * 2)
-  expect_equal(dia2$n_edf, base$n_edf)
+  strip2 <- janusplot:::.cell_text_sizes(4, list(strip = 2 * base$pt$strip))
+  diag2  <- janusplot:::.cell_text_sizes(
+    4, list(diagonal = 2 * base$pt$diagonal)
+  )
+  # The strip size doubles n_edf / glyph but leaves diag untouched.
+  expect_equal(strip2$n_edf, base$n_edf * 2)
+  expect_equal(strip2$glyph, base$glyph * 2)
+  expect_equal(strip2$diag,  base$diag)
+  # The diagonal size doubles diag but leaves n_edf untouched.
+  expect_equal(diag2$diag,  base$diag * 2)
+  expect_equal(diag2$n_edf, base$n_edf)
 })
 
 test_that("summary(janusplot_fit()) is the per-cell table behind the plot", {

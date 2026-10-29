@@ -17,9 +17,8 @@ test_that("every style knob warns and lands in the style object", {
   values <- list(
     show_data = FALSE, show_ci = FALSE, palette = "magma",
     show_shape_legend = FALSE, glyph_style = "unicode", labels = "none",
-    diagonal = "density", label_srt = 90, label_cex = 1.5,
-    text_scale_diag = 0.5, text_scale_off_diag = 1.2, show_glossary = FALSE,
-    glossary_scale = 0.7, compact = "never", compact_threshold = 15L,
+    diagonal = "density", label_srt = 90, show_glossary = FALSE,
+    compact = "never", compact_threshold = 15L,
     compact_levels = list(t1 = 15L, t2 = 20L, t3 = 30L), focus_dim_alpha = 0.5
   )
   for (nm in names(values)) {
@@ -31,6 +30,32 @@ test_that("every style knob warns and lands in the style object", {
     expect_s3_class(out$style, "janusplot_style")
     expect_length(out$fit_args, 0L)
   }
+})
+
+test_that("the 0.2.0 text multipliers map to text_size elements", {
+  map <- c(label_cex = "labels", text_scale_diag = "diagonal",
+           text_scale_off_diag = "strip", glossary_scale = "glossary")
+  for (nm in names(map)) {
+    lifecycle::expect_deprecated(
+      out <- do.call(shim, stats::setNames(list(1.5), nm)),
+      sprintf("`%s` argument of `janusplot\\(\\)`", nm)
+    )
+    expect_identical(out$text_args, stats::setNames(list(1.5), nm))
+    expect_length(out$fit_args, 0L)
+    # Applied at the variable count: 1.5 times the automatic size.
+    style <- janusplot:::.apply_legacy_text(out$style, out$text_args, 4L)
+    auto <- janusplot:::.text_size_auto(4L)
+    expect_equal(style$text_size[[map[[nm]]]], 1.5 * auto[[map[[nm]]]],
+                 info = nm)
+  }
+  lifecycle::expect_deprecated(
+    expect_error(shim(label_cex = 0), "single positive number")
+  )
+  # An explicit base size is scaled from its own element size.
+  base <- janusplot:::.apply_legacy_text(janusplot_style(text_size = 10),
+                                         list(glossary_scale = 0.5), 4L)
+  expect_equal(base$text_size$glossary, 4.5)
+  expect_equal(base$text_size$title, 13)
 })
 
 test_that("a shimmed style knob is still validated", {
@@ -84,12 +109,12 @@ test_that("model arguments pass through to janusplot_fit() without a warning", {
 test_that("unnamed arguments reaching ... are refused", {
   # The 0.2.0 fourth positional argument was `method`; today a fourth
   # positional value lands in `colour_by` and fails there, and anything
-  # past the thirteenth formal reaches `...` unnamed.
+  # past the fourteenth formal reaches `...` unnamed.
   expect_error(janusplot(d_lin, c("x1", "x2"), NULL, "REML"), "colour_by")
   expect_error(
-    janusplot(d_lin, c("x1", "x2"), NULL, "nonlinearity", c("A", "signif"),
-              "original", "fit", NULL, NA, "q90", "original",
-              janusplot_style(), "REML"),
+    janusplot(d_lin, c("x1", "x2"), NULL, "nonlinearity", "pearson",
+              c("A", "signif"), "original", "fit", NULL, NA, "q90",
+              "original", janusplot_style(), "REML"),
     "must be named"
   )
 })

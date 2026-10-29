@@ -1,19 +1,28 @@
 # Tests for janusplot_style(): construction, the class and field order,
 # every validation error, and the print() method.
 
-test_that("janusplot_style() returns the 26 documented fields in order", {
+test_that("janusplot_style() returns the 30 documented fields in order", {
   s <- janusplot_style()
   expect_s3_class(s, c("janusplot_style", "list"), exact = TRUE)
   expect_named(s, c(
-    "colour_channel", "palette", "annotation_position", "show_data",
-    "show_ci", "point_size", "point_alpha", "curve_colour", "band_alpha",
-    "density_threshold", "group_palette", "group_max_levels", "labels",
-    "label_srt", "label_cex", "diagonal", "text_scale_diag",
-    "text_scale_off_diag", "glyph_style", "show_shape_legend",
-    "show_glossary", "glossary_scale", "compact", "compact_threshold",
-    "compact_levels", "focus_dim_alpha"
+    "colour_channel", "palette", "background_palette", "background_strength",
+    "annotation_position", "show_data", "show_ci", "point_size",
+    "point_alpha", "curve_colour", "curve_width", "band_alpha",
+    "border_width", "density_threshold", "group_palette", "group_max_levels",
+    "labels", "label_srt", "diagonal", "glyph_style", "show_shape_legend",
+    "show_glossary", "show_key", "pair_background", "text_size",
+    "base_family", "compact", "compact_threshold", "compact_levels",
+    "focus_dim_alpha"
   ))
-  expect_length(formals(janusplot_style), 26L)
+  expect_length(formals(janusplot_style), 30L)
+  expect_identical(s$background_palette, "RdBu")
+  expect_identical(s$background_strength, 0.35)
+  expect_identical(s$curve_width, 2)
+  expect_null(s$border_width)
+  expect_true(s$show_key)
+  expect_true(s$pair_background)
+  expect_identical(s$text_size, "auto")
+  expect_identical(s$base_family, "")
   expect_identical(s$colour_channel, "border")
   expect_null(s$palette)
   expect_identical(s$annotation_position, "strip")
@@ -64,7 +73,8 @@ test_that("enumerated arguments are matched", {
 })
 
 test_that("logical flags must be a single TRUE or FALSE", {
-  for (nm in c("show_data", "show_ci", "show_shape_legend", "show_glossary")) {
+  for (nm in c("show_data", "show_ci", "show_shape_legend", "show_glossary",
+               "show_key", "pair_background")) {
     args <- stats::setNames(list("yes"), nm)
     expect_error(do.call(janusplot_style, args), "TRUE or FALSE")
     args <- stats::setNames(list(NA), nm)
@@ -75,8 +85,7 @@ test_that("logical flags must be a single TRUE or FALSE", {
 })
 
 test_that("positive scalars are validated", {
-  for (nm in c("point_size", "label_cex", "text_scale_diag",
-               "text_scale_off_diag", "glossary_scale")) {
+  for (nm in c("point_size", "curve_width", "border_width")) {
     expect_error(do.call(janusplot_style, stats::setNames(list(0), nm)),
                  "single positive number")
     expect_error(do.call(janusplot_style, stats::setNames(list(-1), nm)),
@@ -150,4 +159,67 @@ test_that("print() lists the non-default values or says all defaults", {
   expect_match(lines[4L], "^  compact_levels = list\\(t1 = 5L, t2 = 8L, t3 = 12L\\)$")
   lines <- testthat::capture_output_lines(print(janusplot_style(label_srt = 0)))
   expect_identical(lines[1L], "janusplot style: 1 non-default value")
+})
+
+test_that("the background palette and strength are validated", {
+  expect_error(janusplot_style(background_palette = "viridis"),
+               "must be one of")
+  expect_identical(janusplot_style(background_palette = "PuOr")$background_palette,
+                   "PuOr")
+  for (bad in list(0, -0.1, 1.5, NA_real_, "strong", c(0.2, 0.3))) {
+    expect_error(janusplot_style(background_strength = bad), "\\(0, 1\\]")
+  }
+  expect_identical(janusplot_style(background_strength = 1)$background_strength, 1)
+})
+
+test_that("text_size takes auto, a number, a named list or NULL", {
+  expect_identical(janusplot_style(text_size = 9)$text_size, 9)
+  s <- janusplot_style(text_size = list(strip = 6, glossary = NULL,
+                                        title = "auto"))
+  expect_identical(s$text_size, list(strip = 6, glossary = NULL, title = "auto"))
+  expect_null(janusplot_style(text_size = NULL)$text_size)
+  expect_error(janusplot_style(text_size = list(strip = 6, bogus = 3)),
+               "bogus")
+  expect_error(janusplot_style(text_size = list(strip = 6, bogus = 3)),
+               "glossary")
+  expect_error(janusplot_style(text_size = list(strip = -1, key = "x")),
+               "strip")
+  expect_error(janusplot_style(text_size = list(strip = -1, key = "x")),
+               "key")
+  expect_error(janusplot_style(text_size = list(6)), "named")
+  expect_error(janusplot_style(text_size = "large"), "text_size")
+  expect_error(janusplot_style(base_family = 1), "base_family")
+})
+
+test_that("text sizes resolve to points per element", {
+  resolve <- janusplot:::.resolve_text_pt
+  auto4 <- resolve(4L, "auto")
+  expect_named(auto4, c("strip", "labels", "diagonal", "legend", "key",
+                        "glossary", "title", "axis"))
+  # The strip scales with the variable count and keeps 5 points.
+  expect_equal(auto4$strip, 8 * (3 / 4)^0.55)
+  expect_identical(resolve(12L, "auto")$strip, 5)
+  expect_identical(resolve(40L, "auto")$strip, 5)
+  # One number: every element at its fixed ratio.
+  base <- resolve(4L, 10)
+  expect_equal(unlist(base), c(strip = 8, labels = 10, diagonal = 12,
+                               legend = 9, key = 7.5, glossary = 9,
+                               title = 13, axis = 8))
+  # A list: named elements set, NULL removes, the rest stay auto.
+  mixed <- resolve(4L, list(strip = 7, glossary = NULL, title = "auto"))
+  expect_identical(mixed$strip, 7)
+  expect_identical(mixed$glossary, NA_real_)
+  expect_identical(mixed$title, auto4$title)
+  expect_identical(mixed$labels, auto4$labels)
+  # NULL: no text at all.
+  expect_true(all(is.na(unlist(resolve(4L, NULL)))))
+})
+
+test_that("the automatic border width scales with the variable count", {
+  lw <- janusplot:::.border_linewidth
+  expect_equal(lw(4L), 2.4)
+  expect_gt(lw(2L), lw(4L))
+  expect_lt(lw(12L), lw(4L))
+  expect_identical(lw(40L), 1.0)
+  expect_equal(lw(4L, border_width = 3), 3 / ggplot2::.pt)
 })

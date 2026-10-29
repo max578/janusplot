@@ -1,4 +1,5 @@
-# Tests for janusplot_pair(): the two directions of one pair of a fit.
+# Tests for janusplot_pair(): the two directions of one or more pairs of a
+# fit, and the stacked layout of many pairs.
 # Every fit pins engine = "gam" so the drawn EDFs and curves are stable.
 
 pair_fit <- function(...) {
@@ -43,7 +44,8 @@ test_that("the panels carry axis titles and the full strip", {
   labs_left <- ggplot2::get_labs(p[[1L]])
   expect_identical(labs_left$x, "x1")
   expect_identical(labs_left$y, "x2")
-  expect_match(labs_left$subtitle, "^A [0-9.]+  EDF [0-9.]+  n 200")
+  expect_match(labs_left$subtitle,
+               "^A [0-9.]+  EDF [0-9.]+  r -?[0-9.]+  n 200")
 })
 
 test_that("the title carries the adjust terms of the fit", {
@@ -64,9 +66,10 @@ test_that("the title carries the adjust terms of the fit", {
 test_that("malformed calls are refused with a named cause", {
   fit <- pair_fit()
   expect_error(janusplot_pair(mtcars, "mpg", "hp"), "janusplot_fit")
-  expect_error(janusplot_pair(fit, "x9", "x2"), "not a fitted variable")
+  expect_error(janusplot_pair(fit, "x9", "x2"), "not fitted")
+  expect_error(janusplot_pair(fit, "x9", "x2"), "x2 ~ x9")
   expect_error(janusplot_pair(fit, "x9", "x2"), "x1")
-  expect_error(janusplot_pair(fit, "x1", "x1"), "different variables")
+  expect_error(janusplot_pair(fit, "x1", "x1"), "with itself")
   expect_error(janusplot_pair(fit, "x1", "x2", display = "d3"), "display")
   expect_error(janusplot_pair(fit, "x1", "x2", style = list()),
                "janusplot_style")
@@ -157,5 +160,126 @@ test_that("the overlay pair matches its snapshot", {
   vdiffr::expect_doppelganger(
     "pair-quadratic-both",
     janusplot_pair(fit, "x1", "x2", display = "both")
+  )
+})
+
+# ---------------------------------------------------------------
+# Many pairs
+# ---------------------------------------------------------------
+
+# The members of a patchwork: a wrap of patchworks keeps them all in
+# $patches$plots; otherwise the last member is the object itself.
+patch_members <- function(p) {
+  members <- p$patches$plots
+  if (!inherits(p, "plot_filler")) members <- c(members, list(p))
+  members
+}
+
+block_titles <- function(block) {
+  vapply(list(block[[1L]], block[[2L]]), function(panel) {
+    ggplot2::get_labs(panel)$title
+  }, character(1L))
+}
+
+test_that("pairs are given as two vectors or as a two-column data frame", {
+  fit <- pair_fit()
+  by_vec <- janusplot_pair(fit, c("x1", "x1"), c("x2", "x3"))
+  by_df  <- janusplot_pair(fit, data.frame(x = c("x1", "x1"),
+                                           y = c("x2", "x3")))
+  by_mat <- janusplot_pair(fit, cbind(c("x1", "x1"), c("x2", "x3")))
+  for (p in list(by_vec, by_df, by_mat)) {
+    expect_s3_class(p, "patchwork")
+    # Two blocks in one stack, each block y ~ s(x) then x ~ s(y).
+    expect_identical(block_titles(p[[1L]]), c("x2 ~ s(x1)", "x1 ~ s(x2)"))
+    expect_identical(block_titles(p[[2L]]), c("x3 ~ s(x1)", "x1 ~ s(x3)"))
+  }
+  # A factor data frame works the same.
+  by_fac <- janusplot_pair(fit, data.frame(x = factor("x3"), y = factor("x2")))
+  expect_identical(panel_titles(by_fac), c("x2 ~ s(x3)", "x3 ~ s(x2)"))
+})
+
+test_that("blocks fill stacks of nrow, side by side", {
+  d <- make_nonlinear_data(n = 80L, seed = 2L)
+  d$x5 <- d$x1 + d$x4
+  d$x6 <- d$x2 - d$x3
+  fit <- janusplot_fit(d, engine = "gam", derivatives = integer())
+  all_pairs <- t(utils::combn(fit$vars, 2L))
+  expect_identical(nrow(all_pairs), 15L)
+  pairs <- as.data.frame(all_pairs[1:14, ], stringsAsFactors = FALSE)
+  p <- janusplot_pair(fit, pairs, nrow = 5L)
+  stacks <- patch_members(p)
+  expect_length(stacks, 3L)
+  sizes <- vapply(stacks, function(stack) {
+    sum(!vapply(patch_members(stack), inherits, logical(1L), "spacer"))
+  }, integer(1L))
+  expect_identical(sizes, c(5L, 5L, 4L))
+  # Every stack keeps five rows; the last is padded with one spacer.
+  expect_identical(lengths(lapply(stacks, patch_members)), c(5L, 5L, 5L))
+  # The first block of the second stack is the sixth pair.
+  first_block <- patch_members(stacks[[2L]])[[1L]]
+  expect_identical(
+    block_titles(first_block),
+    sprintf(c("%2$s ~\ns(%1$s)", "%1$s ~\ns(%2$s)"), pairs[6L, 1L],
+            pairs[6L, 2L])
+  )
+  # ncol gives the stack count; neither gives one stack up to five pairs.
+  expect_length(patch_members(janusplot_pair(fit, pairs, ncol = 2L)), 2L)
+  one_stack <- patch_members(janusplot_pair(fit, pairs[1:5, ]))
+  expect_length(one_stack, 5L)
+  expect_identical(block_titles(one_stack[[5L]])[1L],
+                   sprintf("%s ~ s(%s)", pairs[5L, 2L], pairs[5L, 1L]))
+  expect_identical(janusplot:::.pair_stack_layout(14L),
+                   list(nrow = 5L, ncol = 3L))
+  expect_identical(janusplot:::.pair_stack_layout(14L, nrow = 5L),
+                   list(nrow = 5L, ncol = 3L))
+  expect_identical(janusplot:::.pair_stack_layout(14L, ncol = 2L),
+                   list(nrow = 7L, ncol = 2L))
+  expect_identical(janusplot:::.pair_stack_layout(5L),
+                   list(nrow = 5L, ncol = 1L))
+  expect_error(janusplot:::.pair_stack_layout(14L, nrow = 2L, ncol = 2L),
+               "fewer than the 14")
+  expect_error(janusplot:::.pair_stack_layout(3L, nrow = 0L), "nrow")
+  expect_error(janusplot:::.pair_stack_layout(3L, ncol = 1.5), "ncol")
+})
+
+test_that("pair errors name every offending pair", {
+  fit <- pair_fit()
+  err <- expect_error(janusplot_pair(fit, c("x1", "x9", "x7"),
+                                     c("x2", "x2", "x1")))
+  expect_match(conditionMessage(err), "x2 ~ x9")
+  expect_match(conditionMessage(err), "x1 ~ x7")
+  expect_error(janusplot_pair(fit, c("x1", "x2", "x1"), c("x2", "x1", "x3")),
+               "more than once")
+  err <- expect_error(janusplot_pair(fit, c("x1", "x2", "x1"),
+                                     c("x2", "x1", "x3")))
+  expect_match(conditionMessage(err), "x2 ~ x1")
+  expect_match(conditionMessage(err), "x1 ~ x2")
+  expect_error(janusplot_pair(fit, c("x1", "x2"), "x3"), "same length")
+  expect_error(janusplot_pair(fit, c("x1", NA), c("x2", "x3")), "without NA")
+  expect_error(janusplot_pair(fit, "x1"), "two columns")
+  expect_error(janusplot_pair(fit, data.frame(a = "x1")), "two columns")
+})
+
+test_that("the pair panels take the signed background", {
+  fit <- pair_fit()
+  pair <- fit$pairs[[1L]]
+  expected <- janusplot:::.background_hex(pair$cor_pearson, "RdBu", 0.35)
+  p <- janusplot_pair(fit, "x1", "x2")
+  expect_identical(p[[1L]]$theme$panel.background$fill, expected)
+  expect_identical(p[[2L]]$theme$panel.background$fill, expected)
+  plain <- janusplot_pair(fit, "x1", "x2",
+                          style = janusplot_style(pair_background = FALSE))
+  expect_true(is.na(plain[[1L]]$theme$panel.background$fill))
+  both <- janusplot_pair(fit, "x1", "x2", display = "both")
+  expect_identical(both[[1L]]$theme$panel.background$fill, expected)
+})
+
+test_that("many overlay panels share one generic key", {
+  fit <- pair_fit()
+  p <- janusplot_pair(fit, c("x1", "x1"), c("x2", "x3"), display = "both")
+  key <- p[[2L]]
+  expect_identical(
+    levels(key$data$curve),
+    c("vertical ~ s(horizontal)", "horizontal ~ s(vertical)")
   )
 })

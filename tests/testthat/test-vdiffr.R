@@ -1,7 +1,8 @@
 # Visual regression tests via vdiffr.
 # Snapshots live under tests/testthat/_snaps/vdiffr/. The 1.0.0 default
-# cell (coloured border, strip above the data, blank diagonal) replaced
-# the 0.2.0 fill look on 2026-10-29. Regenerate with
+# cell (thick coloured border, Pearson background, strip above the data,
+# blank diagonal, every cell row ~ s(column), corner key) replaced the
+# 0.2.0 fill look on 2026-10-29. Regenerate with
 # `testthat::snapshot_accept("vdiffr")` on a trusted machine, after
 # looking at each case.
 #
@@ -35,7 +36,7 @@ test_that("non-linear 3-var matrix with unicode shape glyphs matches snapshot", 
 test_that("fill channel with Pearson r (the 0.2.0 look) matches snapshot", {
   d <- make_nonlinear_data(n = 200L, seed = 2L)
   fit <- janusplot_fit(d, vars = c("x1", "x2", "x3"), engine = "gam")
-  p <- plot(fit, colour_by = "pearson",
+  p <- plot(fit, colour_by = "pearson", background_by = "none",
             style = janusplot_style(colour_channel = "fill"))
   vdiffr::expect_doppelganger("matrix-3var-nonlinear-fill-pearson", p)
 })

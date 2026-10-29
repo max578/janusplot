@@ -36,6 +36,32 @@
     Code
       janusplot:::.cell_text_sizes(3L)
     Output
+      $pt
+      $pt$strip
+      [1] 8
+      
+      $pt$labels
+      [1] 10
+      
+      $pt$diagonal
+      [1] 14.79543
+      
+      $pt$legend
+      [1] 9
+      
+      $pt$key
+      [1] 5.5
+      
+      $pt$glossary
+      [1] 9
+      
+      $pt$title
+      [1] 13
+      
+      $pt$axis
+      [1] 8
+      
+      
       $n_edf
       [1] 4
       
@@ -60,20 +86,46 @@
     Code
       janusplot:::.cell_text_sizes(10L)
     Output
+      $pt
+      $pt$strip
+      [1] 5
+      
+      $pt$labels
+      [1] 10
+      
+      $pt$diagonal
+      [1] 7.630348
+      
+      $pt$legend
+      [1] 9
+      
+      $pt$key
+      [1] 5
+      
+      $pt$glossary
+      [1] 9
+      
+      $pt$title
+      [1] 13
+      
+      $pt$axis
+      [1] 5
+      
+      
       $n_edf
-      [1] 2.062893
+      [1] 2.5
       
       $glyph
-      [1] 2.372327
+      [1] 2.875
       
       $asym
-      [1] 1.959748
+      [1] 2.375
       
       $shape
-      [1] 3.094339
+      [1] 3.75
       
       $empty
-      [1] 1.650314
+      [1] 2
       
       $diag
       [1] 2.681761
