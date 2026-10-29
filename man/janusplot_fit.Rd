@@ -157,7 +157,8 @@ correlations \code{cor_pearson}, \code{cor_spearman}, \code{cor_kendall} and
 \verb{convexity_index_*}, the counts \verb{n_turning_*}, \verb{n_inflect_*}, the
 labels \verb{shape_*}, \verb{shape_code_*}, \verb{shape_archetype_*},
 \verb{shape_monotonic_*}, \verb{shape_linear_*}, the margins
-\code{shape_borderline_yx}, \code{shape_borderline_xy}, the derivative
+\code{shape_borderline_yx}, \code{shape_borderline_xy} (\code{NA} only for an
+\code{indeterminate} label or a missing flat-range ratio), the derivative
 curves \code{deriv_yx}, \code{deriv_xy} (lists keyed \code{"1"}, \code{"2"} of data
 frames with \code{x}, \code{fit}, \code{se}, \code{lo}, \code{hi}, \code{ci_type}), the
 prediction references \code{prediction_reference_yx},
@@ -231,8 +232,9 @@ had its basis dimension capped (\code{k_capped_yx} or \code{k_capped_xy}).
 and a classification cutoff whose crossing by that index alone would
 change the \code{shape_category} label, on the index's own scale: \code{M} and
 \code{C} against the monotonicity and curvature cutoffs, the flat-range
-ratio against the \code{flat} cutoff. It is \code{NA} for an \code{indeterminate}
-label and when no cutoff can change the label. A small value marks a
+ratio against the \code{flat} cutoff. A label decided by the turning-point
+and inflection counts (\code{u_shape}, the other single-extremum labels and
+the waves) reports its gap to the \code{flat} cutoff. A small value marks a
 label that a slightly different smooth would have moved.
 
 \verb{$data} is the cleaned copy of the columns used: the fitted variables,

@@ -245,7 +245,7 @@ residual-independence test of direction (`janusplot_direction()`).
   `focus_by`, `focus_threshold`, `axes` and `style`. Unknown names in
   `...` are an error. The non-linearity colour scale runs from 0 to the
   observed maximum with a floor of 1, so a wholly linear matrix shows pale
-  borders rather than a degenerate scale.
+  borders.
 * `plot()` and `janusplot()` gain `background_by` (`"pearson"`,
   `"spearman"`, `"kendall"` or `"none"`): each cell's background is tinted
   by the pair's signed correlation, white at 0 and deeper blue or red

@@ -5,10 +5,11 @@
 \alias{janusplot-package}
 \title{janusplot: Asymmetric Smoothed-Association Matrices via GAM Fits}
 \description{
-\code{janusplot} renders pairwise, asymmetric smoothed-association matrices
-of continuous variables. Each cell shows the fitted spline from an
-\code{\link[mgcv:gam]{mgcv::gam()}} model, with upper and lower triangles encoding the two
-directional regressions \code{y ~ s(x)} and \code{x ~ s(y)} respectively.
+\code{janusplot} draws pairwise, asymmetric smoothed-association matrices
+of continuous variables. Each off-diagonal cell \verb{[r, c]} shows the
+fitted spline of \code{x_r ~ s(x_c)} from an \code{\link[mgcv:gam]{mgcv::gam()}} or \code{\link[mgcv:bam]{mgcv::bam()}}
+model, so the two cells of a pair hold the two directional regressions
+\code{y ~ s(x)} and \code{x ~ s(y)}.
 
 Unlike a Pearson correlation matrix (one scalar per pair, symmetric),
 a smoothed-association matrix gives two curves per pair and is
@@ -16,23 +17,27 @@ intentionally asymmetric. Heteroscedasticity, leverage, and directional
 non-linearity become visually evident.
 }
 \section{Main functions}{
+The model is fitted once and every view reads the fitted object.
 \itemize{
-\item \code{\link[=janusplot]{janusplot()}} -- returns a ggplot of the matrix.
-\item \code{\link[=janusplot_fit]{janusplot_fit()}} -- fits every ordered pair once and returns the
-fit object (per-pair metrics, per-cell table via \code{summary()}, flags)
-for custom plotting or downstream analysis.
-\item \code{\link[=janusplot_pair]{janusplot_pair()}} -- draws the two directions of one pair side by
-side, or overlaid in one z-score panel.
-\item \code{\link[=janusplot_direction]{janusplot_direction()}} -- runs the residual-independence test
-that licenses a directional reading of a pair's asymmetry, and
-abstains where the additive noise model cannot decide.
+\item \code{\link[=janusplot_fit]{janusplot_fit()}} fits every ordered pair once and returns a
+\code{janusplot_fit} object; \code{print()} gives an overview, \code{summary()} the
+per-cell table and \code{plot()} the matrix (\code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}}).
+\item \code{\link[=janusplot]{janusplot()}} fits and draws the matrix in one call.
+\item \code{\link[=janusplot_pair]{janusplot_pair()}} draws the two directions of one or more pairs
+side by side, or overlaid in one z-score panel.
+\item \code{\link[=janusplot_compare]{janusplot_compare()}} matches two fits of the same variables cell by
+cell, typically a marginal fit against an adjusted one.
+\item \code{\link[=janusplot_direction]{janusplot_direction()}} runs the residual-independence test that
+licenses a directional reading of a pair, and abstains where the
+additive noise model cannot decide.
+\item \code{\link[=janusplot_style]{janusplot_style()}} holds every appearance setting of the views.
 }
 }
 
 \section{Asymmetry index}{
-For each pair, the asymmetry index \verb{A_ij = |EDF_yx - EDF_xy| / (EDF_yx + EDF_xy)} is bounded in [0, 1], where \code{EDF_yx} is the EDF
-of \code{x_j ~ s(x_i)} (upper triangle, \code{i < j}) and \code{EDF_xy} that of
-\code{x_i ~ s(x_j)} (lower triangle). Values near 0 indicate
+For each pair, the asymmetry index \verb{A_ij = |EDF_yx - EDF_xy| / (EDF_yx + EDF_xy)} is bounded in [0, 1], where \code{EDF_xy} is the EDF
+of \code{x_i ~ s(x_j)} (upper triangle, \code{i < j}) and \code{EDF_yx} that of
+\code{x_j ~ s(x_i)} (lower triangle). Values near 0 indicate
 symmetric complexity; values near 1 indicate the two directional
 fits differ sharply in effective degrees of freedom. A is unreliable
 when either direction of the pair had its basis dimension capped at

@@ -1,10 +1,11 @@
 #' janusplot: Asymmetric Smoothed-Association Matrices via GAM Fits
 #'
 #' @description
-#' `janusplot` renders pairwise, asymmetric smoothed-association matrices
-#' of continuous variables. Each cell shows the fitted spline from an
-#' [mgcv::gam()] model, with upper and lower triangles encoding the two
-#' directional regressions `y ~ s(x)` and `x ~ s(y)` respectively.
+#' `janusplot` draws pairwise, asymmetric smoothed-association matrices
+#' of continuous variables. Each off-diagonal cell `[r, c]` shows the
+#' fitted spline of `x_r ~ s(x_c)` from an [mgcv::gam()] or [mgcv::bam()]
+#' model, so the two cells of a pair hold the two directional regressions
+#' `y ~ s(x)` and `x ~ s(y)`.
 #'
 #' Unlike a Pearson correlation matrix (one scalar per pair, symmetric),
 #' a smoothed-association matrix gives two curves per pair and is
@@ -13,22 +14,27 @@
 #'
 #' # Main functions
 #'
-#' * [janusplot()] -- returns a ggplot of the matrix.
-#' * [janusplot_fit()] -- fits every ordered pair once and returns the
-#'   fit object (per-pair metrics, per-cell table via `summary()`, flags)
-#'   for custom plotting or downstream analysis.
-#' * [janusplot_pair()] -- draws the two directions of one pair side by
-#'   side, or overlaid in one z-score panel.
-#' * [janusplot_direction()] -- runs the residual-independence test
-#'   that licenses a directional reading of a pair's asymmetry, and
-#'   abstains where the additive noise model cannot decide.
+#' The model is fitted once and every view reads the fitted object.
+#'
+#' * [janusplot_fit()] fits every ordered pair once and returns a
+#'   `janusplot_fit` object; `print()` gives an overview, `summary()` the
+#'   per-cell table and `plot()` the matrix ([plot.janusplot_fit()]).
+#' * [janusplot()] fits and draws the matrix in one call.
+#' * [janusplot_pair()] draws the two directions of one or more pairs
+#'   side by side, or overlaid in one z-score panel.
+#' * [janusplot_compare()] matches two fits of the same variables cell by
+#'   cell, typically a marginal fit against an adjusted one.
+#' * [janusplot_direction()] runs the residual-independence test that
+#'   licenses a directional reading of a pair, and abstains where the
+#'   additive noise model cannot decide.
+#' * [janusplot_style()] holds every appearance setting of the views.
 #'
 #' # Asymmetry index
 #'
 #' For each pair, the asymmetry index `A_ij = |EDF_yx - EDF_xy| /
-#' (EDF_yx + EDF_xy)` is bounded in \[0, 1\], where `EDF_yx` is the EDF
-#' of `x_j ~ s(x_i)` (upper triangle, `i < j`) and `EDF_xy` that of
-#' `x_i ~ s(x_j)` (lower triangle). Values near 0 indicate
+#' (EDF_yx + EDF_xy)` is bounded in \[0, 1\], where `EDF_xy` is the EDF
+#' of `x_i ~ s(x_j)` (upper triangle, `i < j`) and `EDF_yx` that of
+#' `x_j ~ s(x_i)` (lower triangle). Values near 0 indicate
 #' symmetric complexity; values near 1 indicate the two directional
 #' fits differ sharply in effective degrees of freedom. A is unreliable
 #' when either direction of the pair had its basis dimension capped at

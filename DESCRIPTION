@@ -10,8 +10,8 @@ Authors@R: c(
 Description: Render a pairwise, asymmetric smoothed-association matrix
     of continuous variables. Each cell shows the fitted spline from an
     'mgcv' generalised additive model, with the upper triangle
-    displaying 'gam(x_j ~ s(x_i))' and the lower triangle
-    'gam(x_i ~ s(x_j))'. Unlike Pearson's correlation matrix, the
+    displaying 'gam(x_i ~ s(x_j))' and the lower triangle
+    'gam(x_j ~ s(x_i))'. Unlike Pearson's correlation matrix, the
     visualisation is intentionally asymmetric, revealing
     heteroscedasticity, leverage, and directional non-linearity that
     a single scalar correlation hides. An asymmetry index and a

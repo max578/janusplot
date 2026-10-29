@@ -30,6 +30,11 @@
 #' at minus or plus one, with its own colour bar over `[-1, 1]`. A strip
 #' above each cell carries the `annotations`.
 #'
+#' The default sizes are set for a figure one page wide (170 mm). At one
+#' journal column (85 mm), draw at most four variables with
+#' `janusplot_style(text_size = 6, show_shape_legend = FALSE,
+#' show_glossary = FALSE)`.
+#'
 #' `colour_by = "edf"` is accepted for one release and mapped to
 #' `"nonlinearity"` with a deprecation message.
 #'

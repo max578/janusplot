@@ -130,6 +130,10 @@ the blue (negative) or red (positive) end of \code{style$background_palette}
 at minus or plus one, with its own colour bar over \verb{[-1, 1]}. A strip
 above each cell carries the \code{annotations}.
 
+The default sizes are set for a figure one page wide (170 mm). At one
+journal column (85 mm), draw at most four variables with
+\code{janusplot_style(text_size = 6, show_shape_legend = FALSE, show_glossary = FALSE)}.
+
 \code{colour_by = "edf"} is accepted for one release and mapped to
 \code{"nonlinearity"} with a deprecation message.
 }
