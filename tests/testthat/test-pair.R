@@ -167,18 +167,13 @@ test_that("the overlay pair matches its snapshot", {
 # Many pairs
 # ---------------------------------------------------------------
 
-# The members of a patchwork: a wrap of patchworks keeps them all in
-# $patches$plots; otherwise the last member is the object itself.
-patch_members <- function(p) {
-  members <- p$patches$plots
-  if (!inherits(p, "plot_filler")) members <- c(members, list(p))
-  members
-}
+# The cells of a stacked layout, row by row: a wrap of plots keeps them
+# in $patches$plots, the last cell is the object itself.
+grid_cells <- function(p) c(p$patches$plots, list(p))
 
-block_titles <- function(block) {
-  vapply(list(block[[1L]], block[[2L]]), function(panel) {
-    ggplot2::get_labs(panel)$title
-  }, character(1L))
+cell_title <- function(cell) {
+  if (inherits(cell, "spacer")) return(NA_character_)
+  ggplot2::get_labs(cell)$title
 }
 
 test_that("pairs are given as two vectors or as a two-column data frame", {
@@ -190,15 +185,17 @@ test_that("pairs are given as two vectors or as a two-column data frame", {
   for (p in list(by_vec, by_df, by_mat)) {
     expect_s3_class(p, "patchwork")
     # Two blocks in one stack, each block y ~ s(x) then x ~ s(y).
-    expect_identical(block_titles(p[[1L]]), c("x2 ~ s(x1)", "x1 ~ s(x2)"))
-    expect_identical(block_titles(p[[2L]]), c("x3 ~ s(x1)", "x1 ~ s(x3)"))
+    expect_identical(
+      vapply(grid_cells(p), cell_title, character(1L)),
+      c("x2 ~ s(x1)", "x1 ~ s(x2)", "x3 ~ s(x1)", "x1 ~ s(x3)")
+    )
   }
   # A factor data frame works the same.
   by_fac <- janusplot_pair(fit, data.frame(x = factor("x3"), y = factor("x2")))
   expect_identical(panel_titles(by_fac), c("x2 ~ s(x3)", "x3 ~ s(x2)"))
 })
 
-test_that("blocks fill stacks of nrow, side by side", {
+test_that("blocks fill stacks of nrow, side by side, in one aligned grid", {
   d <- make_nonlinear_data(n = 80L, seed = 2L)
   d$x5 <- d$x1 + d$x4
   d$x6 <- d$x2 - d$x3
@@ -207,26 +204,29 @@ test_that("blocks fill stacks of nrow, side by side", {
   expect_identical(nrow(all_pairs), 15L)
   pairs <- as.data.frame(all_pairs[1:14, ], stringsAsFactors = FALSE)
   p <- janusplot_pair(fit, pairs, nrow = 5L)
-  stacks <- patch_members(p)
-  expect_length(stacks, 3L)
-  sizes <- vapply(stacks, function(stack) {
-    sum(!vapply(patch_members(stack), inherits, logical(1L), "spacer"))
-  }, integer(1L))
-  expect_identical(sizes, c(5L, 5L, 4L))
-  # Every stack keeps five rows; the last is padded with one spacer.
-  expect_identical(lengths(lapply(stacks, patch_members)), c(5L, 5L, 5L))
-  # The first block of the second stack is the sixth pair.
-  first_block <- patch_members(stacks[[2L]])[[1L]]
+  # Five rows of three stacks, two panels per block; the last stack holds
+  # four blocks, so the last row ends in two spacers.
+  expect_equal(p$patches$layout$ncol, 6)
+  cells <- grid_cells(p)
+  expect_length(cells, 30L)
+  is_spacer <- vapply(cells, inherits, logical(1L), "spacer")
+  expect_identical(which(is_spacer), c(29L, 30L))
+  # The first block of the second stack is the sixth pair, in row 1.
   expect_identical(
-    block_titles(first_block),
+    vapply(cells[3:4], cell_title, character(1L)),
     sprintf(c("%2$s ~\ns(%1$s)", "%1$s ~\ns(%2$s)"), pairs[6L, 1L],
             pairs[6L, 2L])
   )
+  # The second block of the first stack is the second pair, in row 2.
+  expect_identical(
+    cell_title(cells[[7L]]),
+    sprintf("%2$s ~\ns(%1$s)", pairs[2L, 1L], pairs[2L, 2L])
+  )
   # ncol gives the stack count; neither gives one stack up to five pairs.
-  expect_length(patch_members(janusplot_pair(fit, pairs, ncol = 2L)), 2L)
-  one_stack <- patch_members(janusplot_pair(fit, pairs[1:5, ]))
-  expect_length(one_stack, 5L)
-  expect_identical(block_titles(one_stack[[5L]])[1L],
+  expect_equal(janusplot_pair(fit, pairs, ncol = 2L)$patches$layout$ncol, 4)
+  one_stack <- janusplot_pair(fit, pairs[1:5, ])
+  expect_equal(one_stack$patches$layout$ncol, 2)
+  expect_identical(cell_title(grid_cells(one_stack)[[9L]]),
                    sprintf("%s ~ s(%s)", pairs[5L, 2L], pairs[5L, 1L]))
   expect_identical(janusplot:::.pair_stack_layout(14L),
                    list(nrow = 5L, ncol = 3L))

@@ -266,26 +266,33 @@ janusplot_pair <- function(
 }
 
 # The blocks in stacks of stacks$nrow, top to bottom, the stacks side by
-# side. The last stack is padded with spacers so every block keeps the
-# same height. One block is returned as it is.
+# side, laid out as one grid of panels so that patchwork aligns every
+# panel, axis and title across the stacks. Cells past the last block are
+# spacers. One block is returned as it is.
 .stack_blocks <- function(blocks, stacks) {
   n <- length(blocks)
-  if (n == 1L) return(blocks[[1L]])
-  stack_of <- ceiling(seq_len(n) / stacks$nrow)
-  columns <- lapply(seq_len(max(stack_of)), function(s) {
-    members <- blocks[stack_of == s]
-    pad <- stacks$nrow - length(members)
-    if (pad > 0L) {
-      members <- c(members, rep(list(patchwork::plot_spacer()), pad))
+  per <- length(blocks[[1L]])
+  if (n == 1L) {
+    if (per == 1L) return(blocks[[1L]][[1L]])
+    return(patchwork::wrap_plots(blocks[[1L]], nrow = 1L))
+  }
+  n_stacks <- ceiling(n / stacks$nrow)
+  cells <- list()
+  for (r in seq_len(stacks$nrow)) {
+    for (s in seq_len(n_stacks)) {
+      i <- (s - 1L) * stacks$nrow + r
+      cells <- c(cells, if (i <= n) {
+        blocks[[i]]
+      } else {
+        rep(list(patchwork::plot_spacer()), per)
+      })
     }
-    patchwork::wrap_plots(members, ncol = 1L)
-  })
-  if (length(columns) == 1L) return(columns[[1L]])
-  patchwork::wrap_plots(columns, nrow = 1L)
+  }
+  patchwork::wrap_plots(cells, ncol = n_stacks * per, byrow = TRUE)
 }
 
-# The block of one pair: two directional panels side by side, or the
-# overlay panel for display = "both".
+# The block of one pair as a list of panels: the two directional panels,
+# left to right, or the overlay panel for display = "both".
 .pair_block <- function(fit, x, y, display, grouping, style, text_sizes,
                         wrap_title = FALSE) {
   pair <- fit$pairs[[.find_pair(fit, x, y)]]
@@ -296,14 +303,14 @@ janusplot_pair <- function(
     NA_character_
   }
   if (display == "both") {
-    return(.render_overlay_cell(
+    return(list(.render_overlay_cell(
       fit, pair, x, y,
       points     = .cell_points(fit, x, y, grouping),
       style      = style,
       text_sizes = text_sizes,
       grouping   = grouping,
       background = background
-    ))
+    )))
   }
   dir_left  <- if (identical(x, pair$var_i)) "yx" else "xy"
   dir_right <- if (dir_left == "yx") "xy" else "yx"
@@ -328,7 +335,7 @@ janusplot_pair <- function(
     )
     .add_pair_axes(p, face, display, text_sizes, style$base_family)
   })
-  patchwork::wrap_plots(panels, nrow = 1L)
+  panels
 }
 
 # ---------------------------------------------------------------
