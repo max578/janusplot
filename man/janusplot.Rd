@@ -176,7 +176,9 @@ janusplot(df, display = "d2", derivative_ci = "simultaneous")
 for the appearance settings.
 
 Other smooth-associations:
+\code{\link[=janusplot_direction]{janusplot_direction()}},
 \code{\link[=janusplot_fit]{janusplot_fit()}},
+\code{\link[=janusplot_pair]{janusplot_pair()}},
 \code{\link[=janusplot_style]{janusplot_style()}},
 \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}}
 }

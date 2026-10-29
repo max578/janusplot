@@ -44,13 +44,15 @@ reference:
       - janusplot_style
       - janusplot_data
 
-  - title: "Directional licensing"
+  - title: "Pair views and direction"
     desc: >
-      The residual-independence test that turns a pair's fit asymmetry
-      into a directional claim, and abstains where the additive noise
+      The two directions of one pair drawn side by side or overlaid, and
+      the residual-independence test that turns a pair's fit asymmetry
+      into a directional claim, abstaining where the additive noise
       model cannot decide.
     contents:
-      - janusplot_direction_test
+      - janusplot_pair
+      - janusplot_direction
 
   - title: "Shape taxonomy"
     desc: >

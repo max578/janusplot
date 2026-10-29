@@ -257,6 +257,8 @@ classification thresholds.
 
 Other smooth-associations:
 \code{\link[=janusplot]{janusplot()}},
+\code{\link[=janusplot_direction]{janusplot_direction()}},
+\code{\link[=janusplot_pair]{janusplot_pair()}},
 \code{\link[=janusplot_style]{janusplot_style()}},
 \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}}
 }
