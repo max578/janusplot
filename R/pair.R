@@ -26,7 +26,9 @@
 #' read from the adjusted p-value when the fit has `p_adjust` other than
 #' `"none"`. With `style$pair_background = TRUE` (the default) the panels
 #' are tinted by the pair's Pearson correlation as the matrix background
-#' is, with the same `background_palette` and `background_strength`.
+#' is, with the same `background_palette` and `background_strength`. A fit
+#' with `adjust` draws no background: its curves are adjusted, while the
+#' correlation is marginal.
 #'
 #' Many pairs are laid out as blocks stacked top to bottom, with the
 #' stacks side by side: `nrow` is the number of blocks per stack and
@@ -305,7 +307,7 @@ janusplot_pair <- function(
 .pair_block <- function(fit, x, y, display, grouping, style, text_sizes,
                         wrap_title = FALSE) {
   pair <- fit$pairs[[.find_pair(fit, x, y)]]
-  background <- if (isTRUE(style$pair_background)) {
+  background <- if (isTRUE(style$pair_background) && is.null(fit$adjust)) {
     .background_hex(pair$cor_pearson, style$background_palette,
                     style$background_strength)
   } else {

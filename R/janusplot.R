@@ -102,7 +102,7 @@ janusplot <- function(
   vars = NULL,
   adjust = NULL,
   colour_by = "nonlinearity",
-  background_by = "pearson",
+  background_by = NULL,
   annotations = NULL,
   order = "original",
   display = "fit",
@@ -393,7 +393,8 @@ janusplot <- function(
                                  colour_channel = "border",
                                  display = "fit",
                                  derivative_ci = "pointwise",
-                                 background_by = "none") {
+                                 background_by = "none",
+                                 adjusted = FALSE) {
   parts <- "Each cell: row ~ s(column), the row variable on the vertical axis"
   if ("formula" %in% annotations) {
     parts <- c(parts, "Strip formula = response ~ predictor of the cell")
@@ -407,9 +408,10 @@ janusplot <- function(
       "EDF = effective degrees of freedom of the smooth")
   }
   if ("r" %in% annotations) {
-    parts <- c(parts, sprintf("r = %s of the pair",
+    parts <- c(parts, sprintf("r = %s of the pair%s",
                               .background_label(background_by) %||%
-                                "Pearson r"))
+                                "Pearson r",
+                              if (adjusted) ", marginal" else ""))
   }
   if ("n" %in% annotations) {
     parts <- c(parts, "n = rows used by the cell")
@@ -442,9 +444,13 @@ janusplot <- function(
   if (!is.null(colour_msg)) parts <- c(parts, paste(where, colour_msg))
   if (background_by != "none") {
     parts <- c(parts, sprintf(
-      "Cell background encodes %s of the pair: white at 0, deeper towards -1 and 1",
-      .background_label(background_by)
+      "Cell background encodes %s of the pair%s: white at 0, deeper towards -1 and 1",
+      .background_label(background_by),
+      if (adjusted) ", marginal (before adjustment)" else ""
     ))
+  } else if (adjusted) {
+    parts <- c(parts,
+      "No cell background: the curves are adjusted, the correlations marginal")
   }
   if (display == "fit" && "signif" %in% annotations) {
     parts <- c(parts,

@@ -488,6 +488,29 @@ test_that("the background blends from white by the signed correlation", {
   expect_error(plot(fit, background_by = "rank"), "must be one of")
 })
 
+test_that("a fit with adjust draws no background unless one is asked for", {
+  d <- make_nonlinear_data(n = 120L, seed = 2L)
+  d$g <- factor(rep(c("a", "b", "c"), length.out = nrow(d)))
+  fit <- fit_two(d, vars = c("x1", "x2", "x3"), adjust = ~ s(g, bs = "re"))
+  style <- janusplot_style(show_shape_legend = FALSE)
+  p <- plot(fit, annotations = c("A", "r"), style = style)
+  expect_true(is.na(matrix_grid(p)[[7L]]$theme$panel.background$fill))
+  caption <- p$patches$annotation$caption
+  expect_match(caption, "No cell background: the curves are adjusted",
+               fixed = TRUE)
+  expect_match(caption, "r = Pearson r of the pair, marginal", fixed = TRUE)
+  asked <- plot(fit, background_by = "pearson", style = style)
+  expect_identical(matrix_grid(asked)[[7L]]$theme$panel.background$fill,
+                   janusplot:::.background_hex(fit$pairs[[1L]]$cor_pearson))
+  expect_match(asked$patches$annotation$caption,
+               "Pearson r of the pair, marginal (before adjustment)",
+               fixed = TRUE)
+  one_call <- janusplot(d, vars = c("x1", "x2", "x3"),
+                        adjust = ~ s(g, bs = "re"), engine = "gam",
+                        style = style)
+  expect_true(is.na(matrix_grid(one_call)[[7L]]$theme$panel.background$fill))
+})
+
 test_that("the background and the fill channel are refused together", {
   fit <- fit_two(make_linear_data(n = 80L))
   err <- expect_error(

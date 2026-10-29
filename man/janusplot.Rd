@@ -9,7 +9,7 @@ janusplot(
   vars = NULL,
   adjust = NULL,
   colour_by = "nonlinearity",
-  background_by = "pearson",
+  background_by = NULL,
   annotations = NULL,
   order = "original",
   display = "fit",
@@ -47,8 +47,11 @@ correlation on a diverging scale over \verb{[-1, 1]}), \code{"deviance_gap"}
 \code{"none"}.}
 
 \item{background_by}{The correlation that tints each cell's
-background: \code{"pearson"} (the default), \code{"spearman"}, \code{"kendall"}, or
-\code{"none"} for no background. Independent of \code{colour_by}. It cannot be
+background: \code{"pearson"}, \code{"spearman"}, \code{"kendall"}, or \code{"none"} for no
+background. Left unset, it is \code{"pearson"} for a marginal fit and
+\code{"none"} for a fit with \code{adjust}, whose curves are adjusted while the
+correlations are marginal; set it to show the marginal correlation
+behind adjusted curves. Independent of \code{colour_by}. It cannot be
 combined with \code{janusplot_style(colour_channel = "fill")}, which paints
 the same area.}
 

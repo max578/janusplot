@@ -69,7 +69,9 @@ population-level, as in \code{\link[=janusplot_fit]{janusplot_fit()}}. The signi
 read from the adjusted p-value when the fit has \code{p_adjust} other than
 \code{"none"}. With \code{style$pair_background = TRUE} (the default) the panels
 are tinted by the pair's Pearson correlation as the matrix background
-is, with the same \code{background_palette} and \code{background_strength}.
+is, with the same \code{background_palette} and \code{background_strength}. A fit
+with \code{adjust} draws no background: its curves are adjusted, while the
+correlation is marginal.
 
 Many pairs are laid out as blocks stacked top to bottom, with the
 stacks side by side: \code{nrow} is the number of blocks per stack and

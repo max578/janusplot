@@ -42,8 +42,11 @@
 #'   (deviance explained by the smooth minus the straight line's) or
 #'   `"none"`.
 #' @param background_by The correlation that tints each cell's
-#'   background: `"pearson"` (the default), `"spearman"`, `"kendall"`, or
-#'   `"none"` for no background. Independent of `colour_by`. It cannot be
+#'   background: `"pearson"`, `"spearman"`, `"kendall"`, or `"none"` for no
+#'   background. Left unset, it is `"pearson"` for a marginal fit and
+#'   `"none"` for a fit with `adjust`, whose curves are adjusted while the
+#'   correlations are marginal; set it to show the marginal correlation
+#'   behind adjusted curves. Independent of `colour_by`. It cannot be
 #'   combined with `janusplot_style(colour_channel = "fill")`, which paints
 #'   the same area.
 #' @param annotations Character vector, a subset of `c("A", "edf",
@@ -144,7 +147,12 @@ plot.janusplot_fit <- function(
   .check_style(style)
   colour_by     <- .resolve_colour_by(colour_by,
                                       user_env = rlang::caller_env())
-  background_by <- rlang::arg_match(background_by)
+  if (missing(background_by) || is.null(background_by)) {
+    background_by <- if (is.null(x$adjust)) "pearson" else "none"
+  }
+  background_by <- rlang::arg_match(
+    background_by, c("pearson", "spearman", "kendall", "none")
+  )
   .check_background_channel(background_by, style$colour_channel)
   annotations   <- .check_annotations(annotations)
   order         <- rlang::arg_match(order)
@@ -273,7 +281,8 @@ plot.janusplot_fit <- function(
       .build_glossary_text(
         annotations, colour_by, style$colour_channel, display,
         derivative_ci = x$settings$derivative_ci,
-        background_by = background_by
+        background_by = background_by,
+        adjusted = !is.null(x$adjust)
       )
     } else {
       NULL

@@ -120,7 +120,8 @@
 #'   "border"`.
 #' @param pair_background Logical. `TRUE` (the default) tints the panels of
 #'   [janusplot_pair()] by the pair's Pearson correlation, as
-#'   `background_by = "pearson"` tints the matrix.
+#'   `background_by = "pearson"` tints the matrix. A fit with `adjust`
+#'   draws no pair background.
 #' @param text_size `"auto"` (the default), a single base size in points,
 #'   a named list of element sizes, or `NULL` for no text; see Details.
 #' @param base_family Font family of every text, `""` (the default) for

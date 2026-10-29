@@ -134,7 +134,8 @@ showing that every cell is \code{row ~ s(column)}. It needs \code{labels = "bord
 
 \item{pair_background}{Logical. \code{TRUE} (the default) tints the panels of
 \code{\link[=janusplot_pair]{janusplot_pair()}} by the pair's Pearson correlation, as
-\code{background_by = "pearson"} tints the matrix.}
+\code{background_by = "pearson"} tints the matrix. A fit with \code{adjust}
+draws no pair background.}
 
 \item{text_size}{\code{"auto"} (the default), a single base size in points,
 a named list of element sizes, or \code{NULL} for no text; see Details.}
