@@ -9,6 +9,7 @@ janusplot(
   vars = NULL,
   adjust = NULL,
   colour_by = "nonlinearity",
+  background_by = "pearson",
   annotations = c("A", "signif"),
   order = "original",
   display = "fit",
@@ -45,13 +46,23 @@ correlation on a diverging scale over \verb{[-1, 1]}), \code{"deviance_gap"}
 (deviance explained by the smooth minus the straight line's) or
 \code{"none"}.}
 
-\item{annotations}{Character vector, a subset of \code{c("A", "edf", "signif", "code", "shape", "k_warn", "n")}, written in the strip of
-every cell (or in its corners under \code{janusplot_style(annotation_position = "corners")}): the asymmetry index, the EDF, the significance glyph
-of the smooth F-test (\verb{***} p < .001, \verb{**} p < .01, \code{*} p < .05,
-\code{.} p < .1, from the adjusted p-value when the fit has \code{p_adjust}
-other than \code{"none"}), the two-letter shape code, the shape glyph, a
-warning sign on cells flagged by the k-check or capped at the distinct
-predictor count, and the rows used. Default \code{c("A", "signif")}.}
+\item{background_by}{The correlation that tints each cell's
+background: \code{"pearson"} (the default), \code{"spearman"}, \code{"kendall"}, or
+\code{"none"} for no background. Independent of \code{colour_by}. It cannot be
+combined with \code{janusplot_style(colour_channel = "fill")}, which paints
+the same area.}
+
+\item{annotations}{Character vector, a subset of \code{c("A", "edf", "signif", "code", "shape", "k_warn", "n", "r", "formula")}, written in
+the strip of every cell (or in its corners under
+\code{janusplot_style(annotation_position = "corners")}): the asymmetry
+index, the EDF, the significance glyph of the smooth F-test (\verb{***}
+p < .001, \verb{**} p < .01, \code{*} p < .05, \code{.} p < .1, from the adjusted
+p-value when the fit has \code{p_adjust} other than \code{"none"}), the
+two-letter shape code, the shape glyph, a warning sign on cells
+flagged by the k-check or capped at the distinct predictor count, the
+rows used, the \code{background_by} correlation of the pair (Pearson when
+\code{background_by = "none"}), printed \code{"r -0.03"}, and the cell's formula,
+printed \code{Temp ~ Ozone}. Default \code{c("A", "signif")}.}
 
 \item{order}{Order of the variables in the matrix: \code{"original"} (the
 default, the order of \code{x$vars}), \code{"hclust"} (hierarchical clustering
@@ -104,13 +115,12 @@ ggplot, as described in \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}}.
 
 Fits every ordered pair of numeric variables with \code{\link[=janusplot_fit]{janusplot_fit()}} and
 draws the matrix with \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}} in one call. Each cell
-\verb{[i, j]} with \code{i != j} shows the fitted spline from \code{\link[mgcv:gam]{mgcv::gam()}} or
-\code{\link[mgcv:bam]{mgcv::bam()}}:
-\itemize{
-\item Upper triangle (\code{i < j}): \verb{gam(x_j ~ s(x_i) + <adjust>)}.
-\item Lower triangle (\code{i > j}): \verb{gam(x_i ~ s(x_j) + <adjust>)}.
-\item Diagonal: blank, the variable names sit on the border.
-}
+\verb{[r, c]} off the diagonal shows the fitted spline of
+\verb{gam(x_r ~ s(x_c) + <adjust>)} from \code{\link[mgcv:gam]{mgcv::gam()}} or \code{\link[mgcv:bam]{mgcv::bam()}}:
+the row variable on the vertical axis against the column variable on
+the horizontal axis, as in \code{\link[graphics:pairs]{graphics::pairs()}}. The diagonal is blank;
+the variable names sit on the border and a key in the top-left corner
+shows the convention.
 
 The two triangles differ by design: the asymmetry reveals
 heteroscedasticity, leverage and directional non-linearity that a
@@ -128,10 +138,13 @@ the same fit more than once, call \code{\link[=janusplot_fit]{janusplot_fit()}} 
 The 0.2.0 appearance arguments of \code{janusplot()} are accepted through
 \code{...} for one release, each with a deprecation warning, and are removed
 in 1.1.0: \code{show_data}, \code{show_ci}, \code{palette}, \code{show_shape_legend},
-\code{glyph_style}, \code{labels}, \code{diagonal}, \code{label_srt}, \code{label_cex},
-\code{text_scale_diag}, \code{text_scale_off_diag}, \code{show_glossary},
-\code{glossary_scale}, \code{compact}, \code{compact_threshold}, \code{compact_levels} and
-\code{focus_dim_alpha} are applied to \code{style}; \code{fill_by} is mapped to
+\code{glyph_style}, \code{labels}, \code{diagonal}, \code{label_srt}, \code{show_glossary},
+\code{compact}, \code{compact_threshold}, \code{compact_levels} and \code{focus_dim_alpha}
+are applied to \code{style}; \code{label_cex}, \code{text_scale_diag},
+\code{text_scale_off_diag} and \code{glossary_scale} are mapped to the \code{labels},
+\code{diagonal}, \code{strip} and \code{glossary} elements of
+\code{janusplot_style(text_size = )} at the matrix's variable count, close
+to but not exactly the 0.2.0 sizes; \code{fill_by} is mapped to
 \code{colour_by}; \code{show_asymmetry} and \code{signif_glyph} are mapped to
 \code{annotations}; \code{labels = "diagonal"} is drawn as \code{"border"} with a
 message; \code{with_data = TRUE} returns \code{list(plot, data)} with \code{data} the
@@ -155,6 +168,7 @@ janusplot(data.frame(x1 = x1, x2 = x2, x3 = stats::rnorm(n)))
 
 # The 0.2.0 look: Pearson r washed over the whole cell.
 janusplot(mtcars[, c("mpg", "hp", "wt")], colour_by = "pearson",
+          background_by = "none",
           style = janusplot_style(colour_channel = "fill"))
 
 # One matrix shows one quantity; derivatives come from the same fit.

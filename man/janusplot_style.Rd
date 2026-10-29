@@ -8,26 +8,30 @@
 janusplot_style(
   colour_channel = c("border", "tile", "fill"),
   palette = NULL,
+  background_palette = "RdBu",
+  background_strength = 0.35,
   annotation_position = c("strip", "corners"),
   show_data = TRUE,
   show_ci = TRUE,
   point_size = 0.4,
   point_alpha = 0.25,
   curve_colour = "#08306b",
+  curve_width = 2,
   band_alpha = 0.2,
+  border_width = NULL,
   density_threshold = 2000L,
   group_palette = "Okabe-Ito",
   group_max_levels = 8L,
   labels = c("border", "none"),
   label_srt = 45,
-  label_cex = 1,
   diagonal = c("auto", "blank", "name", "density"),
-  text_scale_diag = 1,
-  text_scale_off_diag = 1,
   glyph_style = c("ascii", "unicode"),
   show_shape_legend = TRUE,
   show_glossary = TRUE,
-  glossary_scale = 1,
+  show_key = TRUE,
+  pair_background = TRUE,
+  text_size = "auto",
+  base_family = "",
   compact = c("auto", "always", "never"),
   compact_threshold = 12L,
   compact_levels = NULL,
@@ -40,7 +44,7 @@ janusplot_style(
 \item{colour_channel}{Where the \code{colour_by} value is painted:
 \code{"border"} (the default) colours the panel border, \code{"tile"} fills a
 small bottom-right corner tile and leaves the border grey, \code{"fill"}
-washes the whole cell at alpha 0.45.}
+washes the whole cell at alpha 0.45 and needs \code{background_by = "none"}.}
 
 \item{palette}{Name of the colour palette for the \code{colour_by} scale, or
 \code{NULL} (the default) for \code{"RdBu"} when \code{colour_by} is a correlation
@@ -51,9 +55,18 @@ and \code{"viridis"} otherwise. Sequential choices: \code{"viridis"},
 \code{"Spectral"} (not colour-blind safe). A sequential palette under a
 correlation \code{colour_by} is replaced by \code{"RdBu"}.}
 
+\item{background_palette}{Diverging palette of the correlation
+background, one of \code{"RdBu"} (the default: blue negative, red
+positive), \code{"RdYlBu"}, \code{"PuOr"} and \code{"Spectral"}.}
+
+\item{background_strength}{Number in \verb{(0, 1]}, \code{0.35} by default: how
+far from white towards the palette end the background of a cell with
+correlation of magnitude one is drawn. A cell with correlation \code{r} is
+drawn \code{abs(r) * background_strength} of the way, as an opaque colour.}
+
 \item{annotation_position}{Where the \code{annotations} of \code{plot()} are
 written: \code{"strip"} (the default) in a thin strip above the data area,
-\code{"corners"} inside the panel where 0.2.0 placed them (A, EDF and n
+\code{"corners"} inside the panel where 0.2.0 placed them (A, EDF, r and n
 bottom-left, significance top-right, shape code top-left, shape
 glyph bottom-right).}
 
@@ -73,7 +86,13 @@ default.}
 \item{curve_colour}{Colour of the fitted curve and its band; the dark
 blue \code{"#08306b"} by default.}
 
+\item{curve_width}{Width of the fitted curve in points; \code{2} by default.}
+
 \item{band_alpha}{Opacity of the band in \verb{[0, 1]}; \code{0.20} by default.}
+
+\item{border_width}{Width in points of a border that carries a colour,
+or \code{NULL} (the default) for the width scaled with the variable count
+described in Details.}
 
 \item{density_threshold}{Positive integer. A cell whose row count
 exceeds it draws the points as a binned density
@@ -94,18 +113,9 @@ along the top and left margins, \code{"none"} nowhere.}
 \item{label_srt}{Rotation in degrees of the top border labels; \code{45} by
 default.}
 
-\item{label_cex}{Positive multiplier on the border-label font size;
-\code{1} by default.}
-
 \item{diagonal}{Content of the diagonal cells: \code{"auto"} (the default)
 and \code{"blank"} leave them empty, \code{"name"} writes the variable name,
 \code{"density"} draws a kernel density with a rug of the raw values.}
-
-\item{text_scale_diag}{Positive multiplier on the diagonal name labels;
-\code{1} by default.}
-
-\item{text_scale_off_diag}{Positive multiplier on every off-diagonal
-annotation; \code{1} by default.}
 
 \item{glyph_style}{\code{"ascii"} (the default) or \code{"unicode"} for the shape
 glyphs, the derivative order labels and the k-check warning sign.}
@@ -116,8 +126,19 @@ shape-categories legend below the matrix.}
 \item{show_glossary}{Logical. \code{TRUE} (the default) attaches a caption
 describing the abbreviations and encodings on the plot.}
 
-\item{glossary_scale}{Positive multiplier on the glossary font size;
-\code{1} by default.}
+\item{show_key}{Logical. \code{TRUE} (the default) draws in the top-left
+corner of the matrix a two-by-two key with the first two variables,
+showing that every cell is \code{row ~ s(column)}. It needs \code{labels = "border"}.}
+
+\item{pair_background}{Logical. \code{TRUE} (the default) tints the panels of
+\code{\link[=janusplot_pair]{janusplot_pair()}} by the pair's Pearson correlation, as
+\code{background_by = "pearson"} tints the matrix.}
+
+\item{text_size}{\code{"auto"} (the default), a single base size in points,
+a named list of element sizes, or \code{NULL} for no text; see Details.}
+
+\item{base_family}{Font family of every text, \code{""} (the default) for
+the device's sans-serif font.}
 
 \item{compact}{Scale-aware content suppression as the variable count
 grows: \code{"auto"} (the default) climbs the tier ladder at
@@ -142,34 +163,62 @@ outside the \code{focus_by} selection; \code{0.25} by default.}
 \item{...}{Ignored by the \code{print()} method.}
 }
 \value{
-A named list of class \code{janusplot_style} holding the 26 values
-above. \code{print()} lists the values that differ from the defaults and
-returns \code{x} invisibly.
+A named list of class \code{janusplot_style} holding the 30 values
+above, with \code{text_size} stored as given. \code{print()} lists the values
+that differ from the defaults and returns \code{x} invisibly.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-Collects every appearance knob of \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}} and
-\code{\link[=janusplot]{janusplot()}} into one validated object. Model settings live in
-\code{\link[=janusplot_fit]{janusplot_fit()}}, what the matrix encodes lives in \code{plot()}'s
-\code{colour_by} and \code{annotations}, and how it is drawn lives here.
+Collects every appearance knob of \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}},
+\code{\link[=janusplot_pair]{janusplot_pair()}} and \code{\link[=janusplot]{janusplot()}} into one validated object. Model
+settings live in \code{\link[=janusplot_fit]{janusplot_fit()}}, what the matrix encodes lives in
+\code{plot()}'s \code{colour_by}, \code{background_by} and \code{annotations}, and how it is
+drawn lives here.
 }
 \details{
-The default cell has no background fill. The panel border carries the
-\code{colour_by} value, a thin strip above the data area carries the
-annotations in small grey text, grey points sit behind a dark blue
-curve with a 20 percent band, and cells with more than
-\code{density_threshold} rows draw the points as a light grey binned
-density instead. \code{colour_channel = "fill"} with \code{colour_by = "pearson"}
-reproduces the 0.2.0 look.
+The default cell has a thick panel border carrying the \code{colour_by}
+value, a background tinted by the pair's signed correlation (white at
+zero, \code{background_strength} of the way to the palette's blue or red at
+minus or plus one), a thin strip above the data area with the
+annotations in small grey text, grey points behind a dark blue curve
+with a 20 percent band, and, for cells with more than
+\code{density_threshold} rows, a light grey binned density in place of the
+points. A key in the empty top-left corner states the convention of
+every cell, \code{row ~ s(column)}.
+
+\code{text_size} sets every text of the view. \code{"auto"} scales the strip and
+the diagonal names with the variable count and keeps the strip at 5
+points or more. A single number is a base size in points: the strip and
+the axis text are 0.8 of it, the border labels 1.0, the diagonal names
+1.2, the legends and the glossary 0.9, the corner key 0.75 and the
+title 1.3. A named list sets elements one by one: \code{strip} (the strip
+and the in-panel annotations), \code{labels} (the border variable names),
+\code{diagonal} (the names on the diagonal), \code{legend} (the colour bars and
+the group legend), \code{key} (the corner key), \code{glossary} (the caption),
+\code{title} (the title) and \code{axis} (the axes of the pair view). Each element
+is a size in points, \code{"auto"}, or \code{NULL}, which removes that text;
+elements not named stay \code{"auto"}. \code{text_size = NULL} removes every text.
+
+Widths are in points, as for text: a width \code{w} is drawn as the ggplot2
+linewidth \code{w / ggplot2::.pt}. \code{border_width = NULL} scales the border
+with the variable count: 6.8 points (linewidth 2.4) at four variables,
+thicker for fewer, thinner for more, and never below 2.8 points
+(linewidth 1.0).
+
+\code{colour_channel = "fill"} with \code{colour_by = "pearson"} and
+\code{background_by = "none"} reproduces the 0.2.0 look.
 }
 \examples{
 janusplot_style()
 janusplot_style(colour_channel = "tile", point_alpha = 0.4)
 
+# Every text from one base size; no glossary text and no corner key.
+janusplot_style(text_size = list(strip = 7, glossary = NULL, key = NULL))
+
 # The 0.2.0 look: Pearson r washed over the whole cell.
 fit <- janusplot_fit(mtcars[, c("mpg", "hp", "wt")], engine = "gam")
-plot(fit, colour_by = "pearson",
+plot(fit, colour_by = "pearson", background_by = "none",
      style = janusplot_style(colour_channel = "fill"))
 }
 \seealso{

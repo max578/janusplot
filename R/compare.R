@@ -281,10 +281,10 @@ print.janusplot_compare <- function(x, ...) {
 #' Nothing is refitted.
 #'
 #' @details
-#' The layout follows [plot.janusplot_fit()]: cell `[i, j]` with `i < j`
-#' shows `vars[j] ~ s(vars[i])` and the lower triangle the reverse
-#' direction, over the variables of the second fit. There is no colour
-#' scale. The caption keys the two curves by `x$labels` when
+#' The layout follows [plot.janusplot_fit()]: every cell `[r, c]` shows
+#' `vars[r] ~ s(vars[c])`, over the variables of the second fit, with the
+#' key of that convention in the top-left corner. There is no colour scale
+#' and no background. The caption keys the two curves by `x$labels` when
 #' `style$show_glossary` is `TRUE`.
 #'
 #' @param x A `janusplot_compare` object.
@@ -355,11 +355,8 @@ plot.janusplot_compare <- function(
     compact_threshold = style$compact_threshold,
     compact_levels = style$compact_levels
   )
-  text_sizes <- .cell_text_sizes(
-    k_n,
-    text_scale_diag     = style$text_scale_diag,
-    text_scale_off_diag = style$text_scale_off_diag
-  )
+  text_sizes <- .cell_text_sizes(k_n, style$text_size)
+  border_lw  <- .border_linewidth(k_n, style$border_width)
 
   # Directed cells: B placed by position, A matched by variable names ------
   cell_index <- .cell_index(fit_b$pairs, vars)
@@ -385,7 +382,8 @@ plot.janusplot_compare <- function(
       style         = style,
       text_sizes    = text_sizes,
       tier          = tier,
-      group_colours = grouping$colours
+      group_colours = grouping$colours,
+      border_linewidth = border_lw
     )
   }
 
@@ -394,18 +392,21 @@ plot.janusplot_compare <- function(
   diag_cells <- lapply(vars, function(v) {
     switch(diagonal,
       blank   = .build_blank_diagonal_cell(),
-      name    = .build_diagonal_cell(v, text_sizes = text_sizes),
+      name    = .build_diagonal_cell(v, text_sizes = text_sizes,
+                                     family = style$base_family),
       density = .build_density_rug_cell(v, fit_b$data[[v]],
                                         text_sizes = text_sizes)
     )
   })
   shape_legend_plot <- if (isTRUE(style$show_shape_legend)) {
-    .build_shape_legend_plot()
+    .build_shape_legend_plot(text_pt = text_sizes$pt$legend,
+                             family = style$base_family)
   } else {
     NULL
   }
   group_legend_plot <- if (!is.null(grouping)) {
-    .build_group_legend_plot(grouping)
+    .build_group_legend_plot(grouping, text_pt = text_sizes$pt$legend,
+                             family = style$base_family)
   } else {
     NULL
   }
@@ -415,7 +416,8 @@ plot.janusplot_compare <- function(
     palette = NULL, shape_legend_plot = shape_legend_plot,
     group_legend_plot = group_legend_plot,
     labels = style$labels, label_srt = style$label_srt,
-    label_cex = style$label_cex
+    text_pt = text_sizes$pt, show_key = style$show_key,
+    family = style$base_family
   )
   .finalize_plot(
     composite,
@@ -426,7 +428,8 @@ plot.janusplot_compare <- function(
     } else {
       NULL
     },
-    glossary_scale = style$glossary_scale
+    text_pt = text_sizes$pt,
+    family  = style$base_family
   )
 }
 
@@ -497,7 +500,8 @@ plot.janusplot_compare <- function(
   style,
   text_sizes,
   tier = 0L,
-  group_colours = NULL
+  group_colours = NULL,
+  border_linewidth = 1.2
 ) {
   tier <- as.integer(tier)
   show_data   <- isTRUE(style$show_data) && tier < 1L
@@ -514,9 +518,10 @@ plot.janusplot_compare <- function(
   }
   p <- ggplot2::ggplot() +
     .cell_theme(
-      strip_pt = 2 * text_sizes$n_edf,
+      strip_pt = text_sizes$pt$strip,
       border_colour = if (changed) "#b2182b" else "grey55",
-      border_linewidth = if (changed) 1.2 else 0.35
+      border_linewidth = if (changed) border_linewidth else 0.35,
+      family = style$base_family
     ) +
     ggplot2::labs(subtitle = strip)
 
@@ -525,10 +530,7 @@ plot.janusplot_compare <- function(
   has_b <- nrow(face_b$pred) > 0L
   if (!has_a && !has_b) {
     label <- if (!is.na(face_b$error)) "no fit" else "n < 5"
-    return(p + ggplot2::annotate(
-      "text", x = 0.5, y = 0.5, label = label,
-      size = text_sizes$empty, colour = "grey40"
-    ) + ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1))
+    return(.empty_cell_text(p, label, text_sizes, style$base_family))
   }
 
   # Data, B's band, A's curve, B's curve -----------------------------------
@@ -556,18 +558,19 @@ plot.janusplot_compare <- function(
     p <- p + ggplot2::geom_line(
       data = face_b$pred,
       ggplot2::aes(x = .data$x, y = .data$fit),
-      colour = style$curve_colour, linewidth = 0.7,
+      colour = style$curve_colour,
+      linewidth = style$curve_width / ggplot2::.pt,
       inherit.aes = FALSE
     )
   }
   if (!show_spline) {
     # Tier 3: B's shape glyph in the cell centre stands for the curves.
     glyph <- .shape_glyph(face_b$shape, style = style$glyph_style)
-    if (!is.na(glyph) && nzchar(glyph)) {
+    if (!is.na(glyph) && nzchar(glyph) && !is.na(text_sizes$shape)) {
       p <- p + ggplot2::annotate(
         "text", x = 0.5, y = 0.5,
         label = glyph, size = text_sizes$shape * 1.2,
-        colour = "grey20", fontface = "bold"
+        colour = "grey20", fontface = "bold", family = style$base_family
       ) + ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1)
     }
   }

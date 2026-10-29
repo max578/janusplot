@@ -8,7 +8,8 @@
 # readers can navigate back to regardless of which categories appear
 # in the matrix they are inspecting.
 .build_shape_legend_plot <- function(ncol = 6L,
-                                     line_colour = "#08306b") {
+                                     line_colour = "#08306b",
+                                     text_pt = 9, family = "") {
   tax <- .shape_taxonomy()
   # Build one (x, y, category, label) data frame, with y per-category
   # normalised to [0, 1] for consistent panel scales.
@@ -60,21 +61,21 @@
         x = 0.5, y = 0.5, glyph = "?"
       ),
       ggplot2::aes(x = .data$x, y = .data$y, label = .data$glyph),
-      colour = "grey40", size = 5, fontface = "bold"
+      colour = "grey40", size = 5, fontface = "bold", family = family
     ) +
     ggplot2::facet_wrap(~ panel, ncol = as.integer(ncol)) +
     ggplot2::scale_x_continuous(limits = c(-0.02, 1.02), expand = c(0, 0)) +
     ggplot2::scale_y_continuous(limits = c(-0.1, 1.1), expand = c(0, 0)) +
     ggplot2::labs(title = "Shape categories",
                   x = NULL, y = NULL) +
-    ggplot2::theme_void(base_size = 8) +
+    ggplot2::theme_void(base_size = 8, base_family = family) +
     ggplot2::theme(
-      plot.title        = ggplot2::element_text(
-        size = 10, face = "bold",
+      plot.title        = .element_text_or_blank(
+        text_pt * 10 / 9, face = "bold", family = family,
         margin = ggplot2::margin(t = 4, b = 6)
       ),
-      strip.text        = ggplot2::element_text(
-        size = 8.5, colour = "grey15",
+      strip.text        = .element_text_or_blank(
+        text_pt * 8.5 / 9, colour = "grey15", family = family,
         margin = ggplot2::margin(t = 3, b = 1)
       ),
       strip.background  = ggplot2::element_rect(fill = NA, colour = NA),

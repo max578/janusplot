@@ -216,7 +216,8 @@
 # Stand-alone colour-bar legend plot placed to the right of the matrix.
 # ---------------------------------------------------------------
 
-.build_legend_plot <- function(colour_by, limits, palette) {
+.build_legend_plot <- function(colour_by, limits, palette, text_pt = 9,
+                               family = "") {
   label <- .colour_label(colour_by)
   df <- data.frame(x = 1, v = limits)
   ggplot2::ggplot(df, ggplot2::aes(x = .data$x, y = .data$v)) +
@@ -225,7 +226,7 @@
       shape = 22, size = 0, stroke = 0, alpha = 0
     ) +
     .palette_scale(palette, limits, label, colour_by, show_guide = TRUE) +
-    ggplot2::theme_void() +
+    ggplot2::theme_void(base_family = family) +
     ggplot2::theme(
       legend.position        = "left",
       # Corrplot-style tracking: the bar flex-fills the legend box's
@@ -233,11 +234,12 @@
       # follows the matrix panel height regardless of figure size.
       legend.key.height      = grid::unit(1, "null"),
       legend.key.width       = grid::unit(0.9, "lines"),
-      legend.title           = ggplot2::element_text(
-        size = 9, face = "bold",
+      legend.title           = .element_text_or_blank(
+        text_pt, face = "bold", family = family,
         margin = ggplot2::margin(b = 4)
       ),
-      legend.text            = ggplot2::element_text(size = 9),
+      legend.text            = .element_text_or_blank(text_pt,
+                                                      family = family),
       legend.margin          = ggplot2::margin(0, 0, 0, 0),
       legend.box.margin      = ggplot2::margin(0, 0, 0, 0),
       legend.box.spacing     = grid::unit(0, "pt"),
@@ -250,7 +252,7 @@
 # the `group` column, in the colours the cells use for the points.
 # ---------------------------------------------------------------
 
-.build_group_legend_plot <- function(grouping) {
+.build_group_legend_plot <- function(grouping, text_pt = 9, family = "") {
   levels <- names(grouping$colours)
   df <- data.frame(x = 1, level = factor(levels, levels = levels))
   ggplot2::ggplot(df, ggplot2::aes(x = .data$x, y = .data$x,
@@ -263,11 +265,13 @@
         nrow = 1L, override.aes = list(alpha = 1, size = 2.5)
       )
     ) +
-    ggplot2::theme_void() +
+    ggplot2::theme_void(base_family = family) +
     ggplot2::theme(
       legend.position   = "bottom",
-      legend.title      = ggplot2::element_text(size = 9, face = "bold"),
-      legend.text       = ggplot2::element_text(size = 8.5),
+      legend.title      = .element_text_or_blank(text_pt, face = "bold",
+                                                 family = family),
+      legend.text       = .element_text_or_blank(text_pt * 8.5 / 9,
+                                                 family = family),
       legend.margin     = ggplot2::margin(0, 0, 0, 0),
       legend.box.margin = ggplot2::margin(0, 0, 0, 0),
       plot.margin       = ggplot2::margin(2, 0, 2, 0)
@@ -275,24 +279,182 @@
 }
 
 # ---------------------------------------------------------------
-# Text sizes. Off-diagonal sizes are ggplot2 text sizes (mm); the strip
-# above a cell is a theme element in points, taken as twice `n_edf`.
+# Text sizes and widths. Every text size is resolved to points from
+# style$text_size; NA marks a text that is not drawn. The in-panel sizes
+# (n_edf, glyph, asym, shape, empty, diag) are ggplot2 text sizes in mm,
+# derived from the strip and diagonal sizes at the 0.2.0 ratios.
 # ---------------------------------------------------------------
 
-.cell_text_sizes <- function(k,
-                              text_scale_diag     = 1,
-                              text_scale_off_diag = 1) {
-  auto       <- max(0.35, (3 / max(k, 2L))^0.55)
-  off_scale  <- auto * text_scale_off_diag
-  diag_scale <- auto * text_scale_diag
+# The 0.2.0 scaling of cell text with the variable count k.
+.text_auto_scale <- function(k) {
+  max(0.35, (3 / max(k, 2L))^0.55)
+}
+
+# Point sizes of every text element under text_size = "auto". The strip
+# keeps 5 points or more so a 12-variable strip stays legible in print.
+.text_size_auto <- function(k) {
+  a <- .text_auto_scale(k)
+  strip <- max(5, 8 * a)
   list(
-    n_edf  = 4.0 * off_scale,
-    glyph  = 4.6 * off_scale,
-    asym   = 3.8 * off_scale,
-    shape  = 6.0 * off_scale,
-    empty  = 3.2 * off_scale,
-    diag   = 5.2 * diag_scale
+    strip    = strip,
+    labels   = 10,
+    diagonal = 5.2 * ggplot2::.pt * a,
+    legend   = 9,
+    key      = max(5, min(5.5, strip)),
+    glossary = 9,
+    title    = 13,
+    axis     = strip
   )
+}
+
+# Ratios of each element to a single base size given in points.
+.text_size_ratios <- function() {
+  c(strip = 0.8, labels = 1.0, diagonal = 1.2, legend = 0.9, key = 0.75,
+    glossary = 0.9, title = 1.3, axis = 0.8)
+}
+
+# Resolve style$text_size at variable count k to a named list of points,
+# NA where the text is not drawn.
+.resolve_text_pt <- function(k, text_size = "auto") {
+  auto <- .text_size_auto(k)
+  if (is.null(text_size)) {
+    return(lapply(auto, function(v) NA_real_))
+  }
+  if (identical(text_size, "auto")) return(auto)
+  if (is.numeric(text_size)) {
+    return(as.list(text_size * .text_size_ratios()))
+  }
+  out <- auto
+  for (nm in names(text_size)) {
+    v <- text_size[[nm]]
+    out[[nm]] <- if (is.null(v)) {
+      NA_real_
+    } else if (identical(v, "auto")) {
+      auto[[nm]]
+    } else {
+      v
+    }
+  }
+  out
+}
+
+.cell_text_sizes <- function(k, text_size = "auto") {
+  pt <- .resolve_text_pt(k, text_size)
+  strip <- pt$strip
+  list(
+    pt     = pt,
+    n_edf  = strip / 2,
+    glyph  = strip * 4.6 / 8,
+    asym   = strip * 3.8 / 8,
+    shape  = strip * 6.0 / 8,
+    empty  = strip * 3.2 / 8,
+    diag   = pt$diagonal / ggplot2::.pt
+  )
+}
+
+# ggplot2 element_text of size `pt` points, or element_blank() when the
+# text is not drawn.
+.element_text_or_blank <- function(pt, ...) {
+  if (is.na(pt)) return(ggplot2::element_blank())
+  ggplot2::element_text(size = pt, ...)
+}
+
+# Linewidth of a coloured border: style$border_width points, or by
+# default linewidth 2.4 at four variables scaled like the cell text with
+# the variable count, never below linewidth 1.0.
+.border_linewidth <- function(k, border_width = NULL) {
+  if (!is.null(border_width)) return(border_width / ggplot2::.pt)
+  max(1.0, 2.4 * .text_auto_scale(k) / .text_auto_scale(4L))
+}
+
+# ---------------------------------------------------------------
+# Correlation background. A cell with correlation r is filled with the
+# opaque colour abs(r) * strength of the way from white to the palette
+# end of the sign of r; r = 0 is white.
+# ---------------------------------------------------------------
+
+.background_choices <- function() {
+  c("pearson", "spearman", "kendall", "none")
+}
+
+.background_label <- function(background_by) {
+  switch(background_by,
+    pearson  = "Pearson r",
+    spearman = "Spearman rho",
+    kendall  = "Kendall tau",
+    NULL
+  )
+}
+
+# The correlation of a face under background_by; Pearson for "none".
+.face_correlation <- function(face, background_by = "pearson") {
+  value <- switch(background_by,
+    spearman = face$cor_spearman,
+    kendall  = face$cor_kendall,
+    face$cor_pearson
+  )
+  as.numeric(value %||% NA_real_)
+}
+
+.background_hex <- function(r, palette = "RdBu", strength = 0.35) {
+  eps <- .brewer_divergent_endpoints(palette)
+  vapply(r, function(v) {
+    if (is.na(v)) return(NA_character_)
+    end <- if (v < 0) eps[["low"]] else eps[["high"]]
+    rgb <- grDevices::colorRamp(c("white", end))(min(1, abs(v)) * strength)
+    grDevices::rgb(rgb[, 1L], rgb[, 2L], rgb[, 3L], maxColorValue = 255)
+  }, character(1L))
+}
+
+# The colour bar of the background over [-1, 1], drawn from the same
+# blended colours as the cells, labelled at -1, 0 and 1. The ticks span
+# the bar, so the one at 0 is a thin dark line across it and those at -1
+# and 1 fall on the frame.
+.background_bar_breaks <- function() c(-1, 0, 1)
+
+.build_background_bar <- function(background_by, palette, strength,
+                                  text_pt = 9, family = "") {
+  v <- seq(-1, 1, length.out = 201L)
+  df <- data.frame(x = 1, v = c(-1, 1))
+  bar_width <- grid::unit(0.9, "lines")
+  ggplot2::ggplot(df, ggplot2::aes(x = .data$x, y = .data$v)) +
+    ggplot2::geom_point(ggplot2::aes(fill = .data$v), shape = 22, size = 0,
+                        stroke = 0, alpha = 0) +
+    ggplot2::scale_fill_gradientn(
+      colours = .background_hex(v, palette, strength),
+      values  = (v + 1) / 2,
+      limits  = c(-1, 1),
+      breaks  = .background_bar_breaks(),
+      labels  = c("-1", "0", "1"),
+      name    = paste0("Background\n(", .background_label(background_by),
+                       ")"),
+      guide   = ggplot2::guide_colourbar(
+        title.position = "top",
+        title.hjust    = 0.5,
+        theme = ggplot2::theme(
+          legend.key.width    = bar_width,
+          legend.ticks        = ggplot2::element_line(colour = "grey10",
+                                                      linewidth = 0.4),
+          legend.ticks.length = 0.5 * bar_width,
+          legend.frame        = ggplot2::element_rect(colour = "grey50",
+                                                      linewidth = 0.3)
+        )
+      )
+    ) +
+    ggplot2::theme_void(base_family = family) +
+    ggplot2::theme(
+      legend.position    = "left",
+      legend.key.height  = grid::unit(1, "null"),
+      legend.title       = .element_text_or_blank(
+        text_pt, face = "bold", family = family,
+        margin = ggplot2::margin(b = 4)
+      ),
+      legend.text        = .element_text_or_blank(text_pt, family = family),
+      legend.margin      = ggplot2::margin(0, 0, 0, 0),
+      legend.box.margin  = ggplot2::margin(0, 0, 0, 0),
+      legend.box.spacing = grid::unit(0, "pt"),
+      plot.margin        = ggplot2::margin(6, 0, 0, 4)
+    )
 }
 
 # ---------------------------------------------------------------
@@ -493,8 +655,9 @@
 # ---------------------------------------------------------------
 # One directed cell of a pair: the `_yx` or `_xy` fields of a pair
 # element under direction-free names, plus the pair-level quantities.
-# `yx` is vars[j] ~ s(vars[i]) with x = var_i (the upper cell); `xy` is
-# vars[i] ~ s(vars[j]) with x = var_j (the lower cell).
+# `yx` is vars[j] ~ s(vars[i]) with x = var_i, drawn at row var_j and
+# column var_i; `xy` is vars[i] ~ s(vars[j]) with x = var_j, drawn at row
+# var_i and column var_j. Every cell is row ~ s(column).
 # ---------------------------------------------------------------
 
 .pair_face <- function(pair, direction = c("yx", "xy")) {
@@ -544,12 +707,18 @@
 # ---------------------------------------------------------------
 # The strip: one line of small grey text above the data area, e.g.
 # "A 0.32  EDF 2.4  **" or, compact, "A 0.32 E 2.4 **". NULL when no
-# annotation applies to the face.
+# annotation applies to the face. `background_by` picks the correlation
+# of the "r" annotation (Pearson when "none"); `wrap` breaks the line
+# after the third item.
 # ---------------------------------------------------------------
 
 .cell_strip_text <- function(face, annotations, glyph_style = "ascii",
-                             compact = FALSE, p_adjust = "none") {
+                             compact = FALSE, p_adjust = "none",
+                             background_by = "pearson", wrap = FALSE) {
   parts <- character()
+  if ("formula" %in% annotations) {
+    parts <- c(parts, sprintf("%s ~ %s", face$var_y, face$var_x))
+  }
   if ("code" %in% annotations && !is.na(face$shape_code)) {
     parts <- c(parts, face$shape_code)
   }
@@ -558,6 +727,11 @@
   }
   if ("edf" %in% annotations && !is.na(face$edf)) {
     parts <- c(parts, sprintf(if (compact) "E %.1f" else "EDF %.1f", face$edf))
+  }
+  # Adding 0 prints a value that rounds to -0 as 0.00.
+  r <- .face_correlation(face, background_by)
+  if ("r" %in% annotations && !is.na(r)) {
+    parts <- c(parts, sprintf("r %.2f", round(r, 2L) + 0))
   }
   if ("n" %in% annotations && !is.na(face$n_used)) {
     parts <- c(parts, sprintf("n %d", as.integer(face$n_used)))
@@ -574,33 +748,41 @@
     parts <- c(parts, .k_warn_glyph(glyph_style))
   }
   if (!length(parts)) return(NULL)
-  paste(parts, collapse = if (compact) " " else "  ")
+  sep <- if (compact) " " else "  "
+  if (wrap && length(parts) > 3L) {
+    return(paste(paste(parts[1:3], collapse = sep),
+                 paste(parts[-(1:3)], collapse = sep), sep = "\n"))
+  }
+  paste(parts, collapse = sep)
 }
 
 # ---------------------------------------------------------------
-# Cell theme: square panel, no background, a border that carries the
-# cell's colour when the channel is "border", the strip as the subtitle
-# left-aligned to the panel.
+# Cell theme: square panel, the background colour (NA for none), a
+# border that carries the cell's colour when the channel is "border",
+# the strip as the subtitle left-aligned to the panel. `strip_pt` NA
+# removes the title and the strip.
 # ---------------------------------------------------------------
 
 .cell_theme <- function(strip_pt, border_colour = "grey55",
-                        border_linewidth = 0.35) {
-  ggplot2::theme_void(base_size = 8) +
+                        border_linewidth = 0.35, background = NA,
+                        family = "") {
+  ggplot2::theme_void(base_size = 8, base_family = family) +
     ggplot2::theme(
       aspect.ratio        = 1,
       plot.margin         = ggplot2::margin(3, 3, 3, 3),
       plot.background     = ggplot2::element_rect(fill = NA, colour = NA),
-      panel.background    = ggplot2::element_rect(fill = NA, colour = NA),
+      panel.background    = ggplot2::element_rect(fill = background,
+                                                  colour = NA),
       panel.border        = ggplot2::element_rect(
         fill = NA, colour = border_colour, linewidth = border_linewidth
       ),
       plot.title.position = "panel",
-      plot.title          = ggplot2::element_text(
-        size = strip_pt + 1, colour = "grey15", hjust = 0,
+      plot.title          = .element_text_or_blank(
+        strip_pt + 1, colour = "grey15", hjust = 0, family = family,
         margin = ggplot2::margin(0, 0, 1, 0)
       ),
-      plot.subtitle       = ggplot2::element_text(
-        size = strip_pt, colour = "grey35", hjust = 0,
+      plot.subtitle       = .element_text_or_blank(
+        strip_pt, colour = "grey35", hjust = 0, family = family,
         margin = ggplot2::margin(0, 0, 1.5, 0)
       )
     )
@@ -661,25 +843,37 @@
 # The 0.2.0 corner placement of the annotations, used when
 # style$annotation_position = "corners".
 .add_corner_annotations <- function(p, face, annotations, style, text_sizes,
-                                    p_adjust = "none") {
+                                    p_adjust = "none",
+                                    background_by = "pearson") {
+  if (is.na(text_sizes$pt$strip)) return(p)
+  family <- style$base_family
+
   # Top-right: significance glyph.
   if ("signif" %in% annotations) {
     glyph <- .face_signif(face, p_adjust)
     if (nzchar(glyph)) {
       p <- p + ggplot2::annotate(
         "text", x = Inf, y = Inf, hjust = 1.25, vjust = 1.4,
-        label = glyph, size = text_sizes$glyph, fontface = "bold"
+        label = glyph, size = text_sizes$glyph, fontface = "bold",
+        family = family
       )
     }
   }
 
-  # Bottom-left stack: A, EDF and n, one line each.
+  # Bottom-left stack: formula, A, EDF, r and n, one line each.
   bl_lines <- character()
+  if ("formula" %in% annotations) {
+    bl_lines <- c(bl_lines, sprintf("%s ~ %s", face$var_y, face$var_x))
+  }
   if ("A" %in% annotations && !is.na(face$asymmetry_index)) {
     bl_lines <- c(bl_lines, sprintf("A = %.2f", face$asymmetry_index))
   }
   if ("edf" %in% annotations && !is.na(face$edf)) {
     bl_lines <- c(bl_lines, sprintf("EDF = %.2f", face$edf))
+  }
+  r <- .face_correlation(face, background_by)
+  if ("r" %in% annotations && !is.na(r)) {
+    bl_lines <- c(bl_lines, sprintf("r = %.2f", round(r, 2L) + 0))
   }
   if ("n" %in% annotations && !is.na(face$n_used)) {
     bl_lines <- c(bl_lines, sprintf("n = %d", as.integer(face$n_used)))
@@ -690,7 +884,7 @@
       hjust = -0.07, vjust = -0.15,
       label = paste(bl_lines, collapse = "\n"),
       size = text_sizes$n_edf, lineheight = 0.95,
-      colour = "grey15", fontface = "plain"
+      colour = "grey15", fontface = "plain", family = family
     )
   }
 
@@ -702,7 +896,7 @@
       hjust = -0.20, vjust = 1.4,
       label = face$shape_code,
       size = text_sizes$n_edf,
-      colour = "grey20", fontface = "bold"
+      colour = "grey20", fontface = "bold", family = family
     )
   }
 
@@ -715,7 +909,7 @@
         hjust = 1.15, vjust = -0.25,
         label = glyph,
         size = text_sizes$shape,
-        colour = "grey25", fontface = "bold"
+        colour = "grey25", fontface = "bold", family = family
       )
     }
   }
@@ -728,7 +922,7 @@
       vjust = 1.4,
       label = .k_warn_glyph(style$glyph_style),
       size = text_sizes$n_edf,
-      colour = "#b30000", fontface = "bold"
+      colour = "#b30000", fontface = "bold", family = family
     )
   }
   p
@@ -739,7 +933,8 @@
 # strip, the raw points, the band and the curve, the colour channel,
 # the focus wash and the compact-tier suppression. `points` is a data
 # frame with `x`, `y` and optionally `group` for the rows of the cell;
-# `colour` is the hex colour of the cell's colour_by value or NA.
+# `colour` is the hex colour of the cell's colour_by value or NA;
+# `background` the hex colour of its correlation background or NA.
 # ---------------------------------------------------------------
 
 .render_cell <- function(
@@ -757,7 +952,11 @@
   group_colours = NULL,
   x_transform = NULL,
   y_transform = NULL,
-  title = NULL
+  title = NULL,
+  background = NA_character_,
+  border_linewidth = .border_linewidth(4L, style$border_width),
+  background_by = "pearson",
+  wrap_strip = FALSE
 ) {
   face <- .pair_face(pair, direction)
   tier <- as.integer(tier)
@@ -766,7 +965,8 @@
     return(.build_deriv_panel(
       face, order = if (display == "d1") 1L else 2L,
       style = style, text_sizes = text_sizes, colour = colour,
-      tier = tier, is_focused = is_focused, title = title
+      tier = tier, is_focused = is_focused, title = title,
+      background = background, border_linewidth = border_linewidth
     ))
   }
 
@@ -785,15 +985,18 @@
   # Panel, strip and colour channel ----------------------------------------
   on_border <- style$colour_channel == "border" && !is.na(colour)
   strip <- if (style$annotation_position == "strip") {
-    .cell_strip_text(face, annotations, style$glyph_style, compact, p_adjust)
+    .cell_strip_text(face, annotations, style$glyph_style, compact, p_adjust,
+                     background_by, wrap = wrap_strip)
   } else {
     NULL
   }
   p <- ggplot2::ggplot() +
     .cell_theme(
-      strip_pt = 2 * text_sizes$n_edf,
+      strip_pt = text_sizes$pt$strip,
       border_colour = if (on_border) colour else "grey55",
-      border_linewidth = if (on_border) 1.2 else 0.35
+      border_linewidth = if (on_border) border_linewidth else 0.35,
+      background = background,
+      family = style$base_family
     ) +
     ggplot2::labs(title = title, subtitle = strip)
   if (!isTRUE(is_focused)) {
@@ -812,10 +1015,7 @@
   # Empty cell: a failed fit or fewer than 5 shared rows -----------------
   if (nrow(face$pred) == 0L) {
     label <- if (!is.na(face$error)) "no fit" else "n < 5"
-    return(p + ggplot2::annotate(
-      "text", x = 0.5, y = 0.5, label = label,
-      size = text_sizes$empty, colour = "grey40"
-    ) + ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1))
+    return(.empty_cell_text(p, label, text_sizes, style$base_family))
   }
 
   # Data, band and curve ---------------------------------------------------
@@ -844,17 +1044,18 @@
     p <- p + ggplot2::geom_line(
       data = pred_line,
       ggplot2::aes(x = .data$x, y = .data$fit),
-      colour = style$curve_colour, linewidth = 0.7,
+      colour = style$curve_colour,
+      linewidth = style$curve_width / ggplot2::.pt,
       inherit.aes = FALSE
     )
   } else if (isTRUE(is_focused)) {
     # Tier 3: the shape glyph in the cell centre stands for the curve.
     glyph <- .shape_glyph(face$shape, style = style$glyph_style)
-    if (!is.na(glyph) && nzchar(glyph)) {
+    if (!is.na(glyph) && nzchar(glyph) && !is.na(text_sizes$shape)) {
       p <- p + ggplot2::annotate(
         "text", x = 0.5, y = 0.5,
         label = glyph, size = text_sizes$shape * 1.2,
-        colour = "grey20", fontface = "bold"
+        colour = "grey20", fontface = "bold", family = style$base_family
       ) + ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1)
     }
   }
@@ -862,9 +1063,21 @@
   # Corner annotations -----------------------------------------------------
   if (style$annotation_position == "corners" && length(annotations)) {
     p <- .add_corner_annotations(p, face, annotations, style, text_sizes,
-                                 p_adjust)
+                                 p_adjust, background_by)
   }
   p
+}
+
+# The centred grey label of an empty cell ("no fit", "n < 5"), or the
+# empty panel alone when the strip text is not drawn.
+.empty_cell_text <- function(p, label, text_sizes, family = "") {
+  if (!is.na(text_sizes$empty)) {
+    p <- p + ggplot2::annotate(
+      "text", x = 0.5, y = 0.5, label = label,
+      size = text_sizes$empty, colour = "grey40", family = family
+    )
+  }
+  p + ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1)
 }
 
 # ---------------------------------------------------------------
@@ -891,7 +1104,9 @@
 
 .build_deriv_panel <- function(face, order, style, text_sizes,
                                colour = NA_character_, tier = 0L,
-                               is_focused = TRUE, title = NULL) {
+                               is_focused = TRUE, title = NULL,
+                               background = NA_character_,
+                               border_linewidth = 1.2) {
   tier <- as.integer(tier)
   # Tiers 0-1: curve and band; tier 2: curve only; tier 3: no strip.
   show_ribbon <- isTRUE(style$show_ci) && tier < 2L
@@ -907,9 +1122,11 @@
   }
   p <- ggplot2::ggplot() +
     .cell_theme(
-      strip_pt = 2 * text_sizes$n_edf,
+      strip_pt = text_sizes$pt$strip,
       border_colour = if (on_border) colour else "grey55",
-      border_linewidth = if (on_border) 1.2 else 0.35
+      border_linewidth = if (on_border) border_linewidth else 0.35,
+      background = background,
+      family = style$base_family
     ) +
     ggplot2::labs(title = title, subtitle = strip)
   if (!isTRUE(is_focused)) {
@@ -927,11 +1144,10 @@
 
   deriv_df <- face$deriv[[as.character(as.integer(order))]]
   if (is.null(deriv_df) || nrow(deriv_df) == 0L) {
-    return(p + ggplot2::annotate(
-      "text", x = 0.5, y = 0.5,
-      label = sprintf("deriv %d unavailable", as.integer(order)),
-      size = text_sizes$empty, colour = "grey40"
-    ) + ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1))
+    return(.empty_cell_text(
+      p, sprintf("deriv %d unavailable", as.integer(order)), text_sizes,
+      style$base_family
+    ))
   }
 
   # Reference line at zero -- sign flips of the derivative correspond
@@ -991,16 +1207,19 @@
 # widths / heights are set by the assembly layer.
 # ---------------------------------------------------------------
 
-.build_top_label_cell <- function(label, srt = 45, cex = 1) {
+.build_top_label_cell <- function(label, srt = 45, size_pt = 10, family = "") {
   hj <- if (identical(srt, 0)) 0.5 else 0
   vj <- if (identical(srt, 0)) 0 else 0.5
-  ggplot2::ggplot() +
-    ggplot2::annotate(
+  p <- ggplot2::ggplot()
+  if (!is.na(size_pt)) {
+    p <- p + ggplot2::annotate(
       "text", x = 0.5, y = 0,
       label = label, angle = srt,
       hjust = hj, vjust = vj,
-      size = 3.5 * cex, colour = "grey10"
-    ) +
+      size = size_pt / ggplot2::.pt, colour = "grey10", family = family
+    )
+  }
+  p +
     ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1) +
     ggplot2::coord_cartesian(clip = "off") +
     ggplot2::theme_void(base_size = 8) +
@@ -1011,14 +1230,17 @@
     )
 }
 
-.build_left_label_cell <- function(label, cex = 1) {
-  ggplot2::ggplot() +
-    ggplot2::annotate(
+.build_left_label_cell <- function(label, size_pt = 10, family = "") {
+  p <- ggplot2::ggplot()
+  if (!is.na(size_pt)) {
+    p <- p + ggplot2::annotate(
       "text", x = 1, y = 0.5,
       label = label,
       hjust = 1, vjust = 0.5,
-      size = 3.5 * cex, colour = "grey10"
-    ) +
+      size = size_pt / ggplot2::.pt, colour = "grey10", family = family
+    )
+  }
+  p +
     ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1) +
     ggplot2::coord_cartesian(clip = "off") +
     ggplot2::theme_void(base_size = 8) +
@@ -1033,6 +1255,98 @@
   ggplot2::ggplot() +
     ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1) +
     ggplot2::theme_void(base_size = 8) +
+    ggplot2::theme(
+      plot.margin      = ggplot2::margin(0, 0, 0, 0),
+      plot.background  = ggplot2::element_rect(fill = NA, colour = NA),
+      panel.background = ggplot2::element_rect(fill = NA, colour = NA)
+    )
+}
+
+# ---------------------------------------------------------------
+# Corner key: a two-by-two schematic of the first two variables in the
+# empty top-left corner, headed "each cell: row ~ s(column)". The
+# off-diagonal boxes carry the formula on two lines, the diagonal boxes
+# are grey. Names longer than .key_name_chars() are cut with an
+# ellipsis. Sizes are in points, with text width estimated at 0.5 em per
+# character; the assembly sizes the corner from .key_layout().
+# ---------------------------------------------------------------
+
+.key_name_chars <- function() 7L
+
+.key_heading <- function() "each cell:\nrow ~ s(column)"
+
+.truncate_name <- function(name, max_chars = .key_name_chars()) {
+  if (nchar(name) <= max_chars) return(name)
+  paste0(trimws(substr(name, 1L, max_chars - 1L), which = "right"),
+         intToUtf8(8230L))
+}
+
+# The truncated names and the geometry of the key at `key_pt`, in points.
+.key_layout <- function(vars, key_pt) {
+  a <- .truncate_name(vars[[1L]])
+  b <- .truncate_name(vars[[2L]])
+  em <- 0.5 * key_pt
+  line <- 1.2 * key_pt
+  row_w <- max(nchar(c(a, b))) * em + 0.5 * key_pt
+  box_w <- (max(nchar(c(a, b))) + 3L) * em + 0.6 * key_pt
+  box_h <- 2 * line + 0.4 * key_pt
+  heading_w <- max(nchar(strsplit(.key_heading(), "\n", fixed = TRUE)[[1L]]))
+  list(
+    a = a, b = b, row_w = row_w, box_w = box_w, box_h = box_h,
+    line = line,
+    width = max(row_w + 2 * box_w, heading_w * em),
+    height = 3 * line + 2 * box_h
+  )
+}
+
+# The key drawn in a corner panel of `panel_w` x `panel_h` points,
+# anchored to its bottom-right corner, beside the first matrix cell.
+.build_key_cell <- function(vars, key_pt, panel_w, panel_h, family = "") {
+  if (length(vars) < 2L || is.na(key_pt)) return(.build_corner_cell())
+  lay <- .key_layout(vars, key_pt)
+  x_box <- panel_w - 2 * lay$box_w
+  box_h <- lay$box_h
+  boxes <- data.frame(
+    xmin = x_box + c(0, 1, 0, 1) * lay$box_w,
+    ymin = c(1, 1, 0, 0) * box_h,
+    fill = c("grey92", NA, NA, "grey92"),
+    stringsAsFactors = FALSE
+  )
+  boxes$xmax <- boxes$xmin + lay$box_w
+  boxes$ymax <- boxes$ymin + box_h
+  texts <- data.frame(
+    x = c(panel_w, x_box + 0.5 * lay$box_w, x_box + 1.5 * lay$box_w,
+          x_box - 0.3 * key_pt, x_box - 0.3 * key_pt,
+          x_box + 1.5 * lay$box_w, x_box + 0.5 * lay$box_w),
+    y = c(2 * box_h + 3 * lay$line, rep(2 * box_h + 0.5 * lay$line, 2L),
+          1.5 * box_h, 0.5 * box_h, 1.5 * box_h, 0.5 * box_h),
+    label = c(.key_heading(), lay$a, lay$b, lay$a, lay$b,
+              sprintf("%s ~\ns(%s)", lay$a, lay$b),
+              sprintf("%s ~\ns(%s)", lay$b, lay$a)),
+    hjust = c(1, 0.5, 0.5, 1, 1, 0.5, 0.5),
+    vjust = c(1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5),
+    colour = c("grey10", rep("grey30", 4L), rep("grey15", 2L)),
+    stringsAsFactors = FALSE
+  )
+  ggplot2::ggplot() +
+    ggplot2::geom_rect(
+      data = boxes,
+      ggplot2::aes(xmin = .data$xmin, xmax = .data$xmax,
+                   ymin = .data$ymin, ymax = .data$ymax),
+      fill = boxes$fill, colour = "grey60", linewidth = 0.25,
+      inherit.aes = FALSE
+    ) +
+    ggplot2::geom_text(
+      data = texts,
+      ggplot2::aes(x = .data$x, y = .data$y, label = .data$label),
+      hjust = texts$hjust, vjust = texts$vjust, colour = texts$colour,
+      size = key_pt / ggplot2::.pt, lineheight = 0.9, family = family,
+      inherit.aes = FALSE
+    ) +
+    ggplot2::scale_x_continuous(limits = c(0, panel_w), expand = c(0, 0)) +
+    ggplot2::scale_y_continuous(limits = c(0, panel_h), expand = c(0, 0)) +
+    ggplot2::coord_cartesian(clip = "off") +
+    ggplot2::theme_void(base_size = 8, base_family = family) +
     ggplot2::theme(
       plot.margin      = ggplot2::margin(0, 0, 0, 0),
       plot.background  = ggplot2::element_rect(fill = NA, colour = NA),
@@ -1097,14 +1411,19 @@
 # ---------------------------------------------------------------
 
 .build_diagonal_cell <- function(var_name,
-                                 text_sizes = .cell_text_sizes(3L)) {
+                                 text_sizes = .cell_text_sizes(3L),
+                                 family = "") {
   char_scale <- min(1, 10 / max(1L, nchar(var_name)))
   label_size <- text_sizes$diag * char_scale
-  ggplot2::ggplot() +
-    ggplot2::annotate(
+  p <- ggplot2::ggplot()
+  if (!is.na(label_size)) {
+    p <- p + ggplot2::annotate(
       "text", x = 0.5, y = 0.5, label = var_name,
-      size = label_size, fontface = "bold", colour = "grey10"
-    ) +
+      size = label_size, fontface = "bold", colour = "grey10",
+      family = family
+    )
+  }
+  p +
     ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1) +
     ggplot2::theme_void(base_size = 8) +
     ggplot2::theme(

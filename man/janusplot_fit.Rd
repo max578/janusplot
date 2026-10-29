@@ -165,7 +165,7 @@ prediction references \code{prediction_reference_yx},
 \code{k_check_xy}, \verb{k_requested_*}, \verb{k_used_*}, \code{engine}, \code{method},
 \code{error_yx} and \code{error_xy}.}
 \item{\code{table}}{Data frame with one row per directed cell: \code{var_x},
-\code{var_y}, \code{position} (\code{"upper"} or \code{"lower"}), \code{n_used}, \code{edf},
+\code{var_y}, \code{position} (\code{"upper"} if \code{var_y} is first), \code{n_used}, \code{edf},
 \code{association_p}, \code{association_p_adj}, \code{signif} (glyph from the
 adjusted p-value), \code{dev_exp}, \code{deviance_gap}, \code{asymmetry_index},
 \code{k_capped_yx}, \code{k_capped_xy}, \code{directional_complexity} (signed for
@@ -205,9 +205,9 @@ used and the fit settings. \code{\link[=janusplot]{janusplot()}} draws the matri
 returns the per-cell table.
 }
 \details{
-Suffixes name the direction of fit. \verb{_yx} is \code{vars[j] ~ s(vars[i])} for
-\code{i < j}, the upper-triangle cell at row \code{i}, column \code{j}; \verb{_xy} is
-\code{vars[i] ~ s(vars[j])}, the lower-triangle cell. In \verb{$table} each row
+Suffixes name the direction of fit. \verb{_xy} is \code{vars[i] ~ s(vars[j])} for
+\code{i < j}, the upper-triangle cell at row \code{i}, column \code{j}; \verb{_yx} is
+\code{vars[j] ~ s(vars[i])}, the lower-triangle cell. In \verb{$table} each row
 is one directed cell with \code{var_x} the predictor and \code{var_y} the
 response.
 

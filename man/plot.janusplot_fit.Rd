@@ -8,6 +8,7 @@
   x,
   colour_by = c("nonlinearity", "asymmetry", "pearson", "spearman", "kendall",
     "deviance_gap", "none"),
+  background_by = c("pearson", "spearman", "kendall", "none"),
   annotations = c("A", "signif"),
   order = c("original", "hclust", "alphabetical"),
   display = c("fit", "d1", "d2"),
@@ -30,13 +31,23 @@ correlation on a diverging scale over \verb{[-1, 1]}), \code{"deviance_gap"}
 (deviance explained by the smooth minus the straight line's) or
 \code{"none"}.}
 
-\item{annotations}{Character vector, a subset of \code{c("A", "edf", "signif", "code", "shape", "k_warn", "n")}, written in the strip of
-every cell (or in its corners under \code{janusplot_style(annotation_position = "corners")}): the asymmetry index, the EDF, the significance glyph
-of the smooth F-test (\verb{***} p < .001, \verb{**} p < .01, \code{*} p < .05,
-\code{.} p < .1, from the adjusted p-value when the fit has \code{p_adjust}
-other than \code{"none"}), the two-letter shape code, the shape glyph, a
-warning sign on cells flagged by the k-check or capped at the distinct
-predictor count, and the rows used. Default \code{c("A", "signif")}.}
+\item{background_by}{The correlation that tints each cell's
+background: \code{"pearson"} (the default), \code{"spearman"}, \code{"kendall"}, or
+\code{"none"} for no background. Independent of \code{colour_by}. It cannot be
+combined with \code{janusplot_style(colour_channel = "fill")}, which paints
+the same area.}
+
+\item{annotations}{Character vector, a subset of \code{c("A", "edf", "signif", "code", "shape", "k_warn", "n", "r", "formula")}, written in
+the strip of every cell (or in its corners under
+\code{janusplot_style(annotation_position = "corners")}): the asymmetry
+index, the EDF, the significance glyph of the smooth F-test (\verb{***}
+p < .001, \verb{**} p < .01, \code{*} p < .05, \code{.} p < .1, from the adjusted
+p-value when the fit has \code{p_adjust} other than \code{"none"}), the
+two-letter shape code, the shape glyph, a warning sign on cells
+flagged by the k-check or capped at the distinct predictor count, the
+rows used, the \code{background_by} correlation of the pair (Pearson when
+\code{background_by = "none"}), printed \code{"r -0.03"}, and the cell's formula,
+printed \code{Temp ~ Ozone}. Default \code{c("A", "signif")}.}
 
 \item{order}{Order of the variables in the matrix: \code{"original"} (the
 default, the order of \code{x$vars}), \code{"hclust"} (hierarchical clustering
@@ -79,8 +90,10 @@ style knob cannot pass silently.}
 }
 \value{
 A \link[patchwork:patchwork-package]{patchwork} object, which is a
-ggplot: the matrix with its border labels, the colour bar when
-\code{colour_by} is not \code{"none"}, the group legend when \code{group} is given,
+ggplot: the matrix with its border labels and corner key, the colour
+bar when \code{colour_by} is not \code{"none"}, the background colour bar when
+\code{background_by} is not \code{"none"}, the group legend when \code{group} is
+given,
 the shape-categories legend when \code{style$show_shape_legend} is \code{TRUE},
 a title naming the displayed quantity and the glossary caption when
 \code{style$show_glossary} is \code{TRUE}.
@@ -94,13 +107,21 @@ variable names along the top and left borders. Nothing is refitted;
 every number on the plot is in the object.
 }
 \details{
-Cell \verb{[i, j]} with \code{i != j} shows \code{vars[j] ~ s(vars[i])} for \code{i < j} and
-\code{vars[i] ~ s(vars[j])} for \code{i > j}, so the column variable is the
-response in the upper triangle and the row variable in the lower one;
-the two triangles differ by design. The \code{colour_by} value is painted
-on the border, a corner tile or the whole cell per
-\code{style$colour_channel}, with one colour bar per matrix. A strip above
-each cell carries the \code{annotations}.
+Every off-diagonal cell \verb{[r, c]} shows \code{vars[r] ~ s(vars[c])}: the
+variable named left of the row is the response on the vertical axis and
+the variable named above the column is the predictor on the horizontal
+axis, as in \code{\link[graphics:pairs]{graphics::pairs()}}. Cells \verb{[r, c]} and \verb{[c, r]} are the two
+directions of one pair and differ by design. A key in the top-left
+corner shows the convention with the first two variables
+(\code{style$show_key}).
+
+The \code{colour_by} value is painted on the border, a corner tile or the
+whole cell per \code{style$colour_channel}, with one colour bar per matrix.
+The \code{background_by} correlation tints the panel behind the points, band
+and curve: white at zero and \code{style$background_strength} of the way to
+the blue (negative) or red (positive) end of \code{style$background_palette}
+at minus or plus one, with its own colour bar over \verb{[-1, 1]}. A strip
+above each cell carries the \code{annotations}.
 
 \code{colour_by = "edf"} is accepted for one release and mapped to
 \code{"nonlinearity"} with a deprecation message.
@@ -109,6 +130,7 @@ each cell carries the \code{annotations}.
 fit <- janusplot_fit(mtcars[, c("mpg", "hp", "wt")], engine = "gam")
 plot(fit)
 plot(fit, colour_by = "asymmetry", annotations = c("A", "edf", "signif"))
+plot(fit, background_by = "none", annotations = c("formula", "r"))
 
 \donttest{
 # Points coloured by a factor column of the data; never in the model.

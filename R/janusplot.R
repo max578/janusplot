@@ -12,11 +12,12 @@
 #'
 #' Fits every ordered pair of numeric variables with [janusplot_fit()] and
 #' draws the matrix with [plot.janusplot_fit()] in one call. Each cell
-#' `[i, j]` with `i != j` shows the fitted spline from [mgcv::gam()] or
-#' [mgcv::bam()]:
-#' * Upper triangle (`i < j`): `gam(x_j ~ s(x_i) + <adjust>)`.
-#' * Lower triangle (`i > j`): `gam(x_i ~ s(x_j) + <adjust>)`.
-#' * Diagonal: blank, the variable names sit on the border.
+#' `[r, c]` off the diagonal shows the fitted spline of
+#' `gam(x_r ~ s(x_c) + <adjust>)` from [mgcv::gam()] or [mgcv::bam()]:
+#' the row variable on the vertical axis against the column variable on
+#' the horizontal axis, as in [graphics::pairs()]. The diagonal is blank;
+#' the variable names sit on the border and a key in the top-left corner
+#' shows the convention.
 #'
 #' The two triangles differ by design: the asymmetry reveals
 #' heteroscedasticity, leverage and directional non-linearity that a
@@ -34,10 +35,13 @@
 #' The 0.2.0 appearance arguments of `janusplot()` are accepted through
 #' `...` for one release, each with a deprecation warning, and are removed
 #' in 1.1.0: `show_data`, `show_ci`, `palette`, `show_shape_legend`,
-#' `glyph_style`, `labels`, `diagonal`, `label_srt`, `label_cex`,
-#' `text_scale_diag`, `text_scale_off_diag`, `show_glossary`,
-#' `glossary_scale`, `compact`, `compact_threshold`, `compact_levels` and
-#' `focus_dim_alpha` are applied to `style`; `fill_by` is mapped to
+#' `glyph_style`, `labels`, `diagonal`, `label_srt`, `show_glossary`,
+#' `compact`, `compact_threshold`, `compact_levels` and `focus_dim_alpha`
+#' are applied to `style`; `label_cex`, `text_scale_diag`,
+#' `text_scale_off_diag` and `glossary_scale` are mapped to the `labels`,
+#' `diagonal`, `strip` and `glossary` elements of
+#' `janusplot_style(text_size = )` at the matrix's variable count, close
+#' to but not exactly the 0.2.0 sizes; `fill_by` is mapped to
 #' `colour_by`; `show_asymmetry` and `signif_glyph` are mapped to
 #' `annotations`; `labels = "diagonal"` is drawn as `"border"` with a
 #' message; `with_data = TRUE` returns `list(plot, data)` with `data` the
@@ -77,6 +81,7 @@
 #'
 #' # The 0.2.0 look: Pearson r washed over the whole cell.
 #' janusplot(mtcars[, c("mpg", "hp", "wt")], colour_by = "pearson",
+#'           background_by = "none",
 #'           style = janusplot_style(colour_channel = "fill"))
 #'
 #' # One matrix shows one quantity; derivatives come from the same fit.
@@ -97,6 +102,7 @@ janusplot <- function(
   vars = NULL,
   adjust = NULL,
   colour_by = "nonlinearity",
+  background_by = "pearson",
   annotations = c("A", "signif"),
   order = "original",
   display = "fit",
@@ -115,6 +121,8 @@ janusplot <- function(
   fit <- rlang::inject(janusplot_fit(
     data = data, vars = vars, adjust = adjust, !!!legacy$fit_args
   ))
+  style <- .apply_legacy_text(legacy$style, legacy$text_args,
+                              length(fit$vars))
   # "edf" is resolved here so the deprecation names the caller of
   # janusplot(), not the package-internal call into plot().
   colour_by <- .resolve_colour_by(legacy$view_args$colour_by,
@@ -122,6 +130,7 @@ janusplot <- function(
   p <- plot(
     fit,
     colour_by       = colour_by,
+    background_by   = background_by,
     annotations     = legacy$view_args$annotations,
     order           = order,
     display         = display,
@@ -129,7 +138,7 @@ janusplot <- function(
     focus_by        = focus_by,
     focus_threshold = focus_threshold,
     axes            = axes,
-    style           = legacy$style
+    style           = style
   )
 
   # Legacy post-actions ----------------------------------------------------
@@ -155,14 +164,41 @@ janusplot <- function(
 # The legacy shim: 0.2.0 arguments reached through `...` to their 1.0.0
 # homes, one deprecation warning per name. Returns fit_args (everything
 # that still belongs to janusplot_fit() or mgcv), view_args (colour_by,
-# annotations), the modified style and the post-actions. Removed in 1.1.0.
+# annotations), the modified style, the 0.2.0 text multipliers (applied
+# by .apply_legacy_text() once the variable count is known) and the
+# post-actions. Removed in 1.1.0.
 # ---------------------------------------------------------------
 
 .legacy_style_args <- function() {
   c("show_data", "show_ci", "palette", "show_shape_legend", "glyph_style",
-    "labels", "diagonal", "label_srt", "label_cex", "text_scale_diag",
-    "text_scale_off_diag", "show_glossary", "glossary_scale", "compact",
+    "labels", "diagonal", "label_srt", "show_glossary", "compact",
     "compact_threshold", "compact_levels", "focus_dim_alpha")
+}
+
+# The 0.2.0 text multipliers and the text_size element each one maps to.
+.legacy_text_args <- function() {
+  c(label_cex = "labels", text_scale_diag = "diagonal",
+    text_scale_off_diag = "strip", glossary_scale = "glossary")
+}
+
+# Each multiplier times the element's automatic size at k variables
+# becomes that element of style$text_size; elements the style already
+# sets explicitly are scaled from their own size, and a style without
+# text (text_size = NULL) stays without.
+.apply_legacy_text <- function(style, text_args, k) {
+  if (!length(text_args) || is.null(style$text_size)) return(style)
+  current <- .resolve_text_pt(k, style$text_size)
+  sizes <- if (is.list(style$text_size)) style$text_size else list()
+  if (is.numeric(style$text_size)) sizes <- current
+  for (name in names(text_args)) {
+    element <- .legacy_text_args()[[name]]
+    base <- current[[element]]
+    if (is.na(base)) next
+    sizes[element] <- list(base * text_args[[name]])
+  }
+  style_args <- unclass(style)
+  style_args["text_size"] <- list(sizes)
+  do.call(janusplot_style, style_args)
 }
 
 .shim_legacy_args <- function(dots, style, colour_by, annotations,
@@ -197,6 +233,20 @@ janusplot <- function(
       style_args[name] <- list(value)
     }
     style <- do.call(janusplot_style, style_args)
+  }
+
+  # Text multipliers, applied once the variable count is known -----------
+  text_args <- list()
+  for (name in intersect(nms, names(.legacy_text_args()))) {
+    element <- .legacy_text_args()[[name]]
+    warn(name, with = "janusplot_style(text_size = )",
+         details = sprintf(paste(
+           "Mapped to the %s element of text_size in points, scaled from",
+           "its automatic size; the result is close to, not identical",
+           "with, the 0.2.0 size."
+         ), dQuote(element, FALSE)))
+    .check_scalar_positive(dots[[name]], name)
+    text_args[[name]] <- dots[[name]]
   }
 
   # View arguments ---------------------------------------------------------
@@ -250,13 +300,15 @@ janusplot <- function(
     post$save_dpi <- dots$save_dpi
   }
 
-  shimmed <- c(.legacy_style_args(), "fill_by", "show_asymmetry",
+  shimmed <- c(.legacy_style_args(), names(.legacy_text_args()),
+               "fill_by", "show_asymmetry",
                "signif_glyph", "with_data", "save_as", "save_width",
                "save_height", "save_dpi")
   list(
     fit_args  = dots[setdiff(nms, shimmed)],
     view_args = list(colour_by = colour_by, annotations = annotations),
     style     = style,
+    text_args = text_args,
     post      = post
   )
 }
@@ -334,8 +386,12 @@ janusplot <- function(
 .build_glossary_text <- function(annotations, colour_by,
                                  colour_channel = "border",
                                  display = "fit",
-                                 derivative_ci = "pointwise") {
-  parts <- character()
+                                 derivative_ci = "pointwise",
+                                 background_by = "none") {
+  parts <- "Each cell: row ~ s(column), the row variable on the vertical axis"
+  if ("formula" %in% annotations) {
+    parts <- c(parts, "Strip formula = response ~ predictor of the cell")
+  }
   if (display == "fit" && "A" %in% annotations) {
     parts <- c(parts,
       "A = asymmetry index |EDF_yx - EDF_xy| / (EDF_yx + EDF_xy), in [0, 1]")
@@ -343,6 +399,11 @@ janusplot <- function(
   if (display == "fit" && "edf" %in% annotations) {
     parts <- c(parts,
       "EDF = effective degrees of freedom of the smooth")
+  }
+  if ("r" %in% annotations) {
+    parts <- c(parts, sprintf("r = %s of the pair",
+                              .background_label(background_by) %||%
+                                "Pearson r"))
   }
   if ("n" %in% annotations) {
     parts <- c(parts, "n = rows used by the cell")
@@ -373,6 +434,12 @@ janusplot <- function(
     none         = NULL
   )
   if (!is.null(colour_msg)) parts <- c(parts, paste(where, colour_msg))
+  if (background_by != "none") {
+    parts <- c(parts, sprintf(
+      "Cell background encodes %s of the pair: white at 0, deeper towards -1 and 1",
+      .background_label(background_by)
+    ))
+  }
   if (display == "fit" && "signif" %in% annotations) {
     parts <- c(parts,
       "Signif. of smooth F-test: *** p<.001, ** p<.01, * p<.05, \u00b7 p<.1")
@@ -392,21 +459,23 @@ janusplot <- function(
 # ---------------------------------------------------------------
 
 .finalize_plot <- function(composite, title, caption = NULL,
-                           glossary_scale = 1) {
+                           text_pt = .text_size_auto(4L), family = "") {
   composite +
     patchwork::plot_annotation(
-      title   = title,
-      caption = caption,
+      title   = if (is.na(text_pt$title)) NULL else title,
+      caption = if (is.na(text_pt$glossary)) NULL else caption,
       theme = ggplot2::theme(
-        plot.title   = ggplot2::element_text(
-          size       = 13,
+        plot.title   = .element_text_or_blank(
+          text_pt$title,
+          family     = family,
           face       = "bold",
           hjust      = 0,
           colour     = "grey10",
           margin     = ggplot2::margin(t = 2, b = 6)
         ),
-        plot.caption = ggplot2::element_text(
-          size       = 9 * glossary_scale,
+        plot.caption = .element_text_or_blank(
+          text_pt$glossary,
+          family     = family,
           hjust      = 0,
           colour     = "grey25",
           lineheight = 1.1,

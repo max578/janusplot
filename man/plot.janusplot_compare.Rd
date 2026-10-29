@@ -51,10 +51,10 @@ changed, and the strip above each cell gives the EDF of both fits.
 Nothing is refitted.
 }
 \details{
-The layout follows \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}}: cell \verb{[i, j]} with \code{i < j}
-shows \code{vars[j] ~ s(vars[i])} and the lower triangle the reverse
-direction, over the variables of the second fit. There is no colour
-scale. The caption keys the two curves by \code{x$labels} when
+The layout follows \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}}: every cell \verb{[r, c]} shows
+\code{vars[r] ~ s(vars[c])}, over the variables of the second fit, with the
+key of that convention in the top-left corner. There is no colour scale
+and no background. The caption keys the two curves by \code{x$labels} when
 \code{style$show_glossary} is \code{TRUE}.
 }
 \examples{

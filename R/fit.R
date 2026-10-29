@@ -17,9 +17,9 @@
 #' returns the per-cell table.
 #'
 #' @details
-#' Suffixes name the direction of fit. `_yx` is `vars[j] ~ s(vars[i])` for
-#' `i < j`, the upper-triangle cell at row `i`, column `j`; `_xy` is
-#' `vars[i] ~ s(vars[j])`, the lower-triangle cell. In `$table` each row
+#' Suffixes name the direction of fit. `_xy` is `vars[i] ~ s(vars[j])` for
+#' `i < j`, the upper-triangle cell at row `i`, column `j`; `_yx` is
+#' `vars[j] ~ s(vars[i])`, the lower-triangle cell. In `$table` each row
 #' is one directed cell with `var_x` the predictor and `var_y` the
 #' response.
 #'
@@ -160,7 +160,7 @@
 #'     `k_check_xy`, `k_requested_*`, `k_used_*`, `engine`, `method`,
 #'     `error_yx` and `error_xy`.}
 #'   \item{`table`}{Data frame with one row per directed cell: `var_x`,
-#'     `var_y`, `position` (`"upper"` or `"lower"`), `n_used`, `edf`,
+#'     `var_y`, `position` (`"upper"` if `var_y` is first), `n_used`, `edf`,
 #'     `association_p`, `association_p_adj`, `signif` (glyph from the
 #'     adjusted p-value), `dev_exp`, `deviance_gap`, `asymmetry_index`,
 #'     `k_capped_yx`, `k_capped_xy`, `directional_complexity` (signed for
@@ -512,7 +512,7 @@ janusplot_fit <- function(
   rows <- lapply(names(fits), function(key) {
     f <- fits[[key]]
     ij <- as.integer(strsplit(key, "_", fixed = TRUE)[[1L]])
-    position <- if (ij[1L] < ij[2L]) "upper" else "lower"
+    position <- if (ij[1L] > ij[2L]) "upper" else "lower"
     # Pair-level quantities keyed like A: _yx is vars[j] ~ s(vars[i]), i < j.
     f_yx  <- fits[[sprintf("%d_%d", min(ij), max(ij))]]
     f_xy  <- fits[[sprintf("%d_%d", max(ij), min(ij))]]

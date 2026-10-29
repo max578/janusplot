@@ -2,7 +2,7 @@
 % Please edit documentation in R/pair.R
 \name{janusplot_pair}
 \alias{janusplot_pair}
-\title{Draw both directions of one pair of a janusplot fit}
+\title{Draw both directions of pairs of a janusplot fit}
 \usage{
 janusplot_pair(
   fit,
@@ -10,16 +10,20 @@ janusplot_pair(
   y,
   display = c("fit", "d1", "d2", "both"),
   group = NULL,
+  nrow = NULL,
+  ncol = NULL,
   style = janusplot_style()
 )
 }
 \arguments{
 \item{fit}{A \code{janusplot_fit} object from \code{\link[=janusplot_fit]{janusplot_fit()}}.}
 
-\item{x}{Name of the predictor of the left panel, one of \code{fit$vars}.}
+\item{x}{Character vector of the predictors of the left panels, each
+one of \code{fit$vars}; or a data frame or character matrix with two
+columns, predictor then response, one row per pair, with \code{y} missing.}
 
-\item{y}{Name of the response of the left panel, one of \code{fit$vars}
-and different from \code{x}.}
+\item{y}{Character vector of the responses of the left panels, the same
+length as \code{x}, element \code{i} paired with \code{x[i]} and different from it.}
 
 \item{display}{What the panels show: \code{"fit"} (the default) the fitted
 curves over the data, \code{"d1"} or \code{"d2"} the first or second
@@ -32,43 +36,61 @@ one z-score panel.}
 the panels, or \code{NULL} (the default). Drawing only; the column never
 enters the model.}
 
+\item{nrow, ncol}{Number of pair blocks per stack and number of stacks,
+or \code{NULL} (the default) to derive them as described in Details. When
+both are given, \code{nrow * ncol} must cover every pair.}
+
 \item{style}{A \code{\link[=janusplot_style]{janusplot_style()}} object holding every appearance
 setting.}
 }
 \value{
 A \link[patchwork:patchwork-package]{patchwork} object, which is a
-ggplot: the two panels side by side, or the overlay panel with its
-key, and the group legend underneath when \code{group} is given.
+ggplot: the blocks of panels in their stacks, the key of the overlay
+colours for \code{display = "both"} and the group legend underneath when
+\code{group} is given.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-Draws the two directional fits of one pair of a \code{\link[=janusplot_fit]{janusplot_fit()}}
-object side by side: \code{y ~ s(x)} on the left and \code{x ~ s(y)} on the
-right, each with its raw points, band, curve, the model formula as the
-title and a strip giving the pair's asymmetry index \code{A}, the EDF of
-that direction, its significance glyph and the rows used. Nothing is
-refitted.
+Draws the two directional fits of one or more pairs of a
+\code{\link[=janusplot_fit]{janusplot_fit()}} object. Each pair is a block of two panels side by
+side: \code{y ~ s(x)} on the left and \code{x ~ s(y)} on the right, each with its
+raw points, band, curve, the model formula as the title and a strip
+giving the pair's asymmetry index \code{A}, the EDF of that direction, the
+pair's Pearson correlation \code{r}, its significance glyph and the rows
+used. Nothing is refitted.
 }
 \details{
-The left panel always shows \code{y ~ s(x)}, whichever order the fit stored
-the pair in. Titles name the model in the column names of the data,
-with the fit's \code{adjust} terms appended, for example
+The left panel of a block always shows \code{y ~ s(x)}, whichever order the
+fit stored the pair in. Titles name the model in the column names of
+the data, with the fit's \code{adjust} terms appended, for example
 \code{Ozone ~ s(Temp) + s(Month, bs = "re")}; the curve and band are then
 population-level, as in \code{\link[=janusplot_fit]{janusplot_fit()}}. The significance glyph is
 read from the adjusted p-value when the fit has \code{p_adjust} other than
-\code{"none"}.
+\code{"none"}. With \code{style$pair_background = TRUE} (the default) the panels
+are tinted by the pair's Pearson correlation as the matrix background
+is, with the same \code{background_palette} and \code{background_strength}.
 
-\code{display = "both"} draws one panel in the z-score plane of the pair's
-rows: \code{x} standardised on the horizontal axis and \code{y} on the vertical.
-\code{y ~ s(x)} is drawn in \code{style$curve_colour} and \code{x ~ s(y)} in orange,
-with its axes swapped into the same plane, so the two curves can be
-compared directly. A key below the panel names each colour by its
-formula.
+Many pairs are laid out as blocks stacked top to bottom, with the
+stacks side by side: \code{nrow} is the number of blocks per stack and
+\code{ncol} the number of stacks. Give one and the other follows from the
+number of pairs; give neither and up to five pairs form one stack, more
+pairs \code{ceiling(n / 5)} stacks. Fourteen pairs with \code{nrow = 5L} give
+stacks of five, five and four blocks; stacks that would stay empty are
+dropped. One pair is a single row of two
+panels. Every panel shares the text sizes of \code{style$text_size}.
 
-Points are drawn in grey, coloured by \code{group}, or as a light grey
-binned density when the pair has more rows than
-\code{style$density_threshold} and no \code{group} is given.
+\code{display = "both"} draws one panel per pair in the z-score plane of the
+pair's rows: \code{x} standardised on the horizontal axis and \code{y} on the
+vertical. \code{y ~ s(x)} is drawn in \code{style$curve_colour} and \code{x ~ s(y)} in
+orange, with its axes swapped into the same plane, so the two curves
+can be compared directly. One key below the panels names each colour:
+by its formula for one pair, as vertical on horizontal and horizontal
+on vertical for several.
+
+Points are drawn in grey, coloured by \code{group} with one legend below the
+panels, or as a light grey binned density when the pair has more rows
+than \code{style$density_threshold} and no \code{group} is given.
 }
 \examples{
 fit <- janusplot_fit(airquality[, c("Ozone", "Temp", "Wind")],
@@ -77,6 +99,14 @@ janusplot_pair(fit, "Temp", "Ozone")
 janusplot_pair(fit, "Temp", "Ozone", display = "both")
 
 \donttest{
+# Three pairs, one block each, in one stack.
+janusplot_pair(fit, c("Temp", "Wind", "Wind"), c("Ozone", "Ozone", "Temp"))
+
+# The same pairs as a two-column data frame, in two stacks.
+pairs <- data.frame(x = c("Temp", "Wind", "Wind"),
+                    y = c("Ozone", "Ozone", "Temp"))
+janusplot_pair(fit, pairs, ncol = 2L)
+
 # The first derivative of each direction, computed at fit time.
 janusplot_pair(fit, "Temp", "Ozone", display = "d1")
 }
@@ -84,7 +114,7 @@ janusplot_pair(fit, "Temp", "Ozone", display = "d1")
 \seealso{
 \code{\link[=janusplot_fit]{janusplot_fit()}} for the object, \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}} for
 the matrix, \code{\link[=janusplot_direction]{janusplot_direction()}} for the residual-independence
-test of the pair.
+test of a pair.
 
 Other smooth-associations:
 \code{\link[=janusplot]{janusplot()}},

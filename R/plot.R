@@ -14,13 +14,21 @@
 #' every number on the plot is in the object.
 #'
 #' @details
-#' Cell `[i, j]` with `i != j` shows `vars[j] ~ s(vars[i])` for `i < j` and
-#' `vars[i] ~ s(vars[j])` for `i > j`, so the column variable is the
-#' response in the upper triangle and the row variable in the lower one;
-#' the two triangles differ by design. The `colour_by` value is painted
-#' on the border, a corner tile or the whole cell per
-#' `style$colour_channel`, with one colour bar per matrix. A strip above
-#' each cell carries the `annotations`.
+#' Every off-diagonal cell `[r, c]` shows `vars[r] ~ s(vars[c])`: the
+#' variable named left of the row is the response on the vertical axis and
+#' the variable named above the column is the predictor on the horizontal
+#' axis, as in [graphics::pairs()]. Cells `[r, c]` and `[c, r]` are the two
+#' directions of one pair and differ by design. A key in the top-left
+#' corner shows the convention with the first two variables
+#' (`style$show_key`).
+#'
+#' The `colour_by` value is painted on the border, a corner tile or the
+#' whole cell per `style$colour_channel`, with one colour bar per matrix.
+#' The `background_by` correlation tints the panel behind the points, band
+#' and curve: white at zero and `style$background_strength` of the way to
+#' the blue (negative) or red (positive) end of `style$background_palette`
+#' at minus or plus one, with its own colour bar over `[-1, 1]`. A strip
+#' above each cell carries the `annotations`.
 #'
 #' `colour_by = "edf"` is accepted for one release and mapped to
 #' `"nonlinearity"` with a deprecation message.
@@ -33,15 +41,23 @@
 #'   correlation on a diverging scale over `[-1, 1]`), `"deviance_gap"`
 #'   (deviance explained by the smooth minus the straight line's) or
 #'   `"none"`.
+#' @param background_by The correlation that tints each cell's
+#'   background: `"pearson"` (the default), `"spearman"`, `"kendall"`, or
+#'   `"none"` for no background. Independent of `colour_by`. It cannot be
+#'   combined with `janusplot_style(colour_channel = "fill")`, which paints
+#'   the same area.
 #' @param annotations Character vector, a subset of `c("A", "edf",
-#'   "signif", "code", "shape", "k_warn", "n")`, written in the strip of
-#'   every cell (or in its corners under `janusplot_style(annotation_position
-#'   = "corners")`): the asymmetry index, the EDF, the significance glyph
-#'   of the smooth F-test (`***` p < .001, `**` p < .01, `*` p < .05,
-#'   `.` p < .1, from the adjusted p-value when the fit has `p_adjust`
-#'   other than `"none"`), the two-letter shape code, the shape glyph, a
-#'   warning sign on cells flagged by the k-check or capped at the distinct
-#'   predictor count, and the rows used. Default `c("A", "signif")`.
+#'   "signif", "code", "shape", "k_warn", "n", "r", "formula")`, written in
+#'   the strip of every cell (or in its corners under
+#'   `janusplot_style(annotation_position = "corners")`): the asymmetry
+#'   index, the EDF, the significance glyph of the smooth F-test (`***`
+#'   p < .001, `**` p < .01, `*` p < .05, `.` p < .1, from the adjusted
+#'   p-value when the fit has `p_adjust` other than `"none"`), the
+#'   two-letter shape code, the shape glyph, a warning sign on cells
+#'   flagged by the k-check or capped at the distinct predictor count, the
+#'   rows used, the `background_by` correlation of the pair (Pearson when
+#'   `background_by = "none"`), printed `"r -0.03"`, and the cell's formula,
+#'   printed `Temp ~ Ozone`. Default `c("A", "signif")`.
 #' @param order Order of the variables in the matrix: `"original"` (the
 #'   default, the order of `x$vars`), `"hclust"` (hierarchical clustering
 #'   of absolute Pearson correlations) or `"alphabetical"`. Drawing only;
@@ -75,8 +91,10 @@
 #'   style knob cannot pass silently.
 #'
 #' @returns A [patchwork][patchwork::patchwork-package] object, which is a
-#'   ggplot: the matrix with its border labels, the colour bar when
-#'   `colour_by` is not `"none"`, the group legend when `group` is given,
+#'   ggplot: the matrix with its border labels and corner key, the colour
+#'   bar when `colour_by` is not `"none"`, the background colour bar when
+#'   `background_by` is not `"none"`, the group legend when `group` is
+#'   given,
 #'   the shape-categories legend when `style$show_shape_legend` is `TRUE`,
 #'   a title naming the displayed quantity and the glossary caption when
 #'   `style$show_glossary` is `TRUE`.
@@ -89,6 +107,7 @@
 #' fit <- janusplot_fit(mtcars[, c("mpg", "hp", "wt")], engine = "gam")
 #' plot(fit)
 #' plot(fit, colour_by = "asymmetry", annotations = c("A", "edf", "signif"))
+#' plot(fit, background_by = "none", annotations = c("formula", "r"))
 #'
 #' \donttest{
 #' # Points coloured by a factor column of the data; never in the model.
@@ -106,6 +125,7 @@ plot.janusplot_fit <- function(
   x,
   colour_by = c("nonlinearity", "asymmetry", "pearson", "spearman", "kendall",
                 "deviance_gap", "none"),
+  background_by = c("pearson", "spearman", "kendall", "none"),
   annotations = c("A", "signif"),
   order = c("original", "hclust", "alphabetical"),
   display = c("fit", "d1", "d2"),
@@ -118,14 +138,17 @@ plot.janusplot_fit <- function(
 ) {
   .check_plot_dots(...)
   .check_style(style)
-  colour_by   <- .resolve_colour_by(colour_by, user_env = rlang::caller_env())
-  annotations <- .check_annotations(annotations)
-  order       <- rlang::arg_match(order)
-  display     <- rlang::arg_match(display)
-  axes        <- rlang::arg_match(axes)
+  colour_by     <- .resolve_colour_by(colour_by,
+                                      user_env = rlang::caller_env())
+  background_by <- rlang::arg_match(background_by)
+  .check_background_channel(background_by, style$colour_channel)
+  annotations   <- .check_annotations(annotations)
+  order         <- rlang::arg_match(order)
+  display       <- rlang::arg_match(display)
+  axes          <- rlang::arg_match(axes)
   .check_display_available(display, x$settings$derivatives)
-  focus_by    <- .check_focus_by(focus_by)
-  grouping    <- .resolve_group(x, group, style)
+  focus_by      <- .check_focus_by(focus_by)
+  grouping      <- .resolve_group(x, group, style)
 
   # Variable order and matrix-wide settings --------------------------------
   vars <- switch(order,
@@ -139,11 +162,8 @@ plot.janusplot_fit <- function(
     compact_threshold = style$compact_threshold,
     compact_levels = style$compact_levels
   )
-  text_sizes <- .cell_text_sizes(
-    k_n,
-    text_scale_diag     = style$text_scale_diag,
-    text_scale_off_diag = style$text_scale_off_diag
-  )
+  text_sizes <- .cell_text_sizes(k_n, style$text_size)
+  border_lw  <- .border_linewidth(k_n, style$border_width)
   axis_transforms <- stats::setNames(
     lapply(vars, function(v) .build_axis_transform(x$data[[v]], mode = axes)),
     vars
@@ -160,26 +180,38 @@ plot.janusplot_fit <- function(
   colour_limits <- .colour_limits(colour_vals, colour_by)
   colour_hex    <- .colour_hex(colour_vals, colour_by, colour_limits, palette)
   focus_mask    <- .resolve_focus_mask(faces, focus_by, focus_threshold)
+  background_hex <- if (background_by == "none") {
+    rep(NA_character_, length(faces))
+  } else {
+    .background_hex(
+      vapply(faces, .face_correlation, numeric(1L),
+             background_by = background_by),
+      style$background_palette, style$background_strength
+    )
+  }
 
   cells_by_ij <- vector("list", nrow(cell_index))
   names(cells_by_ij) <- cell_index$key
   for (idx in seq_len(nrow(cell_index))) {
     face <- faces[[idx]]
     cells_by_ij[[idx]] <- .render_cell(
-      pair          = x$pairs[[cell_index$pair[idx]]],
-      direction     = cell_index$direction[idx],
-      points        = .cell_points(x, face$var_x, face$var_y, grouping),
-      style         = style,
-      text_sizes    = text_sizes,
-      annotations   = annotations,
-      display       = display,
-      p_adjust      = x$settings$p_adjust,
-      colour        = colour_hex[[idx]],
-      tier          = tier,
-      is_focused    = isTRUE(focus_mask[[idx]]),
-      group_colours = grouping$colours,
-      x_transform   = axis_transforms[[face$var_x]],
-      y_transform   = axis_transforms[[face$var_y]]
+      pair             = x$pairs[[cell_index$pair[idx]]],
+      direction        = cell_index$direction[idx],
+      points           = .cell_points(x, face$var_x, face$var_y, grouping),
+      style            = style,
+      text_sizes       = text_sizes,
+      annotations      = annotations,
+      display          = display,
+      p_adjust         = x$settings$p_adjust,
+      colour           = colour_hex[[idx]],
+      tier             = tier,
+      is_focused       = isTRUE(focus_mask[[idx]]),
+      group_colours    = grouping$colours,
+      x_transform      = axis_transforms[[face$var_x]],
+      y_transform      = axis_transforms[[face$var_y]],
+      background       = background_hex[[idx]],
+      border_linewidth = border_lw,
+      background_by    = background_by
     )
   }
 
@@ -191,28 +223,41 @@ plot.janusplot_fit <- function(
   diag_cells <- lapply(vars, function(v) {
     switch(diagonal,
       blank   = .build_blank_diagonal_cell(),
-      name    = .build_diagonal_cell(display_var(v), text_sizes = text_sizes),
+      name    = .build_diagonal_cell(display_var(v), text_sizes = text_sizes,
+                                     family = style$base_family),
       density = .build_density_rug_cell(display_var(v), x$data[[v]],
                                         text_sizes = text_sizes)
     )
   })
   shape_legend_plot <- if (isTRUE(style$show_shape_legend)) {
-    .build_shape_legend_plot()
+    .build_shape_legend_plot(text_pt = text_sizes$pt$legend,
+                             family = style$base_family)
   } else {
     NULL
   }
   group_legend_plot <- if (!is.null(grouping)) {
-    .build_group_legend_plot(grouping)
+    .build_group_legend_plot(grouping, text_pt = text_sizes$pt$legend,
+                             family = style$base_family)
   } else {
     NULL
+  }
+  background_plot <- if (background_by == "none") {
+    NULL
+  } else {
+    .build_background_bar(background_by, style$background_palette,
+                          style$background_strength,
+                          text_pt = text_sizes$pt$legend,
+                          family = style$base_family)
   }
   composite <- .assemble_matrix(
     cells_by_ij, diag_cells, vars,
     colour_by = colour_by, colour_limits = colour_limits,
     palette = palette, shape_legend_plot = shape_legend_plot,
     group_legend_plot = group_legend_plot,
+    background_plot = background_plot,
     labels = style$labels, label_srt = style$label_srt,
-    label_cex = style$label_cex,
+    text_pt = text_sizes$pt, show_key = style$show_key,
+    family = style$base_family,
     axes = axes, axis_transforms = axis_transforms
   )
   .finalize_plot(
@@ -221,12 +266,14 @@ plot.janusplot_fit <- function(
     caption = if (isTRUE(style$show_glossary)) {
       .build_glossary_text(
         annotations, colour_by, style$colour_channel, display,
-        derivative_ci = x$settings$derivative_ci
+        derivative_ci = x$settings$derivative_ci,
+        background_by = background_by
       )
     } else {
       NULL
     },
-    glossary_scale = style$glossary_scale
+    text_pt = text_sizes$pt,
+    family  = style$base_family
   )
 }
 
@@ -276,7 +323,22 @@ plot.janusplot_fit <- function(
 }
 
 .annotation_choices <- function() {
-  c("A", "edf", "signif", "code", "shape", "k_warn", "n")
+  c("A", "edf", "signif", "code", "shape", "k_warn", "n", "r", "formula")
+}
+
+# The background and the whole-cell colour wash paint the same area.
+.check_background_channel <- function(background_by, colour_channel,
+                                      call = rlang::caller_env()) {
+  if (background_by != "none" && identical(colour_channel, "fill")) {
+    cli::cli_abort(c(
+      paste("{.arg background_by} = {.val {background_by}} and",
+            "{.code janusplot_style(colour_channel = \"fill\")} both paint",
+            "the whole cell."),
+      i = paste("Set {.code background_by = \"none\"}, or use",
+                "{.arg colour_channel} = {.val border} or {.val tile}.")
+    ), call = call)
+  }
+  invisible(NULL)
 }
 
 .check_annotations <- function(annotations, call = rlang::caller_env()) {
@@ -382,14 +444,15 @@ plot.janusplot_fit <- function(
 # ---------------------------------------------------------------
 
 # One row per directed cell: the pair index, the direction and the
-# position key "r_c" in the drawn variable order. The upper face of a
-# pair sits at (row of var_i, column of var_j), the lower at the mirror.
+# position key "r_c" in the drawn variable order. Every cell is
+# row ~ s(column): the `xy` face, var_i ~ s(var_j), sits at (row of
+# var_i, column of var_j) and the `yx` face at the mirror.
 .cell_index <- function(pairs, vars) {
   rows <- lapply(pairs, function(p) {
     r_i <- match(p$var_i, vars)
     c_j <- match(p$var_j, vars)
     data.frame(
-      direction = c("yx", "xy"),
+      direction = c("xy", "yx"),
       key = c(sprintf("%d_%d", r_i, c_j), sprintf("%d_%d", c_j, r_i)),
       stringsAsFactors = FALSE
     )
