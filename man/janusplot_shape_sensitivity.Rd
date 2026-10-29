@@ -57,8 +57,8 @@ so results are reproducible and cell-permutation-invariant.}
 Default is \code{interactive()}.}
 
 \item{object, x}{A \code{janusplot_sensitivity} data frame returned by
-\code{janusplot_shape_sensitivity()}, or a plain data frame with its
-columns such as \link{shape_sensitivity_demo}.}
+\code{janusplot_shape_sensitivity()}, or a plain data frame with the
+same columns.}
 
 \item{level}{The level at which \code{summary()} scores correctness:
 \code{"fine"} (default, the 27-category label) or \code{"archetype"} (the

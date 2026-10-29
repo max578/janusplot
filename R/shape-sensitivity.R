@@ -337,8 +337,8 @@ janusplot_shape_sensitivity <- function(
 
 #' @rdname janusplot_shape_sensitivity
 #' @param object,x A `janusplot_sensitivity` data frame returned by
-#'   `janusplot_shape_sensitivity()`, or a plain data frame with its
-#'   columns such as [shape_sensitivity_demo].
+#'   `janusplot_shape_sensitivity()`, or a plain data frame with the
+#'   same columns.
 #' @param level The level at which `summary()` scores correctness:
 #'   `"fine"` (default, the 27-category label) or `"archetype"` (the
 #'   7-family label).
