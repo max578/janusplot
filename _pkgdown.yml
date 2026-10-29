@@ -35,14 +35,23 @@ articles:
       - shape-recognition-sensitivity
 
 reference:
-  - title: "Matrix rendering"
-    desc: "Render an asymmetric smoothed-association matrix."
+  - title: "Fit and plot"
+    desc: >
+      Fit every ordered pair once, then print, summarise and draw the
+      matrix from the fitted object; or fit and draw in one call.
     contents:
-      - janusplot
       - janusplot_fit
       - plot.janusplot_fit
-      - janusplot_style
-      - janusplot_data
+      - janusplot
+
+  - title: "Pairs and direction"
+    desc: >
+      The two directions of a pair drawn side by side or overlaid, and
+      the residual-independence test that licenses a directional reading
+      of a pair, abstaining where the additive noise model cannot decide.
+    contents:
+      - janusplot_pair
+      - janusplot_direction
 
   - title: "Comparing fits"
     desc: >
@@ -51,17 +60,11 @@ reference:
     contents:
       - janusplot_compare
       - plot.janusplot_compare
-      - print.janusplot_compare
 
-  - title: "Pair views and direction"
-    desc: >
-      The two directions of one pair drawn side by side or overlaid, and
-      the residual-independence test that turns a pair's fit asymmetry
-      into a directional claim, abstaining where the additive noise
-      model cannot decide.
+  - title: "Appearance"
+    desc: "Every appearance setting of the views, in one object."
     contents:
-      - janusplot_pair
-      - janusplot_direction
+      - janusplot_style
 
   - title: "Shape taxonomy"
     desc: >
@@ -75,12 +78,18 @@ reference:
 
   - title: "Shape-recognition sensitivity study"
     desc: >
-      Characterise how reliably the classifier recovers ground-truth
-      shapes across sample-size and noise regimes. Ships with a
-      precomputed demo sweep and four diagnostic plots.
+      How reliably the classifier recovers ground-truth shapes across
+      sample-size and noise regimes, with a precomputed demo sweep and
+      four diagnostic plots.
     contents:
       - janusplot_shape_sensitivity
       - shape_sensitivity_demo
+
+  - title: "Deprecated"
+    desc: "Kept for one release with a deprecation warning; removed in 1.1.0."
+    contents:
+      - janusplot_data
+      - janusplot_direction_test
 
 authors:
   Max Moldovan:
