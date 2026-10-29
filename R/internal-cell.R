@@ -141,12 +141,14 @@
     ggplot2::guide_colourbar(
       # barheight omitted; deferred to theme legend.key.height so the
       # bar flex-fills the available vertical space (corrplot-style).
-      barwidth       = grid::unit(0.9, "lines"),
-      title.position = "top",
-      title.hjust    = 0.5,
-      ticks.linewidth = 0.5,
-      frame.linewidth = 0.3,
-      frame.colour    = "grey50"
+      theme = ggplot2::theme(
+        legend.key.width      = grid::unit(0.9, "lines"),
+        legend.title.position = "top",
+        legend.title          = ggplot2::element_text(hjust = 0.5),
+        legend.ticks          = ggplot2::element_line(linewidth = 0.5),
+        legend.frame          = ggplot2::element_rect(colour = "grey50",
+                                                      linewidth = 0.3)
+      )
     )
   } else {
     "none"
@@ -176,12 +178,14 @@
     ggplot2::guide_colourbar(
       # barheight omitted; deferred to theme legend.key.height so the
       # bar flex-fills the available vertical space (corrplot-style).
-      barwidth       = grid::unit(0.9, "lines"),
-      title.position = "top",
-      title.hjust    = 0.5,
-      ticks.linewidth = 0.5,
-      frame.linewidth = 0.3,
-      frame.colour    = "grey50"
+      theme = ggplot2::theme(
+        legend.key.width      = grid::unit(0.9, "lines"),
+        legend.title.position = "top",
+        legend.title          = ggplot2::element_text(hjust = 0.5),
+        legend.ticks          = ggplot2::element_line(linewidth = 0.5),
+        legend.frame          = ggplot2::element_rect(colour = "grey50",
+                                                      linewidth = 0.3)
+      )
     )
   } else {
     "none"
@@ -429,9 +433,9 @@
       name    = paste0("Background\n(", .background_label(background_by),
                        ")"),
       guide   = ggplot2::guide_colourbar(
-        title.position = "top",
-        title.hjust    = 0.5,
         theme = ggplot2::theme(
+          legend.title.position = "top",
+          legend.title        = ggplot2::element_text(hjust = 0.5),
           legend.key.width    = bar_width,
           legend.ticks        = ggplot2::element_line(colour = "grey10",
                                                       linewidth = 0.4),

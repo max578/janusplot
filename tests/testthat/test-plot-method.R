@@ -26,6 +26,13 @@ layer_geoms <- function(p) {
 # Return value and the view arguments
 # ---------------------------------------------------------------
 
+test_that("the colour bars use no deprecated ggplot2 guide argument", {
+  withr::local_options(lifecycle_verbosity = "error")
+  fit <- fit_two(make_linear_data(n = 100L), vars = c("x1", "x2", "x3"))
+  expect_no_error(plot(fit))
+  expect_no_error(plot(fit, colour_by = "pearson", background_by = "none"))
+})
+
 test_that("plot() returns a patchwork, which is a ggplot", {
   fit <- fit_two(make_linear_data(n = 100L), vars = c("x1", "x2", "x3"))
   p <- plot(fit)
