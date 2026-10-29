@@ -256,6 +256,8 @@ the shape indices, \code{\link[=janusplot_shape_cutoffs]{janusplot_shape_cutoffs
 classification thresholds.
 
 Other smooth-associations:
-\code{\link[=janusplot]{janusplot()}}
+\code{\link[=janusplot]{janusplot()}},
+\code{\link[=janusplot_style]{janusplot_style()}},
+\code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}}
 }
 \concept{smooth-associations}

@@ -1,47 +1,83 @@
 # Internal helpers -- NOT EXPORTED.
-# Cell-layer logic: build one ggplot per matrix cell.
+# Cell layer: the colour vocabulary and scales, the colour-bar and group
+# legends, text sizes, axis transforms, compact tiers, the focus mask, and
+# one ggplot per matrix cell drawn from a pair element of a janusplot_fit
+# plus the raw points of that cell.
 
 # ---------------------------------------------------------------
-# Colour encodings.
-#  * "spearman" / "pearson" / "kendall" -- symmetric correlation
-#     coefficient, diverging palette, limits c(-1, 1).
-#  * "edf" / "deviance_gap" -- non-linearity index, sequential palette.
-#     deviance_gap is the smooth's deviance explained minus the
-#     straight line's, in [0, 1].
-#  * "none" -- no fill.
-# Supported values for colour_by:
+# Colour encodings
+# ---------------------------------------------------------------
+# colour_by names the quantity; style$colour_channel names where it is
+# painted (border, tile or fill).
+#  * "nonlinearity" -- EDF minus 1 of the cell's smooth; sequential from 0.
+#  * "asymmetry"    -- the pair's A in [0, 1], the same in both cells.
+#  * "pearson" / "spearman" / "kendall" -- symmetric correlation of the
+#     pair, diverging palette, limits c(-1, 1).
+#  * "deviance_gap" -- deviance explained by the smooth minus the straight
+#     line's, in [0, 1], over the observed range.
+#  * "none"         -- nothing painted.
+
 .colour_choices <- function() {
-  c("spearman", "pearson", "kendall", "edf", "deviance_gap", "none")
+  c("nonlinearity", "asymmetry", "pearson", "spearman", "kendall",
+    "deviance_gap", "none")
 }
 
 .is_correlation_colour <- function(colour_by) {
   colour_by %in% c("spearman", "pearson", "kendall")
 }
 
-.colour_value <- function(fit_obj, colour_by) {
-  if (colour_by == "none") return(NA_real_)
-  if (colour_by == "edf") return(fit_obj$edf)
-  if (colour_by == "deviance_gap") return(fit_obj$deviance_gap)
-  corr <- fit_obj$corr
-  if (is.null(corr)) return(NA_real_)
+# The colour_by quantity of one directed cell (a face, see .pair_face()).
+.face_colour_value <- function(face, colour_by) {
   switch(colour_by,
-    spearman = corr$cor_spearman,
-    pearson  = corr$cor_pearson,
-    kendall  = corr$cor_kendall,
+    nonlinearity = if (is.na(face$edf)) NA_real_ else face$edf - 1,
+    asymmetry    = face$asymmetry_index,
+    pearson      = face$cor_pearson,
+    spearman     = face$cor_spearman,
+    kendall      = face$cor_kendall,
+    deviance_gap = face$deviance_gap,
     NA_real_
   )
 }
 
 .colour_label <- function(colour_by) {
   switch(colour_by,
-    edf           = "EDF",
-    deviance_gap  = "Dev. gap",
-    spearman      = "corr",
-    pearson       = "corr",
-    kendall       = "corr",
-    none          = NULL,
+    nonlinearity = "Non-linearity\n(EDF - 1)",
+    asymmetry    = "Asymmetry\n(A)",
+    deviance_gap = "Dev. gap",
+    spearman     = "corr",
+    pearson      = "corr",
+    kendall      = "corr",
     NULL
   )
+}
+
+# Shared limits of the colour scale over the off-diagonal cells: fixed for
+# correlations and A; from 0 to the observed maximum with a floor of 1 for
+# non-linearity, so a wholly linear matrix shows pale borders rather than
+# a degenerate scale; the observed range for the deviance gap.
+.colour_limits <- function(values, colour_by) {
+  if (colour_by == "none" || all(is.na(values))) {
+    return(c(NA_real_, NA_real_))
+  }
+  if (.is_correlation_colour(colour_by)) return(c(-1, 1))
+  if (colour_by == "asymmetry") return(c(0, 1))
+  if (colour_by == "nonlinearity") {
+    return(c(0, max(1, max(values, na.rm = TRUE))))
+  }
+  range(values, na.rm = TRUE)
+}
+
+# One hex colour per value from the scale the legend draws, so the painted
+# channel and the colour bar cannot drift apart. NA where the value is
+# missing or the scale has no finite limits.
+.colour_hex <- function(values, colour_by, limits, palette) {
+  out <- rep(NA_character_, length(values))
+  if (colour_by == "none" || !all(is.finite(limits))) return(out)
+  scale <- .palette_scale(palette, limits, .colour_label(colour_by),
+                          colour_by)
+  ok <- !is.na(values)
+  out[ok] <- scale$map(values[ok])
+  out
 }
 
 # Defaults that depend on the chosen colour_by.
@@ -168,9 +204,10 @@
       guide     = g
     )
   } else {
+    choices <- .palette_choices()                     # nolint: object_usage_linter.
     cli::cli_abort(c(
       "Unknown {.arg palette}: {.val {palette}}.",
-      i = "Choices: {.val {.palette_choices()}}"
+      i = "Choices: {.val {choices}}"
     ))
   }
 }
@@ -197,7 +234,7 @@
       legend.key.height      = grid::unit(1, "null"),
       legend.key.width       = grid::unit(0.9, "lines"),
       legend.title           = ggplot2::element_text(
-        size = 10, face = "bold",
+        size = 9, face = "bold",
         margin = ggplot2::margin(b = 4)
       ),
       legend.text            = ggplot2::element_text(size = 9),
@@ -209,7 +246,37 @@
 }
 
 # ---------------------------------------------------------------
-# Off-diagonal cell: raw points + CI ribbon + fitted line.
+# Stand-alone group legend placed below the matrix: one key per level of
+# the `group` column, in the colours the cells use for the points.
+# ---------------------------------------------------------------
+
+.build_group_legend_plot <- function(grouping) {
+  levels <- names(grouping$colours)
+  df <- data.frame(x = 1, level = factor(levels, levels = levels))
+  ggplot2::ggplot(df, ggplot2::aes(x = .data$x, y = .data$x,
+                                   colour = .data$level)) +
+    ggplot2::geom_point(alpha = 0, size = 0) +
+    ggplot2::scale_colour_manual(
+      values = grouping$colours,
+      name   = grouping$name,
+      guide  = ggplot2::guide_legend(
+        nrow = 1L, override.aes = list(alpha = 1, size = 2.5)
+      )
+    ) +
+    ggplot2::theme_void() +
+    ggplot2::theme(
+      legend.position   = "bottom",
+      legend.title      = ggplot2::element_text(size = 9, face = "bold"),
+      legend.text       = ggplot2::element_text(size = 8.5),
+      legend.margin     = ggplot2::margin(0, 0, 0, 0),
+      legend.box.margin = ggplot2::margin(0, 0, 0, 0),
+      plot.margin       = ggplot2::margin(2, 0, 2, 0)
+    )
+}
+
+# ---------------------------------------------------------------
+# Text sizes. Off-diagonal sizes are ggplot2 text sizes (mm); the strip
+# above a cell is a theme element in points, taken as twice `n_edf`.
 # ---------------------------------------------------------------
 
 .cell_text_sizes <- function(k,
@@ -361,37 +428,54 @@
 }
 
 # ---------------------------------------------------------------
-# Focus filter. Returns a logical vector -- TRUE = cell is "in focus"
-# (rendered with full encoding), FALSE = cell is dimmed (grey85 at
-# alpha = focus_dim_alpha). Matrix shape is preserved either way.
+# Focus filter. Returns a logical vector over the faces -- TRUE = cell
+# is "in focus" (rendered with full encoding), FALSE = cell is dimmed
+# (grey85 at alpha = style$focus_dim_alpha). Matrix shape is preserved
+# either way.
 # ---------------------------------------------------------------
 
-.resolve_focus_mask <- function(fits, focus_by,
-                                focus_threshold = "q90",
-                                asym_tbl = NULL) {
-  if (is.null(focus_by) || is.na(focus_by) || identical(focus_by, "none")) {
-    return(rep(TRUE, length(fits)))
+.focus_choices <- function() {
+  c("asymmetry", "edf", "k_flag", "non_linearity", "none")
+}
+
+# NA (no filter) or one of the focus metrics.
+.check_focus_by <- function(focus_by, call = rlang::caller_env()) {
+  if (length(focus_by) != 1L) {
+    cli::cli_abort(
+      "{.arg focus_by} must be a single value (NA or a metric name).",
+      call = call
+    )
   }
-  vals <- vapply(fits, function(f) {
+  if (is.na(focus_by)) return(NA_character_)
+  choices <- .focus_choices()
+  if (!focus_by %in% choices) {
+    cli::cli_abort(c(
+      "Unknown {.arg focus_by} value: {.val {focus_by}}.",
+      i = "Allowed: NA or {.val {choices}}."
+    ), call = call)
+  }
+  focus_by
+}
+
+# `faces` is a list of directed cells (see .pair_face()); each needs
+# `edf`, `asymmetry_index` and `k_flag` for the metric in use.
+.resolve_focus_mask <- function(faces, focus_by, focus_threshold = "q90") {
+  if (is.null(focus_by) || is.na(focus_by) || identical(focus_by, "none")) {
+    return(rep(TRUE, length(faces)))
+  }
+  vals <- vapply(faces, function(f) {
     switch(focus_by,
-      asymmetry = {
-        ij <- as.integer(strsplit(attr(f, "key") %||% "", "_", fixed = TRUE)[[1L]])
-        if (length(ij) == 2L && !is.null(asym_tbl)) {
-          asym_tbl[[paste(sort(ij), collapse = "_")]] %||% NA_real_
-        } else {
-          NA_real_
-        }
-      },
-      edf            = f$edf %||% NA_real_,
+      asymmetry      = as.numeric(f$asymmetry_index %||% NA_real_),
+      edf            = as.numeric(f$edf %||% NA_real_),
       non_linearity  = {
-        v <- f$edf %||% NA_real_
+        v <- as.numeric(f$edf %||% NA_real_)
         if (is.na(v)) NA_real_ else v - 1
       },
-      k_flag         = if (isTRUE(f$k_check$k_flag)) 1 else 0,
+      k_flag         = if (isTRUE(f$k_flag)) 1 else 0,
       NA_real_
     )
   }, numeric(1L))
-  if (all(is.na(vals))) return(rep(TRUE, length(fits)))
+  if (all(is.na(vals))) return(rep(TRUE, length(faces)))
   cutoff <- if (is.character(focus_threshold) &&
                 grepl("^q[0-9]{1,2}$", focus_threshold)) {
     q <- as.numeric(sub("^q", "", focus_threshold)) / 100
@@ -406,203 +490,181 @@
   vals >= cutoff
 }
 
-.build_cell <- function(fit_obj, show_data, show_ci, colour_by, palette,
-                        signif_glyph, annotations, shape_cutoffs,
-                        glyph_style, asym_val,
-                        colour_limits, is_upper,
-                        text_sizes = .cell_text_sizes(3L),
-                        display = "fit",
-                        derivative_ci = "none",
-                        tier = 0L,
-                        is_focused = TRUE,
-                        focus_dim_alpha = 0.25,
-                        x_transform = NULL,
-                        y_transform = NULL) {
-  # Single-quantity dispatch: every cell is one ggplot. "fit" calls
-  # the historical renderer (unchanged behaviour), "d1" / "d2" call
-  # the derivative renderer. No per-cell stacking; the matrix-level
-  # title names the displayed quantity and the summary-table
-  # `display` column tags programmatic output.
-  display <- as.character(display)
-  if (identical(display, "fit")) {
-    return(.build_fit_panel(
-      fit_obj = fit_obj, show_data = show_data, show_ci = show_ci,
-      colour_by = colour_by, palette = palette,
-      signif_glyph = signif_glyph, annotations = annotations,
-      shape_cutoffs = shape_cutoffs, glyph_style = glyph_style,
-      asym_val = asym_val, colour_limits = colour_limits,
-      is_upper = is_upper, text_sizes = text_sizes,
-      tier = tier, is_focused = is_focused,
-      focus_dim_alpha = focus_dim_alpha,
-      x_transform = x_transform, y_transform = y_transform
-    ))
-  }
-  k <- switch(display, d1 = 1L, d2 = 2L,
-              cli::cli_abort("Unknown display {.val {display}}."))
-  # Derivative cells inherit tier suppression where it makes sense
-  # (no scatter at tier >= 1; no annotations at tier >= 2); focus
-  # dimming applies uniformly across display modes.
-  .build_deriv_panel(
-    fit_obj = fit_obj, order = k,
-    derivative_ci = derivative_ci,
-    text_sizes = text_sizes, glyph_style = glyph_style,
-    tier = tier, is_focused = is_focused,
-    focus_dim_alpha = focus_dim_alpha
+# ---------------------------------------------------------------
+# One directed cell of a pair: the `_yx` or `_xy` fields of a pair
+# element under direction-free names, plus the pair-level quantities.
+# `yx` is vars[j] ~ s(vars[i]) with x = var_i (the upper cell); `xy` is
+# vars[i] ~ s(vars[j]) with x = var_j (the lower cell).
+# ---------------------------------------------------------------
+
+.pair_face <- function(pair, direction = c("yx", "xy")) {
+  direction <- rlang::arg_match(direction)
+  field <- function(name) pair[[paste0(name, "_", direction)]]
+  swap <- direction == "xy"
+  list(
+    direction              = direction,
+    var_x                  = if (swap) pair$var_j else pair$var_i,
+    var_y                  = if (swap) pair$var_i else pair$var_j,
+    pred                   = field("pred"),
+    deriv                  = field("deriv"),
+    edf                    = field("edf"),
+    association_p          = field("association_p"),
+    association_p_adj      = field("association_p_adj"),
+    dev_exp                = field("dev_exp"),
+    deviance_gap           = field("deviance_gap"),
+    directional_complexity = field("directional_complexity"),
+    shape                  = field("shape"),
+    shape_code             = field("shape_code"),
+    k_capped               = isTRUE(field("k_capped")),
+    k_flag                 = isTRUE(field("k_check")$k_flag),
+    error                  = field("error"),
+    n_used                 = pair$n_used,
+    asymmetry_index        = pair$asymmetry_index,
+    cor_pearson            = pair$cor_pearson,
+    cor_spearman           = pair$cor_spearman,
+    cor_kendall            = pair$cor_kendall
   )
 }
 
-# Original cell body, factored out. Full fit + CI + scatter + all
-# corner annotations + colour fill -- identical output to the pre-
-# derivative release when display = "fit".
-.build_fit_panel <- function(fit_obj, show_data, show_ci, colour_by, palette,
-                             signif_glyph, annotations, shape_cutoffs,
-                             glyph_style, asym_val,
-                             colour_limits, is_upper, text_sizes,
-                             tier = 0L, is_focused = TRUE,
-                             focus_dim_alpha = 0.25,
-                             x_transform = NULL, y_transform = NULL) {
-  # Resolve transforms. NULL = identity (axes = "original" path).
-  # Same function applied to scatter, ribbon, spline grid -- visual
-  # coherence regardless of mode.
-  tf_x <- if (is.null(x_transform)) function(v) v else x_transform$fn
-  tf_y <- if (is.null(y_transform)) function(v) v else y_transform$fn
-  colour_val   <- .colour_value(fit_obj, colour_by)
-  colour_label <- .colour_label(colour_by)
-
-  # Tier-driven content policy. Higher tiers progressively drop
-  # detail; suppression is composable with the user's show_data /
-  # show_ci / annotations settings -- tier overrides cannot ADD
-  # detail, only remove. See PLAN_v011_features.md section 2.2 for the
-  # pixel-budget rationale.
-  tier <- as.integer(tier)
-  show_data    <- isTRUE(show_data) && tier < 1L
-  show_ci      <- isTRUE(show_ci)   && tier < 2L
-  show_spline  <- tier < 3L
-  show_glyphs  <- tier < 2L
-  if (tier >= 1L) {
-    # At tier 1+ keep at most one annotation; default priority is
-    # k_warn (the most actionable diagnostic at scale). User can
-    # extend behaviour by setting compact_levels but we don't
-    # second-guess priority here.
-    if ("k_warn" %in% annotations) {
-      annotations <- "k_warn"
-    } else {
-      annotations <- character()
-    }
+# The significance glyph of a face: from the adjusted p-value when the
+# fit adjusted across the matrix, from the raw one otherwise.
+.face_signif <- function(face, p_adjust = "none") {
+  p <- if (identical(p_adjust, "none")) {
+    face$association_p
+  } else {
+    face$association_p_adj
   }
-  if (tier >= 2L) annotations <- character()
-  # Out-of-focus cells get a grey85 wash at user-set alpha. This
-  # short-circuits colour-by encoding for those cells -- by design,
-  # per Feature 2 plan section 2.2 Option 2 ("matrix shape preserved;
-  # attention drains to interesting cells").
-  if (!isTRUE(is_focused)) {
-    colour_by <- "none"
-  }
+  .pvalue_to_glyph(p)
+}
 
-  p <- ggplot2::ggplot() +
-    ggplot2::theme_void(base_size = 8) +
+.k_warn_glyph <- function(glyph_style = "ascii") {
+  if (identical(glyph_style, "unicode")) "\u26A0" else "!"
+}
+
+# ---------------------------------------------------------------
+# The strip: one line of small grey text above the data area, e.g.
+# "A 0.32  EDF 2.4  **" or, compact, "A 0.32 E 2.4 **". NULL when no
+# annotation applies to the face.
+# ---------------------------------------------------------------
+
+.cell_strip_text <- function(face, annotations, glyph_style = "ascii",
+                             compact = FALSE, p_adjust = "none") {
+  parts <- character()
+  if ("code" %in% annotations && !is.na(face$shape_code)) {
+    parts <- c(parts, face$shape_code)
+  }
+  if ("A" %in% annotations && !is.na(face$asymmetry_index)) {
+    parts <- c(parts, sprintf("A %.2f", face$asymmetry_index))
+  }
+  if ("edf" %in% annotations && !is.na(face$edf)) {
+    parts <- c(parts, sprintf(if (compact) "E %.1f" else "EDF %.1f", face$edf))
+  }
+  if ("n" %in% annotations && !is.na(face$n_used)) {
+    parts <- c(parts, sprintf("n %d", as.integer(face$n_used)))
+  }
+  if ("signif" %in% annotations) {
+    glyph <- .face_signif(face, p_adjust)
+    if (nzchar(glyph)) parts <- c(parts, glyph)
+  }
+  if ("shape" %in% annotations && !is.na(face$shape)) {
+    glyph <- .shape_glyph(face$shape, style = glyph_style)
+    if (!is.na(glyph) && nzchar(glyph)) parts <- c(parts, glyph)
+  }
+  if ("k_warn" %in% annotations && (face$k_flag || face$k_capped)) {
+    parts <- c(parts, .k_warn_glyph(glyph_style))
+  }
+  if (!length(parts)) return(NULL)
+  paste(parts, collapse = if (compact) " " else "  ")
+}
+
+# ---------------------------------------------------------------
+# Cell theme: square panel, no background, a border that carries the
+# cell's colour when the channel is "border", the strip as the subtitle
+# left-aligned to the panel.
+# ---------------------------------------------------------------
+
+.cell_theme <- function(strip_pt, border_colour = "grey55",
+                        border_linewidth = 0.35) {
+  ggplot2::theme_void(base_size = 8) +
     ggplot2::theme(
-      aspect.ratio     = 1,
-      plot.margin      = ggplot2::margin(3, 3, 3, 3),
-      plot.background  = ggplot2::element_rect(fill = NA, colour = NA),
-      panel.background = ggplot2::element_rect(fill = NA, colour = NA),
-      panel.border     = ggplot2::element_rect(fill = NA,
-                                               colour = "grey55",
-                                               linewidth = 0.35)
-    )
-
-  if (!isTRUE(is_focused)) {
-    # Dim wash for unfocused cells.
-    p <- p + ggplot2::geom_rect(
-      data    = data.frame(x = 1),
-      mapping = ggplot2::aes(xmin = -Inf, xmax = Inf,
-                             ymin = -Inf, ymax = Inf),
-      fill    = "grey85", alpha = focus_dim_alpha,
-      inherit.aes = FALSE
-    )
-  }
-
-  if (colour_by != "none" && !is.na(colour_val) &&
-      all(is.finite(colour_limits))) {
-    fill_df <- data.frame(fill_val = colour_val)
-    p <- p +
-      ggplot2::geom_rect(
-        data    = fill_df,
-        mapping = ggplot2::aes(xmin = -Inf, xmax = Inf,
-                               ymin = -Inf, ymax = Inf,
-                               fill = .data$fill_val),
-        alpha   = 0.45,
-        inherit.aes = FALSE
-      ) +
-      .palette_scale(palette, colour_limits, colour_label, colour_by)
-  }
-
-  if (nrow(fit_obj$pred) == 0L) {
-    return(p + ggplot2::annotate(
-      "text", x = 0.5, y = 0.5, label = "n < 5",
-      size = text_sizes$empty, colour = "grey40"
-    ) + ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1))
-  }
-
-  if (show_data && nrow(fit_obj$raw) > 0L) {
-    raw <- fit_obj$raw
-    names(raw) <- c("x", "y")
-    raw$x <- tf_x(raw$x)
-    raw$y <- tf_y(raw$y)
-    p <- p + ggplot2::geom_point(
-      data = raw,
-      ggplot2::aes(x = .data$x, y = .data$y),
-      colour = "grey25", size = 0.4, alpha = 0.25,
-      inherit.aes = FALSE
-    )
-  }
-  if (show_ci) {
-    pred_ci <- fit_obj$pred
-    pred_ci$x  <- tf_x(pred_ci$x)
-    pred_ci$lo <- tf_y(pred_ci$lo)
-    pred_ci$hi <- tf_y(pred_ci$hi)
-    p <- p + ggplot2::geom_ribbon(
-      data = pred_ci,
-      ggplot2::aes(x = .data$x, ymin = .data$lo, ymax = .data$hi),
-      fill = "#08306b", alpha = 0.20,
-      inherit.aes = FALSE
-    )
-  }
-  if (show_spline) {
-    pred_line <- fit_obj$pred
-    pred_line$x   <- tf_x(pred_line$x)
-    pred_line$fit <- tf_y(pred_line$fit)
-    p <- p + ggplot2::geom_line(
-      data = pred_line,
-      ggplot2::aes(x = .data$x, y = .data$fit),
-      colour = "#08306b", linewidth = 0.7,
-      inherit.aes = FALSE
-    )
-  } else if (isTRUE(is_focused)) {
-    # Tier 3 -- colour-only mini-tile + shape-class glyph in the
-    # cell centre. Spline is gone; the shape glyph stands for the
-    # entire curve.
-    shape_cat <- .classify_shape(
-      fit_obj$shape$monotonicity_index,
-      fit_obj$shape$convexity_index,
-      fit_obj$shape$n_turning_points, fit_obj$shape$n_inflections,
-      fit_obj$shape$flat_range_ratio, shape_cutoffs,
-      extremum = fit_obj$shape$extremum_type
-    )
-    g <- .shape_glyph(shape_cat, style = glyph_style)
-    if (!is.na(g) && nzchar(g)) {
-      p <- p + ggplot2::annotate(
-        "text", x = 0.5, y = 0.5,
-        label = g, size = text_sizes$shape * 1.2,
-        colour = "grey20", fontface = "bold"
+      aspect.ratio        = 1,
+      plot.margin         = ggplot2::margin(3, 3, 3, 3),
+      plot.background     = ggplot2::element_rect(fill = NA, colour = NA),
+      panel.background    = ggplot2::element_rect(fill = NA, colour = NA),
+      panel.border        = ggplot2::element_rect(
+        fill = NA, colour = border_colour, linewidth = border_linewidth
+      ),
+      plot.title.position = "panel",
+      plot.title          = ggplot2::element_text(
+        size = strip_pt + 1, colour = "grey15", hjust = 0,
+        margin = ggplot2::margin(0, 0, 1, 0)
+      ),
+      plot.subtitle       = ggplot2::element_text(
+        size = strip_pt, colour = "grey35", hjust = 0,
+        margin = ggplot2::margin(0, 0, 1.5, 0)
       )
-      p <- p + ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1)
-    }
-  }
+    )
+}
 
-  # Top-right: significance glyph (suppressed at tier >= 2).
-  if (signif_glyph && show_glyphs) {
-    glyph <- .pvalue_to_glyph(fit_obj$pvalue)
+# The grey85 wash of an out-of-focus cell.
+.dim_wash_layer <- function(alpha) {
+  ggplot2::annotate(
+    "rect", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,
+    fill = "grey85", alpha = alpha
+  )
+}
+
+# The bottom-right corner tile of the "tile" channel, 12 % of the panel.
+.corner_tile_layer <- function(colour) {
+  ggplot2::annotation_custom(grid::rectGrob(
+    x = grid::unit(1, "npc"), y = grid::unit(0, "npc"),
+    just = c("right", "bottom"),
+    width = grid::unit(0.12, "npc"), height = grid::unit(0.12, "npc"),
+    gp = grid::gpar(fill = colour, col = "white", lwd = 0.6)
+  ))
+}
+
+# The raw points of a cell: grey points, points coloured by group, or a
+# light grey binned density when the cell has more rows than
+# style$density_threshold and no grouping.
+.cell_points_layer <- function(points, style, group_colours = NULL,
+                               n_used = nrow(points)) {
+  if (is.null(group_colours) && isTRUE(n_used > style$density_threshold)) {
+    return(list(
+      ggplot2::geom_bin2d(
+        data = points, ggplot2::aes(x = .data$x, y = .data$y),
+        bins = 40L
+      ),
+      ggplot2::scale_fill_gradient(low = "grey94", high = "grey45",
+                                   guide = "none")
+    ))
+  }
+  if (is.null(group_colours)) {
+    return(ggplot2::geom_point(
+      data = points, ggplot2::aes(x = .data$x, y = .data$y),
+      colour = "grey25", size = style$point_size, alpha = style$point_alpha,
+      inherit.aes = FALSE
+    ))
+  }
+  list(
+    ggplot2::geom_point(
+      data = points,
+      ggplot2::aes(x = .data$x, y = .data$y, colour = .data$group),
+      size = style$point_size, alpha = style$point_alpha,
+      inherit.aes = FALSE
+    ),
+    ggplot2::scale_colour_manual(values = group_colours, na.value = "grey70",
+                                 guide = "none")
+  )
+}
+
+# The 0.2.0 corner placement of the annotations, used when
+# style$annotation_position = "corners".
+.add_corner_annotations <- function(p, face, annotations, style, text_sizes,
+                                    p_adjust = "none") {
+  # Top-right: significance glyph.
+  if ("signif" %in% annotations) {
+    glyph <- .face_signif(face, p_adjust)
     if (nzchar(glyph)) {
       p <- p + ggplot2::annotate(
         "text", x = Inf, y = Inf, hjust = 1.25, vjust = 1.4,
@@ -611,14 +673,16 @@
     }
   }
 
-  # Bottom-left stack: A (top line) + EDF (bottom line), in whichever
-  # combination the user asked for via annotations.
+  # Bottom-left stack: A, EDF and n, one line each.
   bl_lines <- character()
-  if ("A" %in% annotations && !is.na(asym_val)) {
-    bl_lines <- c(bl_lines, sprintf("A = %.2f", asym_val))
+  if ("A" %in% annotations && !is.na(face$asymmetry_index)) {
+    bl_lines <- c(bl_lines, sprintf("A = %.2f", face$asymmetry_index))
   }
-  if ("edf" %in% annotations && !is.na(fit_obj$edf)) {
-    bl_lines <- c(bl_lines, sprintf("EDF = %.2f", fit_obj$edf))
+  if ("edf" %in% annotations && !is.na(face$edf)) {
+    bl_lines <- c(bl_lines, sprintf("EDF = %.2f", face$edf))
+  }
+  if ("n" %in% annotations && !is.na(face$n_used)) {
+    bl_lines <- c(bl_lines, sprintf("n = %d", as.integer(face$n_used)))
   }
   if (length(bl_lines)) {
     p <- p + ggplot2::annotate(
@@ -630,63 +694,39 @@
     )
   }
 
-  # Compute shape category once if either code (top-left) or shape
-  # (bottom-right) is requested -- they occupy distinct corners and
-  # no longer compete.
-  want_code  <- "code"  %in% annotations
-  want_glyph <- "shape" %in% annotations
-  shape_cat <- if (want_code || want_glyph) {
-    .classify_shape(
-      fit_obj$shape$monotonicity_index,
-      fit_obj$shape$convexity_index,
-      fit_obj$shape$n_turning_points, fit_obj$shape$n_inflections,
-      fit_obj$shape$flat_range_ratio, shape_cutoffs,
-      extremum = fit_obj$shape$extremum_type
-    )
-  } else {
-    NA_character_
-  }
-
-  # Top-left: 2-letter shape code. ASCII, font-safe, lightweight.
+  # Top-left: 2-letter shape code.
+  want_code <- "code" %in% annotations && !is.na(face$shape_code)
   if (want_code) {
-    code_txt <- .shape_lookup(shape_cat, "code")
-    if (!is.na(code_txt) && nzchar(code_txt)) {
-      p <- p + ggplot2::annotate(
-        "text", x = -Inf, y = Inf,
-        hjust = -0.20, vjust = 1.4,
-        label = code_txt,
-        size = text_sizes$n_edf,
-        colour = "grey20", fontface = "bold"
-      )
-    }
+    p <- p + ggplot2::annotate(
+      "text", x = -Inf, y = Inf,
+      hjust = -0.20, vjust = 1.4,
+      label = face$shape_code,
+      size = text_sizes$n_edf,
+      colour = "grey20", fontface = "bold"
+    )
   }
 
-  # Bottom-right: shape glyph. Unicode or ASCII per glyph_style.
-  if (want_glyph) {
-    g <- .shape_glyph(shape_cat, style = glyph_style)
-    if (!is.na(g) && nzchar(g)) {
+  # Bottom-right: shape glyph.
+  if ("shape" %in% annotations && !is.na(face$shape)) {
+    glyph <- .shape_glyph(face$shape, style = style$glyph_style)
+    if (!is.na(glyph) && nzchar(glyph)) {
       p <- p + ggplot2::annotate(
         "text", x = Inf, y = -Inf,
         hjust = 1.15, vjust = -0.25,
-        label = g,
+        label = glyph,
         size = text_sizes$shape,
         colour = "grey25", fontface = "bold"
       )
     }
   }
 
-  # Top-left underglyph (next to shape code): k-check warning. Either
-  # ASCII "!" or Unicode warning sign per glyph_style. Renders when the
-  # cell is positively flagged or its basis dimension was capped at the
-  # distinct x count; otherwise "unreliable" cells stay quiet.
-  if ("k_warn" %in% annotations &&
-      (isTRUE(fit_obj$k_check$k_flag) || isTRUE(fit_obj$k_capped))) {
-    warn_glyph <- if (identical(glyph_style, "unicode")) "\u26A0" else "!"
+  # Top-left beside the code: k-check warning on flagged or capped cells.
+  if ("k_warn" %in% annotations && (face$k_flag || face$k_capped)) {
     p <- p + ggplot2::annotate(
       "text", x = -Inf, y = Inf,
       hjust = if (want_code) -1.30 else -0.20,
       vjust = 1.4,
-      label = warn_glyph,
+      label = .k_warn_glyph(style$glyph_style),
       size = text_sizes$n_edf,
       colour = "#b30000", fontface = "bold"
     )
@@ -695,11 +735,143 @@
 }
 
 # ---------------------------------------------------------------
-# Derivative sub-panel. Renders f^{(k)}(x) on the full x-grid with
-# a 95% pointwise CI ribbon (LP-matrix SE) and a dashed zero-line
-# reference. Deliberately minimal: no scatter, no cell fill, no
-# corner annotations -- all of those live on the fit panel. A small
-# f' / f'' label in the top-left corner identifies the order.
+# Off-diagonal cell. One ggplot for one direction of one pair: the
+# strip, the raw points, the band and the curve, the colour channel,
+# the focus wash and the compact-tier suppression. `points` is a data
+# frame with `x`, `y` and optionally `group` for the rows of the cell;
+# `colour` is the hex colour of the cell's colour_by value or NA.
+# ---------------------------------------------------------------
+
+.render_cell <- function(
+  pair,
+  direction,
+  points,
+  style,
+  text_sizes,
+  annotations = c("A", "signif"),
+  display = "fit",
+  p_adjust = "none",
+  colour = NA_character_,
+  tier = 0L,
+  is_focused = TRUE,
+  group_colours = NULL,
+  x_transform = NULL,
+  y_transform = NULL,
+  title = NULL
+) {
+  face <- .pair_face(pair, direction)
+  tier <- as.integer(tier)
+  if (!isTRUE(is_focused)) colour <- NA_character_
+  if (display != "fit") {
+    return(.build_deriv_panel(
+      face, order = if (display == "d1") 1L else 2L,
+      style = style, text_sizes = text_sizes, colour = colour,
+      tier = tier, is_focused = is_focused, title = title
+    ))
+  }
+
+  # Tier policy ----------------------------------------------------------
+  # Suppression only removes detail: points at tier 1, the band at tier
+  # 2, the curve and the strip at tier 3. The strip is compact from tier
+  # 1 on.
+  show_data   <- isTRUE(style$show_data) && tier < 1L
+  show_ci     <- isTRUE(style$show_ci) && tier < 2L
+  show_spline <- tier < 3L
+  if (tier >= 3L) annotations <- character()
+  compact <- tier >= 1L
+  tf_x <- if (is.null(x_transform)) function(v) v else x_transform$fn
+  tf_y <- if (is.null(y_transform)) function(v) v else y_transform$fn
+
+  # Panel, strip and colour channel ----------------------------------------
+  on_border <- style$colour_channel == "border" && !is.na(colour)
+  strip <- if (style$annotation_position == "strip") {
+    .cell_strip_text(face, annotations, style$glyph_style, compact, p_adjust)
+  } else {
+    NULL
+  }
+  p <- ggplot2::ggplot() +
+    .cell_theme(
+      strip_pt = 2 * text_sizes$n_edf,
+      border_colour = if (on_border) colour else "grey55",
+      border_linewidth = if (on_border) 1.2 else 0.35
+    ) +
+    ggplot2::labs(title = title, subtitle = strip)
+  if (!isTRUE(is_focused)) {
+    p <- p + .dim_wash_layer(style$focus_dim_alpha)
+  }
+  if (style$colour_channel == "fill" && !is.na(colour)) {
+    p <- p + ggplot2::annotate(
+      "rect", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,
+      fill = colour, alpha = 0.45
+    )
+  }
+  if (style$colour_channel == "tile" && !is.na(colour)) {
+    p <- p + .corner_tile_layer(colour)
+  }
+
+  # Empty cell: a failed fit or fewer than 5 shared rows -----------------
+  if (nrow(face$pred) == 0L) {
+    label <- if (!is.na(face$error)) "no fit" else "n < 5"
+    return(p + ggplot2::annotate(
+      "text", x = 0.5, y = 0.5, label = label,
+      size = text_sizes$empty, colour = "grey40"
+    ) + ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1))
+  }
+
+  # Data, band and curve ---------------------------------------------------
+  if (show_data && nrow(points) > 0L) {
+    points$x <- tf_x(points$x)
+    points$y <- tf_y(points$y)
+    p <- p + .cell_points_layer(points, style, group_colours,
+                                n_used = face$n_used)
+  }
+  if (show_ci) {
+    pred_ci <- face$pred
+    pred_ci$x  <- tf_x(pred_ci$x)
+    pred_ci$lo <- tf_y(pred_ci$lo)
+    pred_ci$hi <- tf_y(pred_ci$hi)
+    p <- p + ggplot2::geom_ribbon(
+      data = pred_ci,
+      ggplot2::aes(x = .data$x, ymin = .data$lo, ymax = .data$hi),
+      fill = style$curve_colour, alpha = style$band_alpha,
+      inherit.aes = FALSE
+    )
+  }
+  if (show_spline) {
+    pred_line <- face$pred
+    pred_line$x   <- tf_x(pred_line$x)
+    pred_line$fit <- tf_y(pred_line$fit)
+    p <- p + ggplot2::geom_line(
+      data = pred_line,
+      ggplot2::aes(x = .data$x, y = .data$fit),
+      colour = style$curve_colour, linewidth = 0.7,
+      inherit.aes = FALSE
+    )
+  } else if (isTRUE(is_focused)) {
+    # Tier 3: the shape glyph in the cell centre stands for the curve.
+    glyph <- .shape_glyph(face$shape, style = style$glyph_style)
+    if (!is.na(glyph) && nzchar(glyph)) {
+      p <- p + ggplot2::annotate(
+        "text", x = 0.5, y = 0.5,
+        label = glyph, size = text_sizes$shape * 1.2,
+        colour = "grey20", fontface = "bold"
+      ) + ggplot2::xlim(0, 1) + ggplot2::ylim(0, 1)
+    }
+  }
+
+  # Corner annotations -----------------------------------------------------
+  if (style$annotation_position == "corners" && length(annotations)) {
+    p <- .add_corner_annotations(p, face, annotations, style, text_sizes,
+                                 p_adjust)
+  }
+  p
+}
+
+# ---------------------------------------------------------------
+# Derivative cell. Renders f^{(k)}(x) on the full x-grid with its band
+# (when the fit stored one and the style shows bands) and a dashed zero
+# line that is always inside the panel's y-range. No points. The strip
+# names the order and n.
 # ---------------------------------------------------------------
 
 .deriv_order_label <- function(order, style = c("ascii", "unicode")) {
@@ -717,41 +889,43 @@
   sprintf("d%df/dx%d", order, order)
 }
 
-.build_deriv_panel <- function(fit_obj, order, derivative_ci = "none",
-                               text_sizes, glyph_style = "ascii",
-                               tier = 0L, is_focused = TRUE,
-                               focus_dim_alpha = 0.25) {
+.build_deriv_panel <- function(face, order, style, text_sizes,
+                               colour = NA_character_, tier = 0L,
+                               is_focused = TRUE, title = NULL) {
   tier <- as.integer(tier)
-  # Derivative panels don't carry the same content axis as fit
-  # panels, so tier behaviour is simplified:
-  #   tier 0-1: full derivative curve (+ ribbon if opted in).
-  #   tier 2+:  curve only, no ribbon, no order label.
-  show_ribbon <- tier < 2L
-  show_label  <- tier < 2L
-
+  # Tiers 0-1: curve and band; tier 2: curve only; tier 3: no strip.
+  show_ribbon <- isTRUE(style$show_ci) && tier < 2L
+  show_strip  <- tier < 3L
+  on_border <- style$colour_channel == "border" && !is.na(colour)
+  strip <- NULL
+  if (show_strip) {
+    parts <- .deriv_order_label(order, style = style$glyph_style)
+    if (!is.na(face$n_used)) {
+      parts <- c(parts, sprintf("n %d", as.integer(face$n_used)))
+    }
+    strip <- paste(parts, collapse = "  ")
+  }
   p <- ggplot2::ggplot() +
-    ggplot2::theme_void(base_size = 8) +
-    ggplot2::theme(
-      aspect.ratio     = 1,
-      plot.margin      = ggplot2::margin(2, 3, 2, 3),
-      plot.background  = ggplot2::element_rect(fill = NA, colour = NA),
-      panel.background = ggplot2::element_rect(fill = NA, colour = NA),
-      panel.border     = ggplot2::element_rect(
-        fill = NA, colour = "grey55", linewidth = 0.35
-      )
-    )
-
+    .cell_theme(
+      strip_pt = 2 * text_sizes$n_edf,
+      border_colour = if (on_border) colour else "grey55",
+      border_linewidth = if (on_border) 1.2 else 0.35
+    ) +
+    ggplot2::labs(title = title, subtitle = strip)
   if (!isTRUE(is_focused)) {
-    p <- p + ggplot2::geom_rect(
-      data    = data.frame(x = 1),
-      mapping = ggplot2::aes(xmin = -Inf, xmax = Inf,
-                             ymin = -Inf, ymax = Inf),
-      fill    = "grey85", alpha = focus_dim_alpha,
-      inherit.aes = FALSE
+    p <- p + .dim_wash_layer(style$focus_dim_alpha)
+  }
+  if (style$colour_channel == "fill" && !is.na(colour)) {
+    p <- p + ggplot2::annotate(
+      "rect", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,
+      fill = colour, alpha = 0.45
     )
   }
+  if (style$colour_channel == "tile" && !is.na(colour)) {
+    p <- p + .corner_tile_layer(colour)
+  }
 
-  deriv_df <- fit_obj$deriv[[as.character(as.integer(order))]]
+  deriv_df <- face$deriv[[as.character(as.integer(order))]]
   if (is.null(deriv_df) || nrow(deriv_df) == 0L) {
     return(p + ggplot2::annotate(
       "text", x = 0.5, y = 0.5,
@@ -762,18 +936,18 @@
 
   # Reference line at zero -- sign flips of the derivative correspond
   # to turning points (k=1) or inflections (k=2), so the zero crossing
-  # is the feature of interest the panel exists to surface.
+  # is the feature of interest the panel exists to surface. The y-range
+  # is expanded to include it even when the curve and band sit entirely
+  # on one side.
   p <- p + ggplot2::geom_hline(
     yintercept = 0, linetype = "dashed", colour = "grey50",
     linewidth = 0.3
-  )
+  ) + ggplot2::expand_limits(y = 0)
 
-  # Ribbon only when the caller has explicitly opted in. The
-  # pointwise / simultaneous selection was resolved at fit time and
-  # baked into deriv_df$lo / deriv_df$hi, so here we just honour the
-  # mode indicator.
-  if (show_ribbon &&
-      !identical(derivative_ci, "none") &&
+  # The band is drawn when the fit stored one (ci_type other than
+  # "none"); pointwise or simultaneous was resolved at fit time.
+  ci_type <- deriv_df$ci_type[1L] %||% "none"
+  if (show_ribbon && !identical(ci_type, "none") &&
       all(c("lo", "hi") %in% names(deriv_df)) &&
       all(is.finite(deriv_df$lo)) && all(is.finite(deriv_df$hi))) {
     p <- p + ggplot2::geom_ribbon(
@@ -782,27 +956,11 @@
       fill = "#6a3d9a", alpha = 0.20, inherit.aes = FALSE
     )
   }
-  p <- p + ggplot2::geom_line(
+  p + ggplot2::geom_line(
     data = deriv_df,
     ggplot2::aes(x = .data$x, y = .data$fit),
     colour = "#6a3d9a", linewidth = 0.6, inherit.aes = FALSE
   )
-
-  if (show_label) {
-    # Top-left order label. ASCII by default; Unicode primes when the
-    # caller has opted in via glyph_style = "unicode".
-    lab <- .deriv_order_label(order, style = glyph_style)
-    if (nzchar(lab)) {
-      p <- p + ggplot2::annotate(
-        "text", x = -Inf, y = Inf,
-        hjust = -0.15, vjust = 1.4,
-        label = lab,
-        size = text_sizes$n_edf * 0.95,
-        colour = "grey20", fontface = "italic"
-      )
-    }
-  }
-  p
 }
 
 # ---------------------------------------------------------------
@@ -935,7 +1093,7 @@
 
 # ---------------------------------------------------------------
 # Diagonal cell -- the variable name, bold, neutral grey background.
-# Used only when labels = "diagonal" (legacy layout).
+# Used when style$diagonal = "name".
 # ---------------------------------------------------------------
 
 .build_diagonal_cell <- function(var_name,

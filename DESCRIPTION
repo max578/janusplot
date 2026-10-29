@@ -30,7 +30,9 @@ Imports:
     ggplot2 (>= 3.5.0),
     patchwork (>= 1.1.0),
     grid,
+    grDevices,
     stats,
+    tools,
     cli (>= 3.6.0),
     lifecycle,
     rlang (>= 1.1.0)

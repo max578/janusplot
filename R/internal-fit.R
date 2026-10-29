@@ -6,9 +6,10 @@
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
 # Argument validation -- single positive scalar.
-.check_scalar_positive <- function(x, arg_name) {
+.check_scalar_positive <- function(x, arg_name, call = rlang::caller_env()) {
   if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x <= 0) {
-    cli::cli_abort("{.arg {arg_name}} must be a single positive number.")
+    cli::cli_abort("{.arg {arg_name}} must be a single positive number.",
+                   call = call)
   }
   invisible(NULL)
 }
@@ -389,10 +390,15 @@
 # Subset data to complete cases on the variables a pair uses
 # ---------------------------------------------------------------
 
-.complete_pair <- function(data, x_name, y_name, adjust) {
+# The columns a pair's fit is complete on: x, y and the adjust variables
+# that exist in `data`.
+.pair_columns <- function(data, x_name, y_name, adjust) {
   cols <- unique(c(x_name, y_name, .adjust_vars(adjust)))
-  cols <- intersect(cols, names(data))
-  sub <- data[, cols, drop = FALSE]
+  intersect(cols, names(data))
+}
+
+.complete_pair <- function(data, x_name, y_name, adjust) {
+  sub <- data[, .pair_columns(data, x_name, y_name, adjust), drop = FALSE]
   sub[stats::complete.cases(sub), , drop = FALSE]
 }
 

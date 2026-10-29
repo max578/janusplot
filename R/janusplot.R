@@ -1,424 +1,85 @@
+# janusplot.R -- The one-call form janusplot(), equal to
+# plot(janusplot_fit(data, vars, adjust, ...), <view arguments>, style),
+# with the shim that maps the 0.2.0 arguments to their 1.0.0 homes for one
+# release; the matrix title, the glossary caption and the final annotation
+# step shared with plot.janusplot_fit(); and the deprecated
+# janusplot_data() alias of janusplot_fit().
+
 #' Asymmetric smoothed-association matrix
 #'
 #' @description
 #' `r lifecycle::badge("experimental")`
 #'
-#' Render a pairwise, asymmetric matrix of smoothed associations between
-#' numeric variables. Each cell \[i, j\] where `i != j` shows the fitted
-#' spline from [mgcv::gam()]:
+#' Fits every ordered pair of numeric variables with [janusplot_fit()] and
+#' draws the matrix with [plot.janusplot_fit()] in one call. Each cell
+#' `[i, j]` with `i != j` shows the fitted spline from [mgcv::gam()] or
+#' [mgcv::bam()]:
 #' * Upper triangle (`i < j`): `gam(x_j ~ s(x_i) + <adjust>)`.
 #' * Lower triangle (`i > j`): `gam(x_i ~ s(x_j) + <adjust>)`.
-#' * Diagonal: blank panel when labels live on the border (default),
-#'   or a variable-name label when `labels = "diagonal"`.
+#' * Diagonal: blank, the variable names sit on the border.
 #'
-#' The two triangles intentionally differ -- the asymmetry reveals
-#' heteroscedasticity, leverage, and directional non-linearity that a
+#' The two triangles differ by design: the asymmetry reveals
+#' heteroscedasticity, leverage and directional non-linearity that a
 #' single scalar correlation hides.
 #'
-#' @param data A data frame with numeric columns to include. Column
-#'   names need not be syntactic (`"grain yield (t/ha)"`,
-#'   `"2019_yield"`): they are fitted under internal [make.names()]
-#'   aliases and reported under their original names in labels,
-#'   returned tables and messages.
-#' @param vars Character vector of column names to use. `NULL` (default)
-#'   uses all numeric columns in `data`. Non-numeric columns trigger an
-#'   error listing offenders. Two columns that are identical or exactly
-#'   collinear (absolute correlation 1) are not fitted against each
-#'   other: both cells fail with a message naming the columns.
-#' @param adjust A one-sided formula RHS giving additional covariates
-#'   and/or random effects to include in every pairwise GAM. For example,
-#'   `adjust = ~ s(age) + s(site, bs = "re")` fits
-#'   `gam(y ~ s(x) + s(age) + s(site, bs = "re"))` for each pair.
-#'   Default `NULL` fits unadjusted pairwise smooths. Non-syntactic
-#'   column names are referenced with backticks, e.g.
-#'   ``adjust = ~ s(`site name`, bs = "re")``. Character and logical
-#'   `adjust` columns are converted to factor before fitting, with a
-#'   message naming them. The curve, its
-#'   confidence band and its derivatives are predicted at the
-#'   population level: random-effect smooths (`bs = "re"` and factor
-#'   smooths `bs = "fs"`) are excluded from prediction, numeric
-#'   covariates are held at their mean over the rows used by the pair,
-#'   and fixed factors at their most frequent level.
-#'   [janusplot_data()] records these values per pair as
-#'   `prediction_reference_yx` / `prediction_reference_xy`, where
-#'   `_yx` is the upper-triangle fit `vars[j] ~ s(vars[i])` (`i < j`)
-#'   and `_xy` the lower-triangle fit `vars[i] ~ s(vars[j])`.
-#' @param method Smoothing-parameter estimation method passed to
-#'   the chosen fitting backend. Default `NULL` resolves
-#'   per-engine: `"fREML"` for `engine = "bam"` (mgcv's
-#'   recommended at scale), `"REML"` for `engine = "gam"`
-#'   (the v0.1.0 behaviour). Pass any valid mgcv method string
-#'   to override.
-#' @param engine One of `"bam"` (default, **new in v0.1.1**) or
-#'   `"gam"`. Selects mgcv's fitting backend:
-#'   * `"bam"` -- [mgcv::bam()]. Block-Lanczos solve + fREML
-#'     estimation + lower memory. ~3-10x speedup at janusplot's
-#'     scale (k = 15-25 vars, 600+ pairwise fits per call). The
-#'     **default**, and the one non-byte-identical change in
-#'     v0.1.1: fREML differs from REML by ~1-3% in EDF on
-#'     identical data, so the asymmetry index may shift by
-#'     similar amounts vs v0.1.0 output. Recoverable verbatim
-#'     via `engine = "gam"`.
-#'   * `"gam"` -- [mgcv::gam()]. The v0.1.0 backend. Use for
-#'     backward-compat reproduction, very small n (< 200) where
-#'     bam's setup overhead exceeds its solve gain, or
-#'     methodologically sensitive contexts that require REML
-#'     rather than fREML.
-#' @param discrete Logical. `bam`-only opt-in to mgcv's
-#'   covariate-discretisation optimisation. Further ~2-5x
-#'   speedup at the cost of small (sub-pixel at typical
-#'   janusplot resolution) prediction-shift. Default `FALSE`.
-#'   Ignored when `engine = "gam"`.
-#' @param nthreads Integer. `bam`-only intra-fit threading.
-#'   Default `1L` to avoid oversubscription when combined with
-#'   `parallel = TRUE` (`future.apply` fans out pair fits
-#'   across cores; nthreads > 1 within each pair would
-#'   double-book CPUs). Raise above 1 only when `parallel =
-#'   FALSE`. Ignored when `engine = "gam"`.
-#' @param k Integer, or named list mapping variable names to integers.
-#'   Basis dimension for `s()`. Default `-1L` (mgcv's automatic choice,
-#'   10 for the `"tp"`, `"ts"`, `"cr"`, `"cs"`, `"cc"`, `"ps"`, `"cp"` and
-#'   `"bs"` bases). For each ordered pair the effective basis dimension
-#'   is capped at the number of distinct predictor values in that pair's
-#'   complete rows, since mgcv cannot fit a basis larger than that:
-#'   `k_used = min(k, n_distinct)`. Capped cells are named in one message
-#'   per call and recorded as `k_requested`, `k_used` and `k_capped`. A
-#'   predictor with fewer distinct values than the smallest basis mgcv
-#'   accepts (3 for `"tp"`) is not capped, and its cells fail with
-#'   mgcv's error.
-#' @param bs Basis type for `s()`. Default `"tp"` (thin plate).
-#' @param order One of `"original"` (default), `"hclust"` (reorder by
-#'   hierarchical clustering of Pearson correlations), or `"alphabetical"`.
-#' @param show_data Logical. If `TRUE` (default), overlay raw data
-#'   points (low alpha) behind each spline. Only applies when
-#'   `display = "fit"`; derivative panels never overlay raw data.
-#' @param show_ci Logical. If `TRUE` (default), overlay the 95%
-#'   confidence envelope from `predict(gam, se.fit = TRUE)` on the
-#'   fit panel (i.e. when `display = "fit"`). CI rendering on
-#'   derivative panels is controlled separately by `derivative_ci`.
-#' @param display One of `"fit"` (default), `"d1"`, or `"d2"`.
-#'   Selects which single quantity is rendered in every
-#'   off-diagonal cell of the matrix.
-#'   * `"fit"` -- the fitted smooth \eqn{\hat f(x)}; default,
-#'     behaviour identical to the pre-derivative release.
-#'   * `"d1"` -- the first derivative \eqn{\hat f'(x)} of the
-#'     fitted smooth. Zero crossings localise turning points of
-#'     \eqn{\hat f}.
-#'   * `"d2"` -- the second derivative \eqn{\hat f''(x)}. Zero
-#'     crossings localise inflection points of \eqn{\hat f}.
+#' @details
+#' Model settings (`k`, `bs`, `engine`, `method`, `na_action`, `n_grid`,
+#' `derivatives`, `derivative_ci`, `derivative_ci_nsim`, `p_adjust`,
+#' `shape_cutoffs`, `k_check_thresholds`, `auto_refit_k`, `k_max_iter`,
+#' `discrete`, `nthreads`, `parallel`, `keep_fits`) pass through `...` to
+#' [janusplot_fit()], which forwards anything else to mgcv. Appearance
+#' settings live in [janusplot_style()] and are passed as `style`. To draw
+#' the same fit more than once, call [janusplot_fit()] and `plot()` it.
 #'
-#'   A single matrix shows a single quantity by design: stacked
-#'   multi-panel cells crowd the matrix at any realistic variable
-#'   count. To compare fit against derivative, render two or three
-#'   `janusplot()` calls side-by-side; each call keeps its own
-#'   `with_data = TRUE` summary table tagged with the `display`
-#'   column.
+#' The 0.2.0 appearance arguments of `janusplot()` are accepted through
+#' `...` for one release, each with a deprecation warning, and are removed
+#' in 1.1.0: `show_data`, `show_ci`, `palette`, `show_shape_legend`,
+#' `glyph_style`, `labels`, `diagonal`, `label_srt`, `label_cex`,
+#' `text_scale_diag`, `text_scale_off_diag`, `show_glossary`,
+#' `glossary_scale`, `compact`, `compact_threshold`, `compact_levels` and
+#' `focus_dim_alpha` are applied to `style`; `fill_by` is mapped to
+#' `colour_by`; `show_asymmetry` and `signif_glyph` are mapped to
+#' `annotations`; `labels = "diagonal"` is drawn as `"border"` with a
+#' message; `with_data = TRUE` returns `list(plot, data)` with `data` the
+#' table of `summary(janusplot_fit(...))`; `save_as`, `save_width`,
+#' `save_height` and `save_dpi` write the plot once with
+#' [ggplot2::ggsave()]. Arguments after `adjust` must be named: the
+#' positional order of 0.2.0 is not shimmed.
 #'
-#'   Orders \eqn{k \ge 3} are not exposed -- higher-order derivatives
-#'   of penalised regression splines amplify noise and rarely carry
-#'   usable signal at realistic sample sizes. See
-#'   `vignette("janusplot")` for the theoretical justification and
-#'   applied use-cases.
-#' @param derivative_ci One of `"none"` (default), `"pointwise"`, or
-#'   `"simultaneous"`. Controls whether -- and how -- a 95%
-#'   confidence ribbon is drawn underneath the derivative curve when
-#'   `display %in% c("d1", "d2")`. Ignored when `display = "fit"`.
-#'   * `"none"` -- no ribbon. The curve and the zero reference line
-#'     are all you see. Default, because pointwise ribbons overshoot
-#'     nominal coverage as a joint region and can invite
-#'     over-reading of local features.
-#'   * `"pointwise"` -- 95% pointwise ribbon from
-#'     \eqn{\sqrt{\mathrm{diag}(D V_p D^\top)}} (Wood 2017 section 7.2.4).
-#'     Valid marginally; not a simultaneous statement.
-#'   * `"simultaneous"` -- 95% simultaneous band via the Monte Carlo
-#'     construction of Ruppert, Wand & Carroll (2003) popularised for
-#'     GAMs by Simpson (2018, *Frontiers Ecol. Evol.* 6:149): draw
-#'     \eqn{B} samples \eqn{\tilde{\boldsymbol\beta} \sim
-#'     \mathcal{N}(\hat{\boldsymbol\beta}, V_p)}, compute
-#'     \eqn{\max_x |D_i(\tilde{\boldsymbol\beta} -
-#'     \hat{\boldsymbol\beta})| / \mathrm{se}_i}, and use the
-#'     \eqn{(1-\alpha)} quantile as a critical multiplier on the
-#'     pointwise SE. Valid for feature localisation ("where is
-#'     \eqn{\hat f'(x)} significantly non-zero").
-#' @param derivative_ci_nsim Integer. Number of Monte Carlo samples
-#'   used when `derivative_ci = "simultaneous"`. Default `1000L` --
-#'   a compromise between coverage accuracy (Simpson 2018 uses
-#'   10000) and CPU budget across every pair in a medium-sized
-#'   matrix. Ignored for any other `derivative_ci`.
-#' @param n_grid Integer or `NULL`. Number of equally-spaced points
-#'   used to evaluate each fitted smooth (and its derivatives).
-#'   Default `NULL` resolves to `100` when `display = "fit"` and
-#'   `200` otherwise, because finite-difference second derivatives
-#'   visibly degrade below \eqn{\sim 150} points on moderate-`k`
-#'   smooths. Supplying `n_grid` directly overrides both defaults.
-#'   Larger grids shift the numerical shape-metric values
-#'   (\eqn{M}, \eqn{C}, turning / inflection counts) slightly
-#'   because they are computed on this same grid. Shapes and
-#'   asymmetry are the primary reading; `M`, `C` and the counts are
-#'   secondary diagnostics and the grid-induced drift is tolerable.
-#' @param colour_by One of `"pearson"` (default), `"spearman"`,
-#'   `"kendall"`, `"edf"`, `"deviance_gap"`, or `"none"`. Encodes the
-#'   per-cell fill colour by the chosen scalar. Correlation choices use
-#'   a diverging palette with limits `c(-1, 1)` and a shared `corr`
-#'   colour-bar title; `"edf"` and `"deviance_gap"` use a sequential
-#'   palette labelled by the metric. `"deviance_gap"` is the deviance
-#'   explained by the smooth minus the deviance explained by the
-#'   straight-line fit of the same ordered pair (same `adjust` terms,
-#'   engine and method), bounded in `[0, 1]`: near 0 for a linear
-#'   association, larger the more the smooth adds over a line.
-#' @param fill_by Deprecated alias for `colour_by`. If supplied emits a
-#'   single soft deprecation warning and is forwarded to `colour_by`.
-#' @param palette Character. Colour palette for the cell fill scale.
-#'   Defaults to `"RdBu"` when `colour_by` is a correlation and
-#'   `"viridis"` otherwise. Sequential choices: `"viridis"`, `"magma"`,
-#'   `"inferno"`, `"plasma"`, `"cividis"`, `"mako"`, `"rocket"`,
-#'   `"turbo"` (not CB-safe), `"YlOrRd"`, `"YlGnBu"`, `"Blues"`,
-#'   `"Greens"`. Diverging choices: `"RdYlBu"`, `"RdBu"`, `"PuOr"`,
-#'   `"Spectral"` (not CB-safe). Passing a sequential palette while
-#'   `colour_by` is a correlation silently upgrades to the default
-#'   diverging palette.
-#' @param annotations Character vector, a subset of
-#'   `c("edf", "A", "shape", "code", "k_warn")`. Controls which corner
-#'   annotations appear on each off-diagonal cell:
-#'   * `"code"` -- 2-letter ASCII shape code, **top-left** corner.
-#'   * `"A"` and `"edf"` -- asymmetry index and effective degrees of
-#'     freedom, stacked **bottom-left**. A is unreliable when either
-#'     direction of the pair had its basis dimension capped at the
-#'     number of distinct predictor values.
-#'   * `"k_warn"` -- basis-dimension warning glyph, **top-left**, on
-#'     cells flagged for possible k underfit (`k_flag`) or whose basis
-#'     dimension was capped (`k_capped`).
-#'   * `"shape"` -- shape glyph (Unicode or ASCII per `glyph_style`),
-#'     **bottom-right** corner.
+#' @inheritParams janusplot_fit
+#' @inheritParams plot.janusplot_fit
+#' @param ... Model arguments of [janusplot_fit()], further arguments to
+#'   [mgcv::gam()] or [mgcv::bam()], and for one release the 0.2.0
+#'   appearance arguments listed in Details.
 #'
-#'   Default `c("edf", "A")`. `"code"` and `"shape"` occupy distinct
-#'   corners so both can be requested together. See
-#'   [janusplot_shape_hierarchy()] for the full code list.
-#' @param shape_cutoffs Named list of classification thresholds used to
-#'   map the continuous shape indices into discrete `shape_category`
-#'   labels; see [janusplot_shape_cutoffs()].
-#' @param show_shape_legend Logical. If `TRUE` (default), attach a
-#'   standing shape-types legend plate below the matrix that
-#'   illustrates every category in the taxonomy as a canonical
-#'   thumbnail spline. Independent of `annotations`.
-#' @param glyph_style One of `"ascii"` (default) or `"unicode"`.
-#'   Controls how cell shape glyphs render when `"shape"` is included
-#'   in `annotations`. Default is `"ascii"` for maximum portability
-#'   across typesetting pipelines; switch to `"unicode"` only when
-#'   the target font is known to cover the curve glyph set.
-#' @param labels One of `"border"` (default), `"diagonal"`, or
-#'   `"none"`. Controls where variable names are rendered:
-#'   * `"border"` -- names along the top (rotated per `label_srt`) and
-#'     left margins of the matrix; diagonal cells are left blank.
-#'     Mirrors `corrplot`'s `tl.pos = "lt"` convention.
-#'   * `"diagonal"` -- names centred on the diagonal cells (the
-#'     pre-0.1 layout).
-#'   * `"none"` -- labels suppressed entirely; diagonal cells blank.
-#' @param diagonal One of `"auto"` (default), `"blank"`, `"name"`,
-#'   or `"density"`. Controls what is rendered in the diagonal
-#'   cells of the matrix.
-#'   * `"auto"` -- preserves the historical behaviour: variable name
-#'     when `labels = "diagonal"`, blank otherwise.
-#'   * `"blank"` -- empty bordered panel (uniform grid reading).
-#'   * `"name"` -- variable name centred in the cell, bold.
-#'   * `"density"` -- kernel density of the variable filled in
-#'     translucent grey, with a rug of raw values along the bottom
-#'     edge. Mirrors the `GGally::ggpairs` convention; surfaces
-#'     tail weight, bimodality, and support clipping that the
-#'     pairwise smooths alone cannot reveal. Variable names should
-#'     come from the border (`labels = "border"`, the default) when
-#'     this mode is on.
-#' @param label_srt Numeric. Rotation (degrees) of top labels when
-#'   `labels = "border"`. Default `45`; set to `0` for horizontal or
-#'   `90` for vertical. Ignored when `labels != "border"`.
-#' @param label_cex Positive numeric multiplier on the border-label
-#'   font size. Default `1`. Ignored when `labels = "none"`.
-#' @param signif_glyph Logical. If `TRUE` (default), annotate cells
-#'   with `-` / `*` / `**` reflecting the smooth's F-test p-value.
-#' @param show_asymmetry Deprecated. Use `annotations` instead
-#'   (`"A" %in% annotations`). When supplied, a soft deprecation
-#'   warning fires and the argument is merged into `annotations`.
-#' @param na_action One of `"pairwise"` (default; per-cell complete
-#'   observations) or `"complete"` (listwise; all cells use the same
-#'   rows). Infinite values (`Inf`, `-Inf`) count as missing, and a
-#'   warning gives the number removed per column.
-#'   A pair sharing fewer than 5 complete rows is drawn as an empty
-#'   "n < 5" cell, keeps its shared-row count in `n_used` and is listed
-#'   in a warning; an error is raised only when no pair reaches 5 rows.
-#' @param compact One of `"auto"` (default), `"always"`, or `"never"`.
-#'   Controls scale-aware content suppression per cell:
-#'   * `"auto"` -- tier 0 at `n_var < compact_threshold` (the v0.1.0
-#'     behaviour); progressively suppresses scatter, then CI, then
-#'     annotations, then the spline itself as `n_var` crosses the
-#'     `compact_levels` ladder. The matrix remains readable as
-#'     `k` grows toward 25-30 by trading detail for legibility.
-#'   * `"always"` -- force at least tier 1 regardless of `n_var`.
-#'     Useful for very dense fixed-size renders.
-#'   * `"never"` -- force tier 0 regardless of `n_var`. Useful for
-#'     reproducing v0.1.0 figures on large matrices.
-#' @param compact_threshold Integer. The `n_var` value at which
-#'   tier 1 (drop scatter) auto-activates under `compact = "auto"`.
-#'   Default `12L`, anchored on the 150 x 150 px-per-cell pixel
-#'   budget at typical 6"x6" 300 DPI R Journal figures.
-#' @param compact_levels Optional named list with entries `t1`, `t2`,
-#'   `t3` overriding the auto-tier ladder. Defaults derive from
-#'   `compact_threshold`: `t1 = compact_threshold`,
-#'   `t2 = compact_threshold + 6`, `t3 = compact_threshold + 13`.
-#'   `NULL` (default) uses these derived defaults.
-#' @param focus_by One of `NA` (default -- no filter), `"asymmetry"`,
-#'   `"edf"`, `"k_flag"`, or `"non_linearity"` (defined as `edf - 1`).
-#'   When set, cells whose chosen metric falls below `focus_threshold`
-#'   are rendered in `grey85` at alpha `focus_dim_alpha`; the matrix
-#'   shape is preserved so attention drains visually to high-metric
-#'   cells. This is a **visual filter, not a statistical one** --
-#'   the underlying fits are unchanged and the `with_data` table
-#'   carries every cell.
-#' @param focus_threshold Either a quantile-string like `"q90"`
-#'   (default) or a numeric cutoff. The quantile is taken over the
-#'   non-`NA` distribution of `focus_by` across all off-diagonal
-#'   cells in the matrix. Ignored when `focus_by = NA`.
-#' @param focus_dim_alpha Numeric in `[0, 1]`. Alpha applied to the
-#'   `grey85` wash on unfocused cells. Default `0.25`. Ignored when
-#'   `focus_by = NA`.
-#' @param axes One of `"original"` (default), `"standardised"`,
-#'   `"centred"`, or `"rank"`. **Rendering-only knob** -- the
-#'   underlying `mgcv::gam` fits are byte-identical across all four
-#'   modes (verifiable via `digest::digest()` on the fit list); the
-#'   transformation lives entirely inside the cell renderer and
-#'   propagates to (a) the raw scatter, (b) the spline prediction
-#'   grid, (c) the CI ribbon, and (d) the variable label on the
-#'   matrix border. Use:
-#'   * `"original"` -- raw units. Maximum interpretability per cell.
-#'     v0.1.0 behaviour.
-#'   * `"standardised"` -- `(x - mean(x)) / sd(x)` per variable.
-#'     Border label becomes e.g. `"mpg (z)"`. Pairs scaled into a
-#'     comparable visual range; useful at `k >= 15` when raw-unit
-#'     panels look disparate.
-#'   * `"centred"` -- `x - mean(x)` per variable. Border label
-#'     becomes e.g. `"mpg (centred)"`. Preserves units while
-#'     anchoring the origin.
-#'   * `"rank"` -- empirical-CDF-based rank, scaled to `[0, n]` per
-#'     variable. Border label becomes `"rank(mpg)"`. Sanity-check
-#'     view: collapses outliers; if the smooth changes shape vs
-#'     `"original"` the relationship is monotone-but-not-linear.
-#'
-#'   At compact tier 3 (`n_var >= 25` under `compact = "auto"`),
-#'   the cells render only colour fill + shape-class glyph -- no
-#'   curve, no scatter -- so `axes` becomes a **documented no-op**
-#'   (the border labels still pick up the mode suffix).
-#' @param save_as Optional file path with extension. When set,
-#'   the final assembled plot is written to this path via
-#'   [ggplot2::ggsave()]; the device is inferred from the
-#'   extension. Supported extensions: `.png`, `.pdf`, `.svg`,
-#'   `.jpg` / `.jpeg`, `.tif` / `.tiff`, `.eps`, `.ps`, `.bmp`.
-#'   Default `NULL` (no file written; `janusplot()` still
-#'   returns the ggplot). Width / height default to `pmax(6,
-#'   0.65 * k_n)` inches each -- square aspect, scaling with
-#'   matrix dimension.
-#' @param save_width Numeric. Override width (inches) for
-#'   `save_as`. Default `NULL` uses the auto-resolved square.
-#' @param save_height Numeric. Override height (inches) for
-#'   `save_as`. Default `NULL` uses the auto-resolved square.
-#' @param save_dpi Integer. Raster DPI for `save_as` when the
-#'   inferred device is bitmap (png/jpg/tiff/bmp). Default `300`,
-#'   matching the R Journal target.
-#' @param k_check_thresholds Named list giving the three flag-criterion
-#'   thresholds used by `mgcv::k.check()`-style basis-dimension
-#'   diagnostics. Required entries: `edf_ratio` (Wood's
-#'   \eqn{\widehat{\mathrm{edf}}/k'} ratio above which the smooth is
-#'   too close to its basis cap), `k_index` (residual-difference
-#'   variance ratio below which the basis appears underspecified), and
-#'   `p` (the simulation p-value below which the basis-deficiency
-#'   signal is significant). Defaults -- `edf_ratio = 0.9`, `k_index = 1.0`,
-#'   `p = 0.05` -- track `mgcv::gam.check()` and Wood (2017) section 5.9.
-#' @param auto_refit_k Logical. If `TRUE`, every cell whose Wood
-#'   trifecta flags an underfit is refit with a doubling-k loop until
-#'   either the flag clears, the per-cell unique-x cap is reached, or
-#'   `k_max_iter` iterations have passed. Default `FALSE` -- the
-#'   diagnostic (`k_check_status`, `k_flag`, `k_prime`, `k_index`,
-#'   `k_p`) is always computed and surfaced regardless of this flag,
-#'   but the refit is opt-in because it can multiply wall time on
-#'   pathological data.
-#' @param k_max_iter Integer. Maximum number of doublings allowed
-#'   per cell when `auto_refit_k = TRUE`. Default `2L` (so a cell
-#'   that starts at the `mgcv` default `k = 10` will visit at most
-#'   `k = 20` and then `k = 40`, capped by the per-cell unique-x
-#'   limit). Ignored when `auto_refit_k = FALSE`.
-#' @param parallel Logical. If `TRUE`, use `future.apply::future_mapply()`
-#'   to fit pairs in parallel. Requires the `future.apply` package and a
-#'   user-configured `future::plan()`. Default `FALSE`.
-#' @param with_data Logical. If `TRUE`, return a two-element list
-#'   `list(plot, data)` where `data` is a flat per-cell summary
-#'   (one row per off-diagonal cell) of everything the plot displays.
-#'   The `data` element is always a plain `data.frame` (base R -- no
-#'   `data.table` dependency). Default `FALSE` -- in which case only
-#'   the ggplot is returned.
-#' @param text_scale_diag Positive numeric multiplier applied to the
-#'   diagonal variable-name labels. Default `1`. Diagonal labels
-#'   additionally auto-shrink for long variable names
-#'   (`nchar(var) > 10`) so they fit the cell regardless of this value.
-#' @param text_scale_off_diag Positive numeric multiplier applied to
-#'   all off-diagonal annotations (`n` / `EDF` readouts, significance
-#'   glyphs, asymmetry-index labels). Default `1`. Use `< 1` when
-#'   cells are small and the annotations crowd the fit line; use
-#'   `> 1` for presentation plots.
-#' @param show_glossary Logical. If `TRUE` (default), attach a
-#'   multi-line caption below the matrix describing the on-plot
-#'   abbreviations (`n`, `EDF`, `A`, fill encoding, significance
-#'   glyphs). Only keys actually displayed are listed.
-#' @param glossary_scale Positive numeric multiplier on the glossary
-#'   caption font size. Default `1`.
-#' @param ... Additional arguments passed to [mgcv::gam()].
-#'
-#' @returns If `with_data = FALSE` (default), a [ggplot2::ggplot] object
-#'   (via [patchwork::wrap_plots()]) carrying a top-of-matrix title
-#'   that names the displayed quantity (`"Direct fit"`,
-#'   `"First derivative f'"`, or `"Second derivative f''"`). If
-#'   `with_data = TRUE`, a list with two elements: `plot` (the
-#'   ggplot) and `data` (a tidy table with columns `var_x`, `var_y`,
-#'   `position`, `n_used`, `edf`, `pvalue`, `signif`, `dev_exp`
-#'   (deviance explained by the smooth), `deviance_gap` (`dev_exp`
-#'   minus the deviance explained by the straight-line fit, in
-#'   `[0, 1]`), `asymmetry_index`, `cor_pearson`, `cor_spearman`,
-#'   `cor_kendall`, `tie_ratio`, `monotonicity_index`,
-#'   `convexity_index`, `n_turning_points`, `n_inflections`,
-#'   `flat_range_ratio`, `shape_category`, `colour_value`,
-#'   `display`, one row per off-diagonal cell). The `display`
-#'   column tags which quantity the call rendered, so separate
-#'   calls for fit / d1 / d2 yield comparable, stackable tables.
-#'   The table also carries the basis-dimension columns for the
-#'   row's own fit: `k_requested` (the requested `k`, with `-1`
-#'   resolved to mgcv's default for `bs`), `k_used` (the basis
-#'   dimension of the returned fit, after the distinct-value cap and
-#'   any `auto_refit_k` refit) and `k_capped` (`TRUE` when the
-#'   request exceeded the distinct predictor values and was reduced).
-#'   Beside `asymmetry_index` sit the pair-level flags `k_capped_yx`
-#'   and `k_capped_xy`, identical on both cells of a pair, where `_yx`
-#'   is the fit of the later variable in `vars` on the earlier one.
-#'   A is unreliable when either direction of the pair had its basis
-#'   dimension capped at the number of distinct predictor values.
-#'   Derivative *curves* themselves (grid of \eqn{x}, fitted
-#'   \eqn{\hat f^{(k)}}, SE) live on `janusplot_data()` -- see there.
+#' @returns A [patchwork][patchwork::patchwork-package] object, which is a
+#'   ggplot, as described in [plot.janusplot_fit()]. With the deprecated
+#'   `with_data = TRUE`, a list with elements `plot` (that object) and
+#'   `data` (the per-cell table of [summary.janusplot_fit()]).
 #'
 #' @family smooth-associations
-#' @seealso [janusplot_data()] for the raw per-cell fits + metrics.
+#' @seealso [janusplot_fit()] for the object behind the plot,
+#'   [plot.janusplot_fit()] for the view arguments, [janusplot_style()]
+#'   for the appearance settings.
 #'
 #' @examples
-#' # Minimal runnable example -- 3 variables, 6 asymmetric pairwise GAM fits.
-#' janusplot(mtcars[, c("mpg", "hp", "wt")])
+#' # Three variables, six asymmetric pairwise GAM fits.
+#' janusplot(mtcars[, c("mpg", "hp", "wt")], engine = "gam")
 #'
 #' \donttest{
-#' # Heteroscedastic DGP: Pearson r is ~ 0.9 but the inverse fit is
-#' # clearly non-linear, yielding asymmetry index > 0.5.
+#' # Heteroscedastic pair: Pearson r is about 0.9 but the inverse fit is
+#' # clearly non-linear, giving an asymmetry index above 0.5.
 #' set.seed(2026L)
 #' n  <- 200L
 #' x1 <- stats::runif(n, 0, 10)
 #' x2 <- x1 + stats::rnorm(n, sd = 0.2 * x1)
 #' janusplot(data.frame(x1 = x1, x2 = x2, x3 = stats::rnorm(n)))
 #'
-#' # A single matrix renders a single quantity. To compare the fit
-#' # against its derivatives, render three calls and place them
-#' # side-by-side; each call's title makes the quantity explicit.
+#' # The 0.2.0 look: Pearson r washed over the whole cell.
+#' janusplot(mtcars[, c("mpg", "hp", "wt")], colour_by = "pearson",
+#'           style = janusplot_style(colour_channel = "fill"))
+#'
+#' # One matrix shows one quantity; derivatives come from the same fit.
 #' set.seed(2026L)
 #' xs <- stats::runif(300L, -3, 3)
 #' df <- data.frame(
@@ -428,502 +89,215 @@
 #' )
 #' janusplot(df, display = "fit")
 #' janusplot(df, display = "d1")
-#' janusplot(df, display = "d2")
-#'
-#' # Simultaneous CI bands on a derivative panel, per Simpson (2018).
-#' janusplot(df, display = "d1", derivative_ci = "simultaneous")
+#' janusplot(df, display = "d2", derivative_ci = "simultaneous")
 #' }
 #' @export
 janusplot <- function(
-    data,
-    vars = NULL,
-    adjust = NULL,
-    method = NULL,
-    k = -1L,
-    bs = "tp",
-    engine = c("bam", "gam"),
-    discrete = FALSE,
-    nthreads = 1L,
-    order = c("original", "hclust", "alphabetical"),
-    show_data = TRUE,
-    show_ci = TRUE,
-    display = c("fit", "d1", "d2"),
-    derivative_ci = c("none", "pointwise", "simultaneous"),
-    derivative_ci_nsim = 1000L,
-    n_grid = NULL,
-    colour_by = c("pearson", "spearman", "kendall",
-                  "edf", "deviance_gap", "none"),
-    fill_by = NULL,
-    palette = NULL,
-    annotations = c("edf", "A"),
-    shape_cutoffs = janusplot_shape_cutoffs(),
-    show_shape_legend = TRUE,
-    glyph_style = c("ascii", "unicode"),
-    labels = c("border", "diagonal", "none"),
-    diagonal = c("auto", "blank", "name", "density"),
-    label_srt = 45,
-    label_cex = 1,
-    signif_glyph = TRUE,
-    show_asymmetry = NULL,
-    na_action = c("pairwise", "complete"),
-    parallel = FALSE,
-    with_data = FALSE,
-    text_scale_diag     = 1,
-    text_scale_off_diag = 1,
-    show_glossary       = TRUE,
-    glossary_scale      = 1,
-    k_check_thresholds  = NULL,
-    auto_refit_k        = FALSE,
-    k_max_iter          = 2L,
-    compact             = c("auto", "always", "never"),
-    compact_threshold   = 12L,
-    compact_levels      = NULL,
-    focus_by            = NA_character_,
-    focus_threshold     = "q90",
-    focus_dim_alpha     = 0.25,
-    axes                = c("original", "standardised", "centred", "rank"),
-    save_as             = NULL,
-    save_width          = NULL,
-    save_height         = NULL,
-    save_dpi            = 300,
-    ...) {
-  order         <- rlang::arg_match(order)
-  na_action     <- rlang::arg_match(na_action)
-  compact       <- rlang::arg_match(compact)
-  axes          <- rlang::arg_match(axes)
-  engine        <- rlang::arg_match(engine)
-  .validate_shared_scalars( # nolint: object_usage_linter.
-    discrete, nthreads, auto_refit_k, k_max_iter, derivative_ci_nsim
+  data,
+  vars = NULL,
+  adjust = NULL,
+  colour_by = "nonlinearity",
+  annotations = c("A", "signif"),
+  order = "original",
+  display = "fit",
+  group = NULL,
+  focus_by = NA_character_,
+  focus_threshold = "q90",
+  axes = "original",
+  style = janusplot_style(),
+  ...
+) {
+  dots   <- list(...)
+  legacy <- .shim_legacy_args(
+    dots, style = style, colour_by = colour_by, annotations = annotations,
+    user_env = rlang::caller_env()
   )
-  nthreads <- as.integer(nthreads)
-  glyph_style   <- rlang::arg_match(glyph_style)
-  labels        <- rlang::arg_match(labels)
-  diagonal      <- rlang::arg_match(diagonal)
-  display       <- rlang::arg_match(display)
-  derivative_ci <- rlang::arg_match(derivative_ci)
-  # `diagonal = "auto"` resolves to the historical behaviour: name
-  # in the diagonal cell when labels == "diagonal", blank otherwise.
-  diagonal_eff <- if (diagonal == "auto") {
-    if (labels == "diagonal") "name" else "blank"
-  } else {
-    diagonal
-  }
-
-  derivative_ci_nsim <- as.integer(derivative_ci_nsim)
-
-  if (!is.numeric(label_srt) || length(label_srt) != 1L ||
-      is.na(label_srt)) {
-    cli::cli_abort("{.arg label_srt} must be a single numeric value.")
-  }
-  .check_scalar_positive(label_cex, "label_cex")
-
-  # Dual-alias: fill_by -> colour_by (soft deprecation).
-  if (!is.null(fill_by)) {
-    lifecycle::deprecate_warn(
-      when = "0.0.0.9000",
-      what = "janusplot(fill_by = )",
-      with = "janusplot(colour_by = )",
-      details = paste0("Forwarding \"", fill_by, "\" to colour_by.")
-    )
-    colour_by <- fill_by
-  }
-  colour_by <- rlang::arg_match(colour_by, .colour_choices())
-
-  if (is.null(palette)) palette <- .default_palette(colour_by)
-  palette <- rlang::arg_match(palette, .palette_choices())
-
-  if (!is.character(annotations)) {
-    cli::cli_abort(
-      "{.arg annotations} must be a character vector (subset of edf/A/shape/code/k_warn)."
-    )
-  }
-  # Annotations vocabulary now includes "k_warn" -- actual setdiff
-  # check lives below the k-check validation block so the error
-  # message lists the full vocabulary in one place.
-
-  # Resolve a single integer derivative order from scalar display.
-  # "fit" -> no derivatives computed; "d1" / "d2" -> the matching order.
-  derivative_orders <- switch(display,
-    fit = integer(),
-    d1  = 1L,
-    d2  = 2L
+  fit <- rlang::inject(janusplot_fit(
+    data = data, vars = vars, adjust = adjust, !!!legacy$fit_args
+  ))
+  # "edf" is resolved here so the deprecation names the caller of
+  # janusplot(), not the package-internal call into plot().
+  colour_by <- .resolve_colour_by(legacy$view_args$colour_by,
+                                  user_env = rlang::caller_env())
+  p <- plot(
+    fit,
+    colour_by       = colour_by,
+    annotations     = legacy$view_args$annotations,
+    order           = order,
+    display         = display,
+    group           = group,
+    focus_by        = focus_by,
+    focus_threshold = focus_threshold,
+    axes            = axes,
+    style           = legacy$style
   )
 
-  # Validate and resolve n_grid. NULL means "100 if no derivatives,
-  # 200 otherwise"; a user value overrides both defaults. Flag very
-  # large grids -- fit time scales as O(n_grid) and derivative SE as
-  # O(n_grid) via the D %*% Vp %*% t(D) product.
-  if (!is.null(n_grid)) {
-    if (!is.numeric(n_grid) || length(n_grid) != 1L ||
-        !is.finite(n_grid) || n_grid < 10) {
-      cli::cli_abort(
-        "{.arg n_grid} must be a single finite number >= 10 or NULL."
-      )
-    }
-    n_grid <- as.integer(n_grid)
-    if (n_grid > 500L) {
-      cli::cli_inform(c(
-        "!" = paste0(
-          "{.arg n_grid} = {n_grid} is unusually large \u2014 ",
-          "each pair pays an O(n_grid) predict cost."
-        ),
-        i = "Grids above ~300 rarely improve readability."
-      ))
-    }
-  } else {
-    n_grid <- if (length(derivative_orders)) 200L else 100L
-  }
-
-  # Dual-alias: show_asymmetry -> annotations (soft deprecation).
-  if (!is.null(show_asymmetry)) {
-    lifecycle::deprecate_warn(
-      when = "0.0.0.9000",
-      what = "janusplot(show_asymmetry = )",
-      with = "janusplot(annotations = )"
-    )
-    if (isTRUE(show_asymmetry)) {
-      annotations <- union(annotations, "A")
-    } else if (isFALSE(show_asymmetry)) {
-      annotations <- setdiff(annotations, "A")
-    }
-  }
-
-  .check_scalar_positive(text_scale_diag,     "text_scale_diag")
-  .check_scalar_positive(text_scale_off_diag, "text_scale_off_diag")
-  .check_scalar_positive(glossary_scale,      "glossary_scale")
-  if (!is.logical(show_glossary) || length(show_glossary) != 1L ||
-      is.na(show_glossary)) {
-    cli::cli_abort("{.arg show_glossary} must be TRUE or FALSE.")
-  }
-  if (!is.logical(show_shape_legend) || length(show_shape_legend) != 1L ||
-      is.na(show_shape_legend)) {
-    cli::cli_abort("{.arg show_shape_legend} must be TRUE or FALSE.")
-  }
-
-  .validate_inputs(data, vars, adjust, na_action)
-  vars <- .resolve_vars(data, vars)
-
-  if (order == "hclust") {
-    vars <- .reorder_hclust(data, vars)
-  } else if (order == "alphabetical") {
-    vars <- sort(vars)
-  }
-
-  k_thresholds <- k_check_thresholds %||% .default_k_thresholds()   # nolint: object_usage_linter.
-  .validate_k_thresholds(k_thresholds)                              # nolint: object_usage_linter.
-  k_max_iter <- as.integer(k_max_iter)
-
-  if (!is.numeric(compact_threshold) || length(compact_threshold) != 1L ||
-      !is.finite(compact_threshold) || compact_threshold < 2L) {
-    cli::cli_abort("{.arg compact_threshold} must be a single integer >= 2.")
-  }
-  compact_threshold <- as.integer(compact_threshold)
-  if (!is.null(compact_levels)) {
-    compact_levels <- .validate_compact_levels(           # nolint: object_usage_linter.
-      compact_levels, compact_threshold
-    )
-  }
-  valid_focus <- c(NA, "asymmetry", "edf", "k_flag", "non_linearity", "none")
-  if (length(focus_by) != 1L) {
-    cli::cli_abort("{.arg focus_by} must be a single value (NA or a metric name).")
-  }
-  if (!is.na(focus_by) && !(focus_by %in% valid_focus)) {
-    cli::cli_abort(c(
-      "Unknown {.arg focus_by} value: {.val {focus_by}}.",
-      i = "Allowed: NA or {.val {setdiff(valid_focus, NA)}}."
-    ))
-  }
-  if (!is.numeric(focus_dim_alpha) || length(focus_dim_alpha) != 1L ||
-      !is.finite(focus_dim_alpha) || focus_dim_alpha < 0 ||
-      focus_dim_alpha > 1) {
-    cli::cli_abort("{.arg focus_dim_alpha} must be in [0, 1].")
-  }
-
-  if (!is.null(save_as)) {
-    if (!is.character(save_as) || length(save_as) != 1L || !nzchar(save_as)) {
-      cli::cli_abort("{.arg save_as} must be a single non-empty file path or NULL.")
-    }
-    ext <- tolower(tools::file_ext(save_as))
-    valid_ext <- c("png", "pdf", "svg", "jpg", "jpeg", "tif", "tiff",
-                   "eps", "ps", "bmp")
-    if (!nzchar(ext) || !(ext %in% valid_ext)) {
-      cli::cli_abort(c(
-        "Cannot infer image device from {.arg save_as} extension {.val {ext}}.",
-        i = "Supported: {.val {valid_ext}}."
-      ))
-    }
-  }
-  for (nm in c("save_width", "save_height")) {
-    v <- get(nm)
-    if (!is.null(v) && (!is.numeric(v) || length(v) != 1L ||
-                        !is.finite(v) || v <= 0)) {
-      cli::cli_abort("{.arg {nm}} must be a single positive numeric or NULL.")
-    }
-  }
-  if (!is.numeric(save_dpi) || length(save_dpi) != 1L ||
-      !is.finite(save_dpi) || save_dpi <= 0) {
-    cli::cli_abort("{.arg save_dpi} must be a single positive numeric.")
-  }
-
-  valid_annot <- c("edf", "A", "shape", "code", "k_warn")
-  bad <- setdiff(annotations, valid_annot)
-  if (length(bad)) {
-    cli::cli_abort(c(
-      "Unknown {.arg annotations} value{?s}: {.val {bad}}.",
-      i = "Allowed: {.val {valid_annot}}."
-    ))
-  }
-
-  fits <- .fit_all_pairs(
-    data = data, vars = vars, adjust = adjust,
-    method = method, k = k, bs = bs,
-    na_action = na_action, parallel = parallel,
-    n_grid = n_grid, derivatives = derivative_orders,
-    derivative_ci = derivative_ci,
-    derivative_ci_nsim = derivative_ci_nsim,
-    k_check_thresholds = k_thresholds,
-    auto_refit_k = auto_refit_k,
-    k_max_iter = k_max_iter,
-    engine = engine, discrete = discrete, nthreads = nthreads, ...
-  )
-
-  .warn_failed_cells(fits)
-  .inform_k_capped(fits)
-  .summarise_k_check(fits, k_thresholds, auto_refit_k)              # nolint: object_usage_linter.
-
-  # Colour-scale limits pooled across off-diagonal cells. Correlation
-  # encodings use fixed symmetric [-1, 1]; non-linearity indices use
-  # the observed data range so we get full use of the palette.
-  colour_vals <- vapply(
-    fits, function(f) .colour_value(f, colour_by), numeric(1L)
-  )
-  colour_limits <- if (colour_by == "none" || all(is.na(colour_vals))) {
-    c(NA_real_, NA_real_)
-  } else if (.is_correlation_colour(colour_by)) {
-    c(-1, 1)
-  } else {
-    range(colour_vals, na.rm = TRUE)
-  }
-
-  asym_tbl <- .asymmetry_table(fits, vars)
-
-  k_n <- length(vars)
-  text_sizes <- .cell_text_sizes(
-    k_n,
-    text_scale_diag     = text_scale_diag,
-    text_scale_off_diag = text_scale_off_diag
-  )
-
-  # Resolve scale-aware tier once per matrix; same tier applies to
-  # every cell within a matrix (uniform reading).
-  tier <- .compact_tier(k_n, compact = compact,                       # nolint: object_usage_linter.
-                        compact_threshold = compact_threshold,
-                        compact_levels = compact_levels)
-
-  # Per-variable axis-transform specs. Built once from raw data,
-  # reused for every cell that touches that variable as x or y.
-  # Identity transforms for `axes = "original"`.
-  # nolint start: object_usage_linter.
-  axis_transforms <- stats::setNames(
-    lapply(vars, function(v) {
-      .build_axis_transform(data[[v]], mode = axes)
-    }),
-    vars
-  )
-  # nolint end
-
-  # Focus mask -- TRUE = full encoding, FALSE = dimmed wash.
-  # Stamp `key` attribute so the mask resolver can recover (i, j)
-  # for the asymmetry-keyed lookup.
-  fits_keyed <- mapply(function(f, key) {
-    attr(f, "key") <- key
-    f
-  }, fits, names(fits), SIMPLIFY = FALSE)
-  focus_arg <- if (is.na(focus_by)) NA else focus_by
-  focus_mask <- .resolve_focus_mask(fits_keyed,                       # nolint: object_usage_linter.
-                                    focus_by = focus_arg,
-                                    focus_threshold = focus_threshold,
-                                    asym_tbl = asym_tbl)
-  names(focus_mask) <- names(fits)
-
-  cells_by_ij <- vector("list", length(fits))
-  names(cells_by_ij) <- names(fits)
-  for (key in names(fits)) {
-    f <- fits[[key]]
-    ij <- as.integer(strsplit(key, "_", fixed = TRUE)[[1L]])
-    is_upper <- ij[1L] < ij[2L]
-    asym_key <- paste(sort(ij), collapse = "_")
-    # nolint start: object_usage_linter.
-    cells_by_ij[[key]] <- .build_cell(
-      fit_obj = f,
-      show_data = show_data, show_ci = show_ci,
-      colour_by = colour_by, palette = palette,
-      signif_glyph = signif_glyph,
-      annotations = annotations,
-      shape_cutoffs = shape_cutoffs,
-      glyph_style = glyph_style,
-      asym_val = asym_tbl[[asym_key]] %||% NA_real_,
-      colour_limits = colour_limits,
-      is_upper = is_upper,
-      text_sizes = text_sizes,
-      display = display,
-      derivative_ci = derivative_ci,
-      tier = tier,
-      is_focused = isTRUE(focus_mask[[key]]),
-      focus_dim_alpha = focus_dim_alpha,
-      x_transform = axis_transforms[[f$x_name]],
-      y_transform = axis_transforms[[f$y_name]]
-    )                                                                # nolint end
-  }
-
-  # Diagonal name / density cells need the *displayed* variable
-  # label too -- so the mode suffix is consistent with border labels.
-  # nolint start: object_usage_linter.
-  display_var <- function(v) {
-    .label_with_suffix(v, axis_transforms[[v]]$suffix, axes)
-  }
-  # nolint end
-  diag_cells <- lapply(vars, function(v) {
-    switch(diagonal_eff,
-      blank   = .build_blank_diagonal_cell(),
-      name    = .build_diagonal_cell(display_var(v), text_sizes = text_sizes),
-      density = .build_density_rug_cell(display_var(v), data[[v]],
-                                        text_sizes = text_sizes)
-    )
-  })
-
-  # Shape legend is a standing reference: it now renders the full
-  # taxonomy regardless of which categories are present in the
-  # matrix or whether the user opted into cell-level shape glyphs.
-  shape_legend_plot <- if (isTRUE(show_shape_legend)) {
-    .build_shape_legend_plot()
-  } else {
-    NULL
-  }
-
-  # nolint start: object_usage_linter.
-  composite <- .assemble_matrix(
-    cells_by_ij, diag_cells, vars,
-    colour_by = colour_by, colour_limits = colour_limits,
-    palette = palette, shape_legend_plot = shape_legend_plot,
-    labels = labels, label_srt = label_srt, label_cex = label_cex,
-    axes = axes, axis_transforms = axis_transforms
-  )
-  # nolint end
-  plot_out <- .finalize_plot(
-    composite,
-    title   = .display_title(display, glyph_style),
-    caption = if (isTRUE(show_glossary)) {
-      .build_glossary_text(signif_glyph, annotations, colour_by, display,
-                           derivative_ci)
-    } else {
-      NULL
-    },
-    glossary_scale = glossary_scale
-  )
-
-  # Optional file-save. Device inferred from save_as extension;
-  # auto-scaling width/height grows with matrix dimension so a
-  # k = 5 plot doesn't get the same footprint as a k = 25 one.
-  if (!is.null(save_as)) {
-    auto_dim <- max(6, 0.65 * k_n)
+  # Legacy post-actions ----------------------------------------------------
+  post <- legacy$post
+  if (!is.null(post$save_as)) {
+    auto_dim <- max(6, 0.65 * length(fit$vars))
     ggplot2::ggsave(
-      filename = save_as,
-      plot     = plot_out,
-      width    = save_width  %||% auto_dim,
-      height   = save_height %||% auto_dim,
+      filename = post$save_as,
+      plot     = p,
+      width    = post$save_width  %||% auto_dim,
+      height   = post$save_height %||% auto_dim,
       units    = "in",
-      dpi      = save_dpi
+      dpi      = post$save_dpi
     )
   }
-
-  if (!isTRUE(with_data)) {
-    return(plot_out)
+  if (isTRUE(post$with_data)) {
+    return(list(plot = p, data = summary(fit)))
   }
-
-  list(
-    plot = plot_out,
-    data = .build_summary_table(fits, vars, colour_by, asym_tbl,
-                                shape_cutoffs, display = display)
-  )
+  p
 }
 
 # ---------------------------------------------------------------
-# Flat per-cell summary table -- mirrors what the plot displays.
+# The legacy shim: 0.2.0 arguments reached through `...` to their 1.0.0
+# homes, one deprecation warning per name. Returns fit_args (everything
+# that still belongs to janusplot_fit() or mgcv), view_args (colour_by,
+# annotations), the modified style and the post-actions. Removed in 1.1.0.
 # ---------------------------------------------------------------
 
-.build_summary_table <- function(fits, vars, colour_by, asym_tbl,
-                                 shape_cutoffs, display = "fit") {
-  rows <- lapply(names(fits), function(key) {
-    f <- fits[[key]]
-    ij <- as.integer(strsplit(key, "_", fixed = TRUE)[[1L]])
-    position <- if (ij[1L] < ij[2L]) "upper" else "lower"
-    asym_key <- paste(sort(ij), collapse = "_")
-    # Pair-level cap flags, keyed like A: _yx is vars[j] ~ s(vars[i]) for i < j.
-    f_yx <- fits[[sprintf("%d_%d", min(ij), max(ij))]]
-    f_xy <- fits[[sprintf("%d_%d", max(ij), min(ij))]]
-    shape_cat <- .classify_shape(
-      f$shape$monotonicity_index, f$shape$convexity_index,
-      f$shape$n_turning_points, f$shape$n_inflections,
-      f$shape$flat_range_ratio, shape_cutoffs,
-      extremum = f$shape$extremum_type
+.legacy_style_args <- function() {
+  c("show_data", "show_ci", "palette", "show_shape_legend", "glyph_style",
+    "labels", "diagonal", "label_srt", "label_cex", "text_scale_diag",
+    "text_scale_off_diag", "show_glossary", "glossary_scale", "compact",
+    "compact_threshold", "compact_levels", "focus_dim_alpha")
+}
+
+.shim_legacy_args <- function(dots, style, colour_by, annotations,
+                              user_env = rlang::caller_env()) {
+  nms <- names(dots)
+  if (length(dots) && (is.null(nms) || !all(nzchar(nms)))) {
+    cli::cli_abort(c(
+      "Every argument after {.arg adjust} must be named.",
+      i = "The positional order of janusplot() 0.2.0 is not carried over."
+    ), call = rlang::caller_env())
+  }
+  warn <- function(name, with = NULL, details = NULL) {
+    lifecycle::deprecate_warn(
+      when = "1.0.0", what = sprintf("janusplot(%s = )", name),
+      with = with, details = details, user_env = user_env
     )
-    kc <- f$k_check %||% list(
-      k_prime = NA_real_, k_index = NA_real_, k_p = NA_real_,
-      k_flag = NA, k_check_status = NA_character_,
-      k_initial = NA_real_, k_final = NA_real_,
-      k_iterations = 0L, k_at_cap = FALSE
+  }
+
+  # Appearance knobs into the style object -------------------------------
+  moved <- intersect(nms, .legacy_style_args())
+  if (length(moved)) {
+    style_args <- unclass(style)
+    for (name in moved) {
+      warn(name, with = sprintf("janusplot_style(%s = )", name))
+      value <- dots[[name]]
+      if (name == "labels" && identical(value, "diagonal")) {
+        cli::cli_inform(c(
+          i = 'labels = "diagonal" is no longer available; drawing labels = "border".'
+        ))
+        value <- "border"
+      }
+      style_args[name] <- list(value)
+    }
+    style <- do.call(janusplot_style, style_args)
+  }
+
+  # View arguments ---------------------------------------------------------
+  if ("fill_by" %in% nms) {
+    warn("fill_by", with = "janusplot(colour_by = )")
+    colour_by <- dots$fill_by
+  }
+  if ("show_asymmetry" %in% nms) {
+    warn("show_asymmetry", with = "janusplot(annotations = )")
+    if (isTRUE(dots$show_asymmetry)) {
+      annotations <- union(annotations, "A")
+    } else if (isFALSE(dots$show_asymmetry)) {
+      annotations <- setdiff(annotations, "A")
+    }
+  }
+  if ("signif_glyph" %in% nms) {
+    warn("signif_glyph", with = "janusplot(annotations = )",
+         details = 'The significance glyph is the "signif" annotation.')
+    .check_flag(dots$signif_glyph, "signif_glyph")
+    annotations <- if (dots$signif_glyph) {
+      union(annotations, "signif")
+    } else {
+      setdiff(annotations, "signif")
+    }
+  }
+
+  # Post-actions -----------------------------------------------------------
+  post <- list(with_data = FALSE, save_as = NULL, save_width = NULL,
+               save_height = NULL, save_dpi = 300)
+  if ("with_data" %in% nms) {
+    warn("with_data",
+         details = "Use summary(janusplot_fit(...)) for the per-cell table.")
+    .check_flag(dots$with_data, "with_data")
+    post$with_data <- dots$with_data
+  }
+  if ("save_as" %in% nms) {
+    warn("save_as", with = "ggplot2::ggsave()")
+    .check_save_as(dots$save_as)
+    post$save_as <- dots$save_as
+  }
+  for (name in c("save_width", "save_height")) {
+    if (name %in% nms) {
+      warn(name, with = "ggplot2::ggsave()")
+      .check_save_dim(dots[[name]], name)
+      post[[name]] <- dots[[name]]
+    }
+  }
+  if ("save_dpi" %in% nms) {
+    warn("save_dpi", with = "ggplot2::ggsave()")
+    .check_save_dpi(dots$save_dpi)
+    post$save_dpi <- dots$save_dpi
+  }
+
+  shimmed <- c(.legacy_style_args(), "fill_by", "show_asymmetry",
+               "signif_glyph", "with_data", "save_as", "save_width",
+               "save_height", "save_dpi")
+  list(
+    fit_args  = dots[setdiff(nms, shimmed)],
+    view_args = list(colour_by = colour_by, annotations = annotations),
+    style     = style,
+    post      = post
+  )
+}
+
+# A single file path whose extension names an image device.
+.check_save_as <- function(save_as, call = rlang::caller_env(2L)) {
+  if (!is.character(save_as) || length(save_as) != 1L || !nzchar(save_as)) {
+    cli::cli_abort(
+      "{.arg save_as} must be a single non-empty file path or NULL.",
+      call = call
     )
-    data.frame(
-      var_x              = f$x_name,
-      var_y              = f$y_name,
-      position           = position,
-      n_used             = f$n_used,
-      edf                = f$edf,
-      pvalue             = f$pvalue,
-      signif             = .pvalue_to_glyph(f$pvalue),
-      dev_exp            = f$dev_exp,
-      deviance_gap       = f$deviance_gap %||% NA_real_,
-      asymmetry_index    = asym_tbl[[asym_key]] %||% NA_real_,
-      k_capped_yx        = isTRUE(f_yx$k_capped),
-      k_capped_xy        = isTRUE(f_xy$k_capped),
-      cor_pearson        = f$corr$cor_pearson,
-      cor_spearman       = f$corr$cor_spearman,
-      cor_kendall        = f$corr$cor_kendall,
-      tie_ratio          = f$corr$tie_ratio,
-      monotonicity_index = f$shape$monotonicity_index,
-      convexity_index    = f$shape$convexity_index,
-      n_turning_points   = f$shape$n_turning_points,
-      n_inflections      = f$shape$n_inflections,
-      flat_range_ratio   = f$shape$flat_range_ratio,
-      shape_category     = shape_cat,
-      shape_code         = .shape_lookup(shape_cat, "code"),
-      shape_archetype    = .shape_lookup(shape_cat, "archetype"),
-      shape_monotonic    = .shape_lookup(shape_cat, "monotonic"),
-      shape_linear       = .shape_lookup(shape_cat, "linear"),
-      colour_value       = .colour_value(f, colour_by),
-      display            = display,
-      k_prime            = kc$k_prime,
-      k_index            = kc$k_index,
-      k_p                = kc$k_p,
-      k_flag             = isTRUE(kc$k_flag),
-      k_check_status     = kc$k_check_status,
-      k_initial          = kc$k_initial,
-      k_final            = kc$k_final,
-      k_iterations       = as.integer(kc$k_iterations %||% 0L),
-      k_at_cap           = isTRUE(kc$k_at_cap),
-      k_requested        = as.integer(f$k_requested %||% NA_integer_),
-      k_used             = as.integer(f$k_used %||% NA_integer_),
-      k_capped           = isTRUE(f$k_capped),
-      engine             = f$engine %||% NA_character_,
-      method             = f$method %||% NA_character_,
-      error              = f$error %||% NA_character_,
-      stringsAsFactors   = FALSE
+  }
+  ext <- tolower(tools::file_ext(save_as))
+  valid_ext <- c("png", "pdf", "svg", "jpg", "jpeg", "tif", "tiff",
+                 "eps", "ps", "bmp")
+  if (!nzchar(ext) || !(ext %in% valid_ext)) {
+    cli::cli_abort(c(
+      "Cannot infer image device from {.arg save_as} extension {.val {ext}}.",
+      i = "Supported: {.val {valid_ext}}."
+    ), call = call)
+  }
+  invisible(NULL)
+}
+
+.check_save_dim <- function(x, arg_name, call = rlang::caller_env(2L)) {
+  if (!is.null(x) && (!is.numeric(x) || length(x) != 1L ||
+                      !is.finite(x) || x <= 0)) {
+    cli::cli_abort(
+      "{.arg {arg_name}} must be a single positive numeric or NULL.",
+      call = call
     )
-  })
-  out <- do.call(rbind, rows)
-  rownames(out) <- NULL
-  out
+  }
+  invisible(NULL)
+}
+
+.check_save_dpi <- function(x, call = rlang::caller_env(2L)) {
+  if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x <= 0) {
+    cli::cli_abort("{.arg save_dpi} must be a single positive numeric.",
+                   call = call)
+  }
+  invisible(NULL)
 }
 
 # ---------------------------------------------------------------
@@ -953,12 +327,14 @@ janusplot <- function(
 
 # ---------------------------------------------------------------
 # Glossary caption body -- only lists keys actually shown on the
-# plot. Extended to mention the derivative CI mode when a
-# derivative is displayed.
+# plot: the annotations, the colour encoding and its channel, and the
+# derivative band mode when a derivative is displayed.
 # ---------------------------------------------------------------
 
-.build_glossary_text <- function(signif_glyph, annotations, colour_by,
-                                 display = "fit", derivative_ci = "none") {
+.build_glossary_text <- function(annotations, colour_by,
+                                 colour_channel = "border",
+                                 display = "fit",
+                                 derivative_ci = "pointwise") {
   parts <- character()
   if (display == "fit" && "A" %in% annotations) {
     parts <- c(parts,
@@ -968,23 +344,36 @@ janusplot <- function(
     parts <- c(parts,
       "EDF = effective degrees of freedom of the smooth")
   }
+  if ("n" %in% annotations) {
+    parts <- c(parts, "n = rows used by the cell")
+  }
   if (display == "fit" && "shape" %in% annotations) {
     parts <- c(parts,
       "Shape glyph = objective shape category (see shape-types legend below)")
   }
+  if (display == "fit" && "k_warn" %in% annotations) {
+    parts <- c(parts,
+      "! marks a cell flagged for possible k underfit or capped at the distinct predictor count")
+  }
+  where <- switch(colour_channel,
+    border = "Cell border encodes",
+    tile   = "Corner tile encodes",
+    fill   = "Cell colour encodes"
+  )
   colour_msg <- switch(colour_by,
-    spearman     = "Cell colour encodes Spearman rank correlation (corr)",
-    pearson      = "Cell colour encodes Pearson correlation (corr)",
-    kendall      = "Cell colour encodes Kendall correlation (corr)",
-    edf          = "Cell colour encodes EDF (see right-margin legend)",
+    spearman     = "Spearman rank correlation (corr)",
+    pearson      = "Pearson correlation (corr)",
+    kendall      = "Kendall correlation (corr)",
+    nonlinearity = "non-linearity, EDF - 1 (see right-margin legend)",
+    asymmetry    = "the asymmetry index A of the pair, in [0, 1]",
     deviance_gap = paste(
-      "Cell colour encodes the deviance gap: deviance explained by the",
+      "the deviance gap: deviance explained by the",
       "smooth minus that of the straight-line fit"
     ),
     none         = NULL
   )
-  if (!is.null(colour_msg)) parts <- c(parts, colour_msg)
-  if (display == "fit" && signif_glyph) {
+  if (!is.null(colour_msg)) parts <- c(parts, paste(where, colour_msg))
+  if (display == "fit" && "signif" %in% annotations) {
     parts <- c(parts,
       "Signif. of smooth F-test: *** p<.001, ** p<.01, * p<.05, \u00b7 p<.1")
   }
@@ -1026,24 +415,6 @@ janusplot <- function(
       )
     )
 }
-
-# Helper used only by janusplot(): asymmetry index lookup by unordered pair
-.asymmetry_table <- function(fits, vars) {
-  k <- length(vars)
-  tbl <- list()
-  for (i in seq_len(k - 1L)) {
-    for (j in (i + 1L):k) {
-      f_ij <- fits[[sprintf("%d_%d", i, j)]]
-      f_ji <- fits[[sprintf("%d_%d", j, i)]]
-      if (is.null(f_ij) || is.null(f_ji)) next
-      tbl[[paste(i, j, sep = "_")]] <- .compute_asymmetry_index(
-        f_ij$edf, f_ji$edf
-      )
-    }
-  }
-  tbl
-}
-
 
 #' Deprecated: raw GAM fits and per-cell metrics
 #'

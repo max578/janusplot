@@ -5,11 +5,13 @@
 #
 # Composite layout (post-matrix):
 #   top row    -> matrix | colour-bar (colour-bar optional)
+#   middle row -> group legend (optional, spans full width)
 #   bottom row -> shape-types legend (optional, spans full width)
 
 .assemble_matrix <- function(cells_by_ij, diag_cells, vars, colour_by,
                              colour_limits, palette,
                              shape_legend_plot = NULL,
+                             group_legend_plot = NULL,
                              labels = "border",
                              label_srt = 45,
                              label_cex = 1,
@@ -112,13 +114,22 @@
     matrix_grid
   }
 
-  if (!has_shape_leg) return(top_row)
+  # --- Rows below the matrix: group legend, then the shape legend ---
+  rows    <- list(top_row)
+  heights <- list(grid::unit(1, "null"))
+  if (!is.null(group_legend_plot)) {
+    rows    <- c(rows, list(group_legend_plot))
+    heights <- c(heights, list(grid::unit(0.9, "cm")))
+  }
+  if (has_shape_leg) {
+    rows    <- c(rows, list(shape_legend_plot))
+    heights <- c(heights, list(grid::unit(0.42, "null")))
+  }
+  if (length(rows) == 1L) return(top_row)
 
-  # --- Bottom row: shape legend spans full width ---
   patchwork::wrap_plots(
-    list(top_row, shape_legend_plot),
+    rows,
     ncol    = 1L,
-    heights = grid::unit.c(grid::unit(1, "null"),
-                           grid::unit(0.42, "null"))
+    heights = do.call(grid::unit.c, heights)
   )
 }

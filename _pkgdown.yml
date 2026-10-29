@@ -40,6 +40,8 @@ reference:
     contents:
       - janusplot
       - janusplot_fit
+      - plot.janusplot_fit
+      - janusplot_style
       - janusplot_data
 
   - title: "Directional licensing"
