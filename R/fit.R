@@ -28,10 +28,12 @@
 #' shape indices `M` and `C`, the turning-point and inflection counts and
 #' the flat-range ratio are computed on this grid.
 #'
-#' The smooth F-test p-values of the `k(k - 1)` directed cells form one
-#' family. `p_adjust` adjusts them once with [stats::p.adjust()] and the
-#' result is stored beside the raw values as `association_p_adj`; failed
-#' cells stay `NA`. Under `"none"` the adjusted columns equal the raw ones.
+#' The smooth F-test p-values of the directed cells form one family.
+#' `p_adjust` adjusts them once with [stats::p.adjust()] and the result is
+#' stored beside the raw values as `association_p_adj`. A failed cell has
+#' no p-value and stays out of the family, so the family is the cells
+#' that produced a p-value, at most `k(k - 1)`. Under `"none"` the
+#' adjusted columns equal the raw ones.
 #'
 #' `directional_complexity_yx` is `(EDF_yx - EDF_xy) / (EDF_yx + EDF_xy)`
 #' in `[-1, 1]`, positive when the fit of `var_j` on `var_i` is the more
