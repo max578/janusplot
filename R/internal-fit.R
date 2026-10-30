@@ -1026,11 +1026,19 @@
 }
 
 # mgcv stops with an uninformative message when y is an exact copy or
-# an exact affine transform of x; name the cause instead.
+# an exact affine transform of x, or when either column is constant on
+# the pair's rows; name the cause instead.
 .degenerate_pair_message <- function(x, y, x_name, y_name) {
   if (identical(x, y)) {
     return(sprintf("`%s` and `%s` are identical; no smooth can be fitted.",
                    x_name, y_name))
+  }
+  constant <- c(x_name, y_name)[c(stats::sd(x) == 0, stats::sd(y) == 0)]
+  if (length(constant)) {
+    return(sprintf(
+      "`%s` is constant on the rows of this pair; no smooth can be fitted.",
+      constant[1L]
+    ))
   }
   if (stats::sd(x) > 0 && stats::sd(y) > 0) {
     r <- stats::cor(x, y)

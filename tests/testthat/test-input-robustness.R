@@ -320,6 +320,21 @@ test_that("identical and collinear columns route through the failed-cell path", 
   expect_true(is.finite(p14$edf_yx))
 })
 
+test_that("a constant column is named in both directions", {
+  withr::local_seed(2026L)
+  d <- data.frame(a = stats::rnorm(60L), b = stats::rnorm(60L), k = 5)
+  expect_warning(
+    fit <- janusplot_fit(d, engine = "gam", derivatives = integer()),
+    "failed to fit"
+  )
+  tbl <- summary(fit)
+  err <- tbl$error[tbl$var_x == "k" | tbl$var_y == "k"]
+  expect_length(err, 4L)
+  expect_true(all(grepl("`k` is constant", err, fixed = TRUE)))
+  expect_false(any(grepl("foreign function|unique covariate", err)))
+  expect_true(all(is.finite(tbl$edf[tbl$var_x != "k" & tbl$var_y != "k"])))
+})
+
 test_that("the per-cell table carries the collinearity message", {
   d <- make_collinear_data()
   names(d)[2L] <- "x1 copy"
