@@ -481,6 +481,31 @@ residual-independence test of direction (`janusplot_direction()`).
   carry. `kernR (>= 0.8.0)` stays in `Suggests:` and resolves through
   `Additional_repositories: https://max578.r-universe.dev`.
 * `DESCRIPTION` names the 27-category shape taxonomy.
+* A `family` with a non-identity link, passed through `...`, now draws the
+  curve and its band on the response scale, beside points on the same
+  scale. The band is formed on the link and mapped through the inverse
+  link. The derivatives, shape indices and shape label describe the
+  linear predictor, and the prediction grid carries it as `fit_link`.
+  The fit records `family`, `link`, `discrete` and `nthreads` in
+  `settings`, and `janusplot_compare()` names a difference in any of them.
+* A column that is constant on a pair's rows is named in that cell's
+  error, in place of mgcv's "NA/NaN/Inf in foreign function call".
+* `derivative_ci = "simultaneous"` leaves the caller's random-number state
+  where it was.
+* `k_capped` is also `TRUE` when an `auto_refit_k` refit stops at the
+  distinct-value cap.
+* `shape_borderline` is `NA` for a label decided by the turning-point and
+  inflection counts. It used to report the distance to the `flat` cutoff,
+  which says nothing about how near a count is to changing.
+* `print()` shows each direction's EDF and p-value (adjusted when the fit
+  adjusted) beside its shape label, and marks a label "n.s." when that
+  p-value is 0.05 or more. The strip does the same for a shape code or
+  glyph. Labels in `summary()` are unchanged.
+* With `adjust`, `janusplot_direction()` reports how many rows it used
+  and that rows missing an `adjust` variable are left out. When both
+  residual tests are independent but the two variables are correlated,
+  the reason says the association is present and its direction is not
+  identified.
 
 # janusplot 0.2.0
 
