@@ -172,6 +172,23 @@ sample: at finite `n`, one direction of a REML-selected smooth can
 pick up a spurious wiggle between two unrelated variables and give
 their pair a clearly positive A.
 
+A also depends on the distribution of the predictor, not only on the
+relationship. When `y` is a straight line in `x` plus noise, the mean
+of `y` given `x` is linear, but the mean of `x` given `y` is linear
+only when `x` is Gaussian. A uniform or otherwise bounded `x` bends the
+reverse mean near the ends of the range. With 200 rows and a uniform
+`x`, a straight-line pair typically has an A between 0.5 and 0.7, where
+a Gaussian `x` gives an A near 0.05. Here `x` is uniform, so
+part of the `x`-`y` index would appear with constant noise as well. Read
+A beside both EDFs and the predictor's distribution, not as a measure
+of non-linearity on its own.
+
+Shape labels describe the fitted smooth. They are not evidence of an
+association: a smooth through pure noise with EDF near 1 still gets a
+monotone label. The p-value carries the evidence, so `print()` shows it
+beside each label, and the strip adds "n.s." to a shape code or glyph
+in a cell whose p-value is 0.05 or more.
+
 ### Colouring points by group
 
 `group` colours the raw points by a factor, character or logical column
