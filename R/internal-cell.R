@@ -704,9 +704,7 @@
   .pvalue_to_glyph(p)
 }
 
-# A shape label is a description of the fitted curve, not evidence of an
-# association; where the cell's p-value (adjusted when the fit adjusted)
-# is 0.05 or more, the label is shown with "n.s." beside it.
+# TRUE when the cell's p-value (adjusted when the fit adjusted) is 0.05 or more.
 .face_not_significant <- function(face, p_adjust = "none") {
   p <- if (identical(p_adjust, "none")) {
     face$association_p

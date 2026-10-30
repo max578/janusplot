@@ -739,8 +739,7 @@ summary.janusplot_fit <- function(object, ...) {
 }
 
 # The n_top largest asymmetries, one formatted line each; pairs without
-# an index are left out. Each direction carries its EDF and p-value
-# beside its label, so a label is never read without its evidence.
+# an index are left out.
 .format_top_asymmetries <- function(pairs, n_top = 5L, p_adjust = "none") {
   a  <- vapply(pairs, function(p) as.numeric(p$asymmetry_index), numeric(1L))
   ok <- which(is.finite(a))
