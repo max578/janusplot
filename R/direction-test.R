@@ -378,9 +378,7 @@ janusplot_direction <- function(
   )
 }
 
-# Reason text when both residual tests are independent: separates a pair
-# with no association from an associated pair whose direction is not
-# identified.
+# Reason text for the both_independent verdict.
 .both_independent_reason <- function(p_forward, p_reverse, x, y, alpha) {
   r_test <- stats::cor.test(x, y)
   head <- paste0(
