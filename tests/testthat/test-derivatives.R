@@ -346,3 +346,21 @@ test_that("janusplot display = 'd1' simultaneous-CI snapshot", {
   })
   vdiffr::expect_doppelganger("matrix-2var-d1-simultaneous", p)
 })
+
+test_that("simultaneous bands leave the caller's RNG state unchanged", {
+  withr::local_seed(99L)
+  d <- data.frame(x = seq(-2, 2, length.out = 80L))
+  d$y <- d$x^2 + stats::rnorm(80L, sd = 0.2)
+  fit_once <- function() {
+    suppressMessages(janusplot_fit(d, engine = "gam", derivatives = 1L,
+                                   derivative_ci = "simultaneous",
+                                   derivative_ci_nsim = 200L))
+  }
+  set.seed(99L)
+  before <- .Random.seed
+  m1 <- attr(fit_once()$pairs[[1L]]$deriv_yx[["1"]], "crit_multiplier")
+  expect_identical(.Random.seed, before)
+  set.seed(99L)
+  m2 <- attr(fit_once()$pairs[[1L]]$deriv_yx[["1"]], "crit_multiplier")
+  expect_identical(m1, m2)
+})

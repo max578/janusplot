@@ -615,8 +615,9 @@
 
   # dB[b, ] = beta*_b - beta_hat, drawn as Z %*% L with Z standard
   # normal (n_sim x p). Keeps memory O(n_sim * p), fast for
-  # n_sim = 1000 and basis ranks in the low tens.
-  Z  <- matrix(stats::rnorm(n_sim * p), nrow = n_sim)
+  # n_sim = 1000 and basis ranks in the low tens. The caller's RNG
+  # stream is left where it was.
+  Z  <- .with_preserved_seed(matrix(stats::rnorm(n_sim * p), nrow = n_sim))
   dB <- Z %*% L
 
   out <- list()
