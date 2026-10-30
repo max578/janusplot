@@ -238,6 +238,24 @@ test_that("the strip carries the requested annotations in order", {
   expect_identical(strip(face, "k_warn", glyph_style = "unicode"), "\u26A0")
 })
 
+test_that("a shape label on a non-significant cell is marked n.s.", {
+  fit <- fit_two(make_nonlinear_data(n = 120L))
+  face <- janusplot:::.pair_face(fit$pairs[[1L]], "yx")
+  strip <- janusplot:::.cell_strip_text
+  face$association_p <- 0.001
+  expect_false(grepl("n.s.", strip(face, c("code", "shape")), fixed = TRUE))
+  face$association_p <- 0.2
+  expect_identical(strip(face, "code"), paste0(face$shape_code, "  n.s."))
+  with_shape <- strip(face, c("code", "shape"))
+  expect_identical(lengths(regmatches(with_shape,
+                                      gregexpr("n.s.", with_shape, fixed = TRUE))), 1L)
+  expect_false(grepl("n.s.", strip(face, c("A", "signif")), fixed = TRUE))
+  # The adjusted p-value decides when the fit adjusted.
+  face$association_p_adj <- 0.001
+  expect_false(grepl("n.s.", strip(face, "code", p_adjust = "holm"),
+                     fixed = TRUE))
+})
+
 test_that("the significance glyph follows the fit's p_adjust", {
   d <- make_nonlinear_data(n = 120L)
   raw  <- fit_two(d, vars = c("x1", "x2", "x3", "x4"))

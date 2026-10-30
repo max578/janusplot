@@ -704,6 +704,18 @@
   .pvalue_to_glyph(p)
 }
 
+# A shape label is a description of the fitted curve, not evidence of an
+# association; where the cell's p-value (adjusted when the fit adjusted)
+# is 0.05 or more, the label is shown with "n.s." beside it.
+.face_not_significant <- function(face, p_adjust = "none") {
+  p <- if (identical(p_adjust, "none")) {
+    face$association_p
+  } else {
+    face$association_p_adj
+  }
+  is.finite(p) && p >= 0.05
+}
+
 .k_warn_glyph <- function(glyph_style = "ascii") {
   if (identical(glyph_style, "unicode")) "\u26A0" else "!"
 }
@@ -724,8 +736,10 @@
   if ("formula" %in% annotations) {
     parts <- c(parts, sprintf("%s ~ %s", face$var_y, face$var_x))
   }
+  not_signif <- .face_not_significant(face, p_adjust)
   if ("code" %in% annotations && !is.na(face$shape_code)) {
     parts <- c(parts, face$shape_code)
+    if (not_signif) parts <- c(parts, "n.s.")
   }
   if ("A" %in% annotations && !is.na(face$asymmetry_index)) {
     parts <- c(parts, sprintf("A %.2f", face$asymmetry_index))
@@ -748,7 +762,10 @@
   }
   if ("shape" %in% annotations && !is.na(face$shape)) {
     glyph <- .shape_glyph(face$shape, style = glyph_style)
-    if (!is.na(glyph) && nzchar(glyph)) parts <- c(parts, glyph)
+    if (!is.na(glyph) && nzchar(glyph)) {
+      parts <- c(parts, glyph)
+      if (not_signif && !"n.s." %in% parts) parts <- c(parts, "n.s.")
+    }
   }
   if ("k_warn" %in% annotations && (face$k_flag || face$k_capped)) {
     parts <- c(parts, .k_warn_glyph(glyph_style))
@@ -898,11 +915,12 @@
 
   # Top-left: 2-letter shape code.
   want_code <- "code" %in% annotations && !is.na(face$shape_code)
+  not_signif <- .face_not_significant(face, p_adjust)
   if (want_code) {
     p <- p + ggplot2::annotate(
       "text", x = -Inf, y = Inf,
       hjust = -0.20, vjust = 1.4,
-      label = face$shape_code,
+      label = if (not_signif) paste(face$shape_code, "n.s.") else face$shape_code,
       size = text_sizes$n_edf,
       colour = "grey20", fontface = "bold", family = family
     )
@@ -915,7 +933,7 @@
       p <- p + ggplot2::annotate(
         "text", x = Inf, y = -Inf,
         hjust = 1.15, vjust = -0.25,
-        label = glyph,
+        label = if (not_signif && !want_code) paste("n.s.", glyph) else glyph,
         size = text_sizes$shape,
         colour = "grey25", fontface = "bold", family = family
       )
