@@ -470,9 +470,8 @@ janusplot_shape_hierarchy <- function() {
 # that index alone changes the label .classify_shape() returns. The
 # probe re-runs the classifier with the index set just across each
 # cutoff, so conjunctions and fall-through branches are honoured
-# without restating the rules. NA for an indeterminate label and when
-# no cutoff can change the label (a count-decided label whose
-# flat-range ratio is NA).
+# without restating the rules. NA for an indeterminate label and for a
+# label decided by the turning-point and inflection counts.
 # ---------------------------------------------------------------
 
 .shape_borderline <- function(M, C, n_turn, n_inflect, flat_ratio, cutoffs,
@@ -492,6 +491,9 @@ janusplot_shape_hierarchy <- function() {
     .cutoff_gaps(C, c(-c_cuts, c_cuts), label,
                  function(v) classify_at(M, v, flat_ratio))
   )
+  # No M or C cutoff bounds a count-decided label; its distance to `flat`
+  # says nothing about how near the counts are to changing.
+  if (!length(gaps) && !identical(label, "flat")) return(NA_real_)
   if (!is.na(flat_ratio)) {
     gaps <- c(gaps, .cutoff_gaps(flat_ratio, cutoffs$flat, label,
                                  function(v) classify_at(M, C, v)))

@@ -134,14 +134,20 @@ test_that(".shape_borderline() is the gap to the cutoff that can flip the label"
   # A flat label is `flat` minus the ratio away from leaving the class.
   expect_equal(janusplot:::.shape_borderline(0.95, 0.05, 0L, 0L, 0.03, co),
                0.02)
-  # Count-decided labels: only the flat gate can move them, so the margin
-  # is the flat-range gap, and NA when that ratio is unavailable.
+  # Count-decided labels: no M or C cutoff bounds them, and the margin
+  # does not measure the counts, so it is NA even with a flat-range ratio.
   expect_identical(janusplot:::.classify_shape(0.1, 0.6, 1L, 0L, 2, co),
                    "u_shape")
-  expect_equal(janusplot:::.shape_borderline(0.1, 0.6, 1L, 0L, 2, co),
-               2 - co$flat)
+  expect_identical(janusplot:::.shape_borderline(0.1, 0.6, 1L, 0L, 2, co),
+                   NA_real_)
+  expect_identical(janusplot:::.shape_borderline(0.1, 0.6, 1L, 0L, 0.06, co),
+                   NA_real_)
   expect_identical(janusplot:::.shape_borderline(0.1, 0.6, 1L, 0L,
                                                  NA_real_, co),
+                   NA_real_)
+  expect_identical(janusplot:::.classify_shape(0.05, 0.2, 3L, 2L, 2, co),
+                   "bimodal")
+  expect_identical(janusplot:::.shape_borderline(0.05, 0.2, 3L, 2L, 2, co),
                    NA_real_)
   # Indeterminate: no cutoff consulted.
   expect_identical(janusplot:::.shape_borderline(NA_real_, 0.3, 0L, 0L, 1, co),
@@ -151,14 +157,18 @@ test_that(".shape_borderline() is the gap to the cutoff that can flip the label"
               "character")
 })
 
-test_that("shape_borderline is finite on fitted cells and NA on failed cells", {
+test_that("shape_borderline is finite on index-decided cells and NA otherwise", {
   d <- make_nonlinear_data(n = 150L)
   d$x5 <- d$x1
   fit <- suppressWarnings(janusplot_fit(d, engine = "gam"))
   tbl <- fit$table
   fitted <- !is.na(tbl$edf)
-  expect_true(all(is.finite(tbl$shape_borderline[fitted])))
-  expect_true(all(tbl$shape_borderline[fitted] >= 0))
+  by_index <- fitted & (tbl$shape_category == "flat" |
+                          (tbl$n_turning_points == 0L & tbl$n_inflections == 0L))
+  expect_true(any(by_index) && any(fitted & !by_index))
+  expect_true(all(is.finite(tbl$shape_borderline[by_index])))
+  expect_true(all(tbl$shape_borderline[by_index] >= 0))
+  expect_true(all(is.na(tbl$shape_borderline[fitted & !by_index])))
   expect_true(all(is.na(tbl$shape_borderline[!fitted])))
   expect_true(all(tbl$shape_category[!fitted] == "indeterminate"))
   pr <- fit$pairs[[1L]]

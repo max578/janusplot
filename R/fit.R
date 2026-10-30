@@ -45,10 +45,12 @@
 #' and a classification cutoff whose crossing by that index alone would
 #' change the `shape_category` label, on the index's own scale: `M` and
 #' `C` against the monotonicity and curvature cutoffs, the flat-range
-#' ratio against the `flat` cutoff. A label decided by the turning-point
-#' and inflection counts (`u_shape`, the other single-extremum labels and
-#' the waves) reports its gap to the `flat` cutoff. A small value marks a
-#' label that a slightly different smooth would have moved.
+#' ratio against the `flat` cutoff. A small value marks a label that a
+#' slightly different smooth would have moved. Only `flat` and the
+#' monotone labels of a curve with no turning point and no inflection
+#' carry a margin. Every other label is decided by the turning-point and
+#' inflection counts and has `NA`: the margin does not measure how near a
+#' count is to changing.
 #'
 #' `$data` is the cleaned copy of the columns used: the fitted variables,
 #' the `adjust` variables and every factor, character or logical column
@@ -164,8 +166,8 @@
 #'     `convexity_index_*`, the counts `n_turning_*`, `n_inflect_*`, the
 #'     labels `shape_*`, `shape_code_*`, `shape_archetype_*`,
 #'     `shape_monotonic_*`, `shape_linear_*`, the margins
-#'     `shape_borderline_yx`, `shape_borderline_xy` (`NA` only for an
-#'     `indeterminate` label or a missing flat-range ratio), the derivative
+#'     `shape_borderline_yx`, `shape_borderline_xy` (`NA` for an
+#'     `indeterminate` or count-decided label), the derivative
 #'     curves `deriv_yx`, `deriv_xy` (lists keyed `"1"`, `"2"` of data
 #'     frames with `x`, `fit`, `se`, `lo`, `hi`, `ci_type`), the
 #'     prediction references `prediction_reference_yx`,
