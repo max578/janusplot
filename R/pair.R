@@ -7,7 +7,7 @@
 #' Draw both directions of pairs of a janusplot fit
 #'
 #' @description
-#' `r lifecycle::badge("experimental")`
+#' `r lifecycle::badge("stable")`
 #'
 #' Draws the two directional fits of one or more pairs of a
 #' [janusplot_fit()] object. Each pair is a block of two panels side by

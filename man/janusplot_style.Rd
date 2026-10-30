@@ -171,7 +171,7 @@ above, with \code{text_size} stored as given. \code{print()} lists the values
 that differ from the defaults and returns \code{x} invisibly.
 }
 \description{
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
 
 Collects every appearance knob of \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}},
 \code{\link[=janusplot_pair]{janusplot_pair()}} and \code{\link[=janusplot]{janusplot()}} into one validated object. Model

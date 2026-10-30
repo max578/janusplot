@@ -26,7 +26,8 @@ and its band are population-level.}
     \item{\code{k}}{Basis dimension for \code{s()}: a single integer, or a named list
 of integers keyed by variable name. \code{-1L} (the default) leaves the
 choice to mgcv. Each cell's basis is capped at the number of distinct
-predictor values in its rows; capped cells are listed in
+predictor values in its rows, and an \code{auto_refit_k} refit stops one
+below that number; capped cells are listed in
 \code{flags$k_capped} and recorded as \code{k_requested}, \code{k_used} and
 \code{k_capped}.}
     \item{\code{bs}}{Basis type for \code{s()}; \code{"tp"} (thin plate) by default.}

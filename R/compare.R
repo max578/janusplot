@@ -9,7 +9,7 @@
 #' Compare two fits of the same variables cell by cell
 #'
 #' @description
-#' `r lifecycle::badge("experimental")`
+#' `r lifecycle::badge("stable")`
 #'
 #' Matches every directed cell of two [janusplot_fit()] objects over the
 #' same variables and reports how the EDF, the asymmetry index and the
@@ -273,7 +273,7 @@ print.janusplot_compare <- function(x, ...) {
 #' Draw two fits of the same variables in one matrix
 #'
 #' @description
-#' `r lifecycle::badge("experimental")`
+#' `r lifecycle::badge("stable")`
 #'
 #' Draws the matrix of a [janusplot_compare()] object with both fitted
 #' curves in every off-diagonal cell: the first fit as a grey dashed

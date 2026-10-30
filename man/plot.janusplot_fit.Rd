@@ -107,7 +107,7 @@ a title naming the displayed quantity and the glossary caption when
 \code{style$show_glossary} is \code{TRUE}.
 }
 \description{
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
 
 Draws the asymmetric matrix of a \code{\link[=janusplot_fit]{janusplot_fit()}} object: one cell per
 directed pair, the fitted curve with its band over the raw points, the

@@ -50,7 +50,7 @@ colours for \code{display = "both"} and the group legend underneath when
 \code{group} is given.
 }
 \description{
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
 
 Draws the two directional fits of one or more pairs of a
 \code{\link[=janusplot_fit]{janusplot_fit()}} object. Each pair is a block of two panels side by

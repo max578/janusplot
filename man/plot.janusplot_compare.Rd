@@ -42,7 +42,7 @@ compare cells carry no shape code), a title naming the two fits and
 the key caption when \code{style$show_glossary} is \code{TRUE}.
 }
 \description{
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
 
 Draws the matrix of a \code{\link[=janusplot_compare]{janusplot_compare()}} object with both fitted
 curves in every off-diagonal cell: the first fit as a grey dashed

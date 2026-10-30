@@ -38,7 +38,7 @@ order of \code{summary(fit_a)}: \code{var_x} (predictor), \code{var_y}
 \code{print()} returns \code{x} invisibly.
 }
 \description{
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
 
 Matches every directed cell of two \code{\link[=janusplot_fit]{janusplot_fit()}} objects over the
 same variables and reports how the EDF, the asymmetry index and the

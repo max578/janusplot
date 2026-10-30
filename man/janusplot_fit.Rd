@@ -55,7 +55,8 @@ and its band are population-level.}
 \item{k}{Basis dimension for \code{s()}: a single integer, or a named list
 of integers keyed by variable name. \code{-1L} (the default) leaves the
 choice to mgcv. Each cell's basis is capped at the number of distinct
-predictor values in its rows; capped cells are listed in
+predictor values in its rows, and an \code{auto_refit_k} refit stops one
+below that number; capped cells are listed in
 \code{flags$k_capped} and recorded as \code{k_requested}, \code{k_used} and
 \code{k_capped}.}
 
@@ -132,7 +133,13 @@ in \verb{$fits} and as \code{fit_yx} / \code{fit_xy} of every pair; \code{FALSE}
 default) keeps metrics and prediction grids only.}
 
 \item{...}{Further arguments passed to \code{\link[mgcv:gam]{mgcv::gam()}} or \code{\link[mgcv:bam]{mgcv::bam()}}.
-The \code{print()} and \code{summary()} methods ignore them.}
+The \code{print()} and \code{summary()} methods ignore them. Under a \code{family}
+with a non-identity link the curve and its band are drawn on the
+response scale, while the derivatives, the shape indices and the
+shape label describe the linear predictor (the link scale). The two
+agree on monotone labels; a curvature label can differ, for example
+a log-linear Poisson mean is \code{linear_up} on the link scale and convex
+on the response scale.}
 
 \item{x}{A \code{janusplot_fit} object.}
 
@@ -146,7 +153,9 @@ order.}
 \item{\code{pairs}}{List with one element per unordered pair \code{i < j}. Each
 element carries \code{i}, \code{j}, \code{var_i}, \code{var_j}, \code{fit_yx}, \code{fit_xy}
 (\code{NULL} unless \code{keep_fits = TRUE}), the prediction grids \code{pred_yx},
-\code{pred_xy} (data frames with \code{x}, \code{fit}, \code{se}, \code{lo}, \code{hi}),
+\code{pred_xy} (data frames with \code{x}, \code{fit}, \code{se}, \code{lo}, \code{hi} on the
+response scale, \code{se} on the link scale, and \code{fit_link} when the
+link is not the identity),
 \code{edf_yx}, \code{edf_xy}, \code{association_p_yx}, \code{association_p_xy},
 \code{association_p_adj_yx}, \code{association_p_adj_xy}, \code{dev_exp_yx},
 \code{dev_exp_xy}, \code{deviance_gap_yx}, \code{deviance_gap_xy}, \code{n_used},
@@ -157,8 +166,8 @@ correlations \code{cor_pearson}, \code{cor_spearman}, \code{cor_kendall} and
 \verb{convexity_index_*}, the counts \verb{n_turning_*}, \verb{n_inflect_*}, the
 labels \verb{shape_*}, \verb{shape_code_*}, \verb{shape_archetype_*},
 \verb{shape_monotonic_*}, \verb{shape_linear_*}, the margins
-\code{shape_borderline_yx}, \code{shape_borderline_xy} (\code{NA} only for an
-\code{indeterminate} label or a missing flat-range ratio), the derivative
+\code{shape_borderline_yx}, \code{shape_borderline_xy} (\code{NA} for an
+\code{indeterminate} or count-decided label), the derivative
 curves \code{deriv_yx}, \code{deriv_xy} (lists keyed \code{"1"}, \code{"2"} of data
 frames with \code{x}, \code{fit}, \code{se}, \code{lo}, \code{hi}, \code{ci_type}), the
 prediction references \code{prediction_reference_yx},
@@ -182,8 +191,9 @@ Details.}
 \item{\code{settings}}{Named list of the fit settings as resolved:
 \code{engine}, \code{method}, \code{k}, \code{bs}, \code{na_action}, \code{n_grid},
 \code{derivatives}, \code{derivative_ci}, \code{derivative_ci_nsim}, \code{p_adjust},
-\code{shape_cutoffs}, \code{k_check_thresholds}, \code{auto_refit_k} and
-\code{k_max_iter}.}
+\code{shape_cutoffs}, \code{k_check_thresholds}, \code{auto_refit_k},
+\code{k_max_iter}, \code{family} and \code{link} (names, as in
+\code{\link[stats:family]{stats::family()}}), \code{discrete} and \code{nthreads}.}
 \item{\code{flags}}{List with \code{failed} (data frame of \code{var_x}, \code{var_y},
 \code{reason} for cells that carry no fit), \code{k_capped} and \code{k_flagged}
 (character vectors of cells as \code{"var_y ~ s(var_x)"}) and \code{sparse}
@@ -197,7 +207,7 @@ than 5 shared rows).}
 component.
 }
 \description{
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
 
 Fits \verb{gam(x_j ~ s(x_i) + <adjust>)} once for every ordered pair of
 numeric variables and returns a \code{janusplot_fit} object holding the
@@ -217,25 +227,31 @@ by default, so \code{n_grid = NULL} resolves to 200 evaluation points. The
 shape indices \code{M} and \code{C}, the turning-point and inflection counts and
 the flat-range ratio are computed on this grid.
 
-The smooth F-test p-values of the \code{k(k - 1)} directed cells form one
-family. \code{p_adjust} adjusts them once with \code{\link[stats:p.adjust]{stats::p.adjust()}} and the
-result is stored beside the raw values as \code{association_p_adj}; failed
-cells stay \code{NA}. Under \code{"none"} the adjusted columns equal the raw ones.
+The smooth F-test p-values of the directed cells form one family.
+\code{p_adjust} adjusts them once with \code{\link[stats:p.adjust]{stats::p.adjust()}} and the result is
+stored beside the raw values as \code{association_p_adj}. A failed cell has
+no p-value and stays out of the family, so the family is the cells
+that produced a p-value, at most \code{k(k - 1)}. Under \code{"none"} the
+adjusted columns equal the raw ones.
 
 \code{directional_complexity_yx} is \code{(EDF_yx - EDF_xy) / (EDF_yx + EDF_xy)}
 in \verb{[-1, 1]}, positive when the fit of \code{var_j} on \code{var_i} is the more
 complex direction; \code{directional_complexity_xy} is its negative and
 \code{asymmetry_index} its magnitude. A is unreliable when either direction
-had its basis dimension capped (\code{k_capped_yx} or \code{k_capped_xy}).
+had its basis dimension capped (\code{k_capped_yx} or \code{k_capped_xy}), either
+at the first fit or when an \code{auto_refit_k} refit reached the cap
+(\code{k_at_cap} in the k-check columns).
 
 \code{shape_borderline} is the smallest absolute gap between a shape index
 and a classification cutoff whose crossing by that index alone would
 change the \code{shape_category} label, on the index's own scale: \code{M} and
 \code{C} against the monotonicity and curvature cutoffs, the flat-range
-ratio against the \code{flat} cutoff. A label decided by the turning-point
-and inflection counts (\code{u_shape}, the other single-extremum labels and
-the waves) reports its gap to the \code{flat} cutoff. A small value marks a
-label that a slightly different smooth would have moved.
+ratio against the \code{flat} cutoff. A small value marks a label that a
+slightly different smooth would have moved. Only \code{flat} and the
+monotone labels of a curve with no turning point and no inflection
+carry a margin. Every other label is decided by the turning-point and
+inflection counts and has \code{NA}: the margin does not measure how near a
+count is to changing.
 
 \verb{$data} is the cleaned copy of the columns used: the fitted variables,
 the \code{adjust} variables and every factor, character or logical column

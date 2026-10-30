@@ -7,7 +7,7 @@
 #' Appearance settings for janusplot views
 #'
 #' @description
-#' `r lifecycle::badge("experimental")`
+#' `r lifecycle::badge("stable")`
 #'
 #' Collects every appearance knob of [plot.janusplot_fit()],
 #' [janusplot_pair()] and [janusplot()] into one validated object. Model

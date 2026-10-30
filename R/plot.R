@@ -6,7 +6,7 @@
 #' Draw the matrix of a janusplot fit
 #'
 #' @description
-#' `r lifecycle::badge("experimental")`
+#' `r lifecycle::badge("stable")`
 #'
 #' Draws the asymmetric matrix of a [janusplot_fit()] object: one cell per
 #' directed pair, the fitted curve with its band over the raw points, the

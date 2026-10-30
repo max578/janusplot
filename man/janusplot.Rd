@@ -118,7 +118,7 @@ ggplot, as described in \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}}.
 \code{data} (the per-cell table of \code{\link[=summary.janusplot_fit]{summary.janusplot_fit()}}).
 }
 \description{
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
 
 Fits every ordered pair of numeric variables with \code{\link[=janusplot_fit]{janusplot_fit()}} and
 draws the matrix with \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}} in one call. Each cell

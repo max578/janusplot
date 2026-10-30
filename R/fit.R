@@ -8,7 +8,7 @@
 #' Fit every ordered pair of a smoothed-association matrix
 #'
 #' @description
-#' `r lifecycle::badge("experimental")`
+#' `r lifecycle::badge("stable")`
 #'
 #' Fits `gam(x_j ~ s(x_i) + <adjust>)` once for every ordered pair of
 #' numeric variables and returns a `janusplot_fit` object holding the

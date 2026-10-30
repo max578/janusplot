@@ -8,7 +8,7 @@
 #' Asymmetric smoothed-association matrix
 #'
 #' @description
-#' `r lifecycle::badge("experimental")`
+#' `r lifecycle::badge("stable")`
 #'
 #' Fits every ordered pair of numeric variables with [janusplot_fit()] and
 #' draws the matrix with [plot.janusplot_fit()] in one call. Each cell
