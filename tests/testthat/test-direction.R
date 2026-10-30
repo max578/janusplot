@@ -563,3 +563,31 @@ test_that("print() states the verdict, reason, p-values and rows", {
   expect_output(shown <- withVisible(print(below)), "n_below_min")
   expect_false(shown$visible)
 })
+
+test_that("both_independent separates an associated pair from no association", {
+  withr::local_seed(2026L)
+  x <- stats::rnorm(120L)
+  assoc <- janusplot:::.both_independent_reason(0.4, 0.6, x,
+                                                x + stats::rnorm(120L), 0.05)
+  expect_match(assoc, "associated \\(r = ")
+  expect_match(assoc, "direction is not identified")
+  none <- janusplot:::.both_independent_reason(0.4, 0.6, x,
+                                               stats::rnorm(120L), 0.05)
+  expect_match(none, "no association between them")
+  expect_no_match(none, "associated \\(r")
+})
+
+test_that("the adjust inform states the rows used", {
+  skip_if_no_kernR()
+  withr::local_seed(2026L)
+  d <- data.frame(x = stats::rnorm(120L))
+  d$y <- 0.5 * d$x + stats::rnorm(120L)
+  d$g <- factor(rep(c("a", "b", "c"), length.out = 120L))
+  d$g[1:15] <- NA
+  fit <- suppressMessages(fit_of(d, vars = c("x", "y"), adjust = ~ g))
+  msgs <- testthat::capture_messages(
+    janusplot_direction(fit, "x", "y", n_permutations = 99L, seed = 7L)
+  )
+  expect_true(any(grepl("105 rows", msgs)))
+  expect_true(any(grepl("missing an", msgs)))
+})

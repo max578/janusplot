@@ -336,17 +336,22 @@ janusplot_direction <- function(
   k_reverse <- .direction_k(pair[[paste0("k_used_", reverse_dir)]])
   is_gam <- identical(fit$settings$engine, "gam")
   method <- if (is_gam) fit$settings$method else .engine_default_method("gam")
+  rows <- .cell_rows(fit, x, y)
   if (!is.null(fit$adjust)) {
     adjust_txt <- paste(deparse(fit$adjust, width.cutoff = 500L), # nolint: object_usage_linter.
                         collapse = " ")
+    n_rows <- length(rows)                                       # nolint: object_usage_linter.
     cli::cli_inform(c(
       i = paste(
         "The direction test is bivariate: the {.arg adjust} terms of",
         "{.arg fit} ({.code {adjust_txt}}) do not enter the two fits."
+      ),
+      i = paste(
+        "It uses the {n_rows} row{?s} the pair was fitted on, so rows",
+        "missing an {.arg adjust} variable are left out."
       )
     ))
   }
-  rows <- .cell_rows(fit, x, y)
   dat <- fit$data[rows, c(x, y), drop = FALSE]
 
   # Kept models replace the refit when they are the same fits -------------
@@ -370,6 +375,31 @@ janusplot_direction <- function(
     linear_tol = linear_tol, gaussian_alpha = gaussian_alpha,
     seed = seed, n_min = n_min, n_max = n_max,
     models = models
+  )
+}
+
+# Reason text when both residual tests are independent: separates a pair
+# with no association from an associated pair whose direction is not
+# identified.
+.both_independent_reason <- function(p_forward, p_reverse, x, y, alpha) {
+  r_test <- stats::cor.test(x, y)
+  head <- paste0(
+    "Residuals are independent of the putative cause in both ",
+    "directions (p = ", format(signif(p_forward, 3L)),
+    " and ", format(signif(p_reverse, 3L)),
+    "). An additive-noise model fits either way, "
+  )
+  if (r_test$p.value < alpha) {
+    return(paste0(
+      head, "and the two variables are associated (r = ",
+      format(signif(unname(r_test$estimate), 2L)), ", p = ",
+      format(signif(r_test$p.value, 3L)), "), so the association is ",
+      "present but its direction is not identified."
+    ))
+  }
+  paste0(
+    head, "which is what two variables carrying no association between ",
+    "them also look like, so neither direction is supported."
   )
 }
 
@@ -594,14 +624,9 @@ janusplot_direction_test <- function(
   } else if (independent_forward && independent_reverse) {
     verdict     <- "undecided"
     reason_code <- "both_independent"
-    reason <- paste0(
-      "Residuals are independent of the putative cause in both ",
-      "directions (p = ", format(signif(hsic_forward$p_value, 3L)),
-      " and ", format(signif(hsic_reverse$p_value, 3L)),
-      "). An additive-noise model fits either way, which is what two ",
-      "variables carrying no association between them also look like, ",
-      "so neither direction is supported."
-    )
+    reason <- .both_independent_reason(hsic_forward$p_value,
+                                       hsic_reverse$p_value,
+                                       dat[[x]], dat[[y]], alpha)
   } else {
     verdict     <- "undecided"
     reason_code <- "neither_independent"
