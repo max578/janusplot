@@ -341,10 +341,30 @@ test_that("print() has six sections and names the top pair", {
   expect_match(lines[5L], "^Largest asymmetries:$")
   a <- vapply(fit$pairs, function(p) p$asymmetry_index, numeric(1L))
   top <- fit$pairs[[which.max(a)]]
-  expect_match(lines[6L], paste0("^  ", top$var_i, " <-> ", top$var_j,
-                                 "  A = [0-9]\\.[0-9]{2}  \\(",
-                                 top$shape_yx, " \\| ", top$shape_xy, "\\)$"))
+  expect_match(lines[6L], paste0(
+    "^  ", top$var_i, " <-> ", top$var_j, "  A = [0-9]\\.[0-9]{2}  ",
+    top$var_j, " ~ ", top$var_i, ": EDF [0-9.]+, p (< 0\\.001|= [0-9.]+), ",
+    top$shape_yx, "( n\\.s\\.)? \\| ",
+    top$var_i, " ~ ", top$var_j, ": EDF [0-9.]+, p (< 0\\.001|= [0-9.]+), ",
+    top$shape_xy, "( n\\.s\\.)?$"
+  ))
   expect_match(lines[length(lines)], "summary\\(\\).*plot\\(\\)")
+})
+
+test_that("print() marks a non-significant direction n.s. and names p_adj", {
+  withr::local_seed(2026L)
+  d <- data.frame(a = stats::rnorm(120L), b = stats::rnorm(120L))
+  d$c <- d$a + stats::rnorm(120L, sd = 0.3)
+  fit <- janusplot_fit(d, engine = "gam", derivatives = integer(),
+                       p_adjust = "holm")
+  lines <- testthat::capture_output_lines(print(fit))
+  top <- grep(" <-> ", lines, value = TRUE)
+  expect_true(all(grepl("p_adj", top)))
+  ab <- grep("^  (a <-> b|b <-> a)", top, value = TRUE)
+  expect_length(ab, 1L)
+  expect_identical(lengths(regmatches(ab, gregexpr("n\\.s\\.", ab))), 2L)
+  ac <- grep("^  (a <-> c|c <-> a)", top, value = TRUE)
+  expect_false(grepl("n\\.s\\.", ac))
 })
 
 test_that("print() says one pair, not one pairs", {

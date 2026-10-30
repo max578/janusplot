@@ -707,7 +707,8 @@ print.janusplot_fit <- function(x, ...) {
                         x$settings$engine, x$settings$method, adjust_txt))
   cli::cat_line(.format_flags(x$flags))
   cli::cat_line("Largest asymmetries:")
-  for (line in .format_top_asymmetries(x$pairs)) {
+  for (line in .format_top_asymmetries(x$pairs,
+                                      p_adjust = x$settings$p_adjust)) {
     cli::cat_line("  ", line)
   }
   cli::cat_line(
@@ -738,14 +739,31 @@ summary.janusplot_fit <- function(object, ...) {
 }
 
 # The n_top largest asymmetries, one formatted line each; pairs without
-# an index are left out.
-.format_top_asymmetries <- function(pairs, n_top = 5L) {
+# an index are left out. Each direction carries its EDF and p-value
+# beside its label, so a label is never read without its evidence.
+.format_top_asymmetries <- function(pairs, n_top = 5L, p_adjust = "none") {
   a  <- vapply(pairs, function(p) as.numeric(p$asymmetry_index), numeric(1L))
   ok <- which(is.finite(a))
   if (!length(ok)) return("(no pair has an asymmetry index)")
   top <- ok[order(-a[ok])][seq_len(min(n_top, length(ok)))]
+  p_name <- if (identical(p_adjust, "none")) "p" else "p_adj"
+  direction <- function(y, x, edf, p, shape) {
+    p_txt <- if (is.na(p)) {
+      paste(p_name, "NA")
+    } else if (p < 0.001) {
+      paste(p_name, "< 0.001")
+    } else {
+      sprintf("%s = %.3f", p_name, p)
+    }
+    ns <- if (is.finite(p) && p >= 0.05) " n.s." else ""
+    sprintf("%s ~ %s: EDF %.1f, %s, %s%s", y, x, edf, p_txt, shape, ns)
+  }
   vapply(pairs[top], function(p) {
-    sprintf("%s <-> %s  A = %.2f  (%s | %s)",
-            p$var_i, p$var_j, p$asymmetry_index, p$shape_yx, p$shape_xy)
+    sprintf("%s <-> %s  A = %.2f  %s | %s",
+            p$var_i, p$var_j, p$asymmetry_index,
+            direction(p$var_j, p$var_i, p$edf_yx,
+                      p$association_p_adj_yx, p$shape_yx),
+            direction(p$var_i, p$var_j, p$edf_xy,
+                      p$association_p_adj_xy, p$shape_xy))
   }, character(1L), USE.NAMES = FALSE)
 }
