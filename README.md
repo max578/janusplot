@@ -73,7 +73,11 @@ The CRAN release ships them built.
 
 ## Quick start
 
-Fit once, then draw:
+Fit once, then draw. The examples use the Palmer penguins data from
+the suggested package palmerpenguins
+(`install.packages("palmerpenguins")`). Any data frame with numeric
+columns works the same way, for example
+`janusplot_fit(mtcars[, c("mpg", "hp", "wt", "qsec")])`.
 
 ``` r
 library(janusplot)
