@@ -941,13 +941,23 @@
       lo = NA_real_, hi = NA_real_
     )
   } else {
+    # mgcv predicts on the link scale; the band is formed there and
+    # mapped through the inverse link, so it stays valid for any
+    # monotone link. pmin/pmax keep lo <= hi for a decreasing link.
+    eta <- as.numeric(preds$fit)
+    se  <- as.numeric(preds$se.fit)
+    linkinv <- fit$family$linkinv
+    bound_a <- linkinv(eta - 1.96 * se)
+    bound_b <- linkinv(eta + 1.96 * se)
     pred_df <- data.frame(
       x  = x_grid,
-      fit = as.numeric(preds$fit),
-      se  = as.numeric(preds$se.fit),
-      lo  = as.numeric(preds$fit) - 1.96 * as.numeric(preds$se.fit),
-      hi  = as.numeric(preds$fit) + 1.96 * as.numeric(preds$se.fit)
+      fit = linkinv(eta),
+      se  = se,
+      lo  = pmin(bound_a, bound_b),
+      hi  = pmax(bound_a, bound_b)
     )
+    # The shape label is read on the link scale (the linear predictor).
+    if (!identical(fit$family$link, "identity")) pred_df$fit_link <- eta
   }
 
   deriv_list <- if (length(derivatives)) {

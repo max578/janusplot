@@ -131,7 +131,13 @@
 #'   in `$fits` and as `fit_yx` / `fit_xy` of every pair; `FALSE` (the
 #'   default) keeps metrics and prediction grids only.
 #' @param ... Further arguments passed to [mgcv::gam()] or [mgcv::bam()].
-#'   The `print()` and `summary()` methods ignore them.
+#'   The `print()` and `summary()` methods ignore them. Under a `family`
+#'   with a non-identity link the curve and its band are drawn on the
+#'   response scale, while the derivatives, the shape indices and the
+#'   shape label describe the linear predictor (the link scale). The two
+#'   agree on monotone labels; a curvature label can differ, for example
+#'   a log-linear Poisson mean is `linear_up` on the link scale and convex
+#'   on the response scale.
 #' @param x A `janusplot_fit` object.
 #' @param object A `janusplot_fit` object.
 #'
@@ -142,7 +148,9 @@
 #'   \item{`pairs`}{List with one element per unordered pair `i < j`. Each
 #'     element carries `i`, `j`, `var_i`, `var_j`, `fit_yx`, `fit_xy`
 #'     (`NULL` unless `keep_fits = TRUE`), the prediction grids `pred_yx`,
-#'     `pred_xy` (data frames with `x`, `fit`, `se`, `lo`, `hi`),
+#'     `pred_xy` (data frames with `x`, `fit`, `se`, `lo`, `hi` on the
+#'     response scale, `se` on the link scale, and `fit_link` when the
+#'     link is not the identity),
 #'     `edf_yx`, `edf_xy`, `association_p_yx`, `association_p_xy`,
 #'     `association_p_adj_yx`, `association_p_adj_xy`, `dev_exp_yx`,
 #'     `dev_exp_xy`, `deviance_gap_yx`, `deviance_gap_xy`, `n_used`,
@@ -178,8 +186,9 @@
 #'   \item{`settings`}{Named list of the fit settings as resolved:
 #'     `engine`, `method`, `k`, `bs`, `na_action`, `n_grid`,
 #'     `derivatives`, `derivative_ci`, `derivative_ci_nsim`, `p_adjust`,
-#'     `shape_cutoffs`, `k_check_thresholds`, `auto_refit_k` and
-#'     `k_max_iter`.}
+#'     `shape_cutoffs`, `k_check_thresholds`, `auto_refit_k`,
+#'     `k_max_iter`, `family` and `link` (names, as in
+#'     [stats::family()]), `discrete` and `nthreads`.}
 #'   \item{`flags`}{List with `failed` (data frame of `var_x`, `var_y`,
 #'     `reason` for cells that carry no fit), `k_capped` and `k_flagged`
 #'     (character vectors of cells as `"var_y ~ s(var_x)"`) and `sparse`
@@ -267,6 +276,7 @@ janusplot_fit <- function(
 
   # Matrix-wide quantities and the object --------------------------------
   p_adj <- .adjust_association_p(fits, p_adjust)
+  family <- .resolve_family(list(...))
   settings <- list(
     engine             = engine,
     method             = method,
@@ -281,7 +291,11 @@ janusplot_fit <- function(
     shape_cutoffs      = shape_cutoffs,
     k_check_thresholds = k_thresholds,
     auto_refit_k       = auto_refit_k,
-    k_max_iter         = k_max_iter
+    k_max_iter         = k_max_iter,
+    family             = family$family,
+    link               = family$link,
+    discrete           = discrete,
+    nthreads           = nthreads
   )
   out <- list(
     vars     = vars,
@@ -368,6 +382,18 @@ janusplot_fit <- function(
   } else {
     method
   }
+}
+
+# The family passed through `...`, resolved the way mgcv resolves it
+# (a name, a family function or a family object), so the fit can record
+# its name and link.
+.resolve_family <- function(dots) {
+  family <- dots$family %||% stats::gaussian()
+  if (is.character(family)) {
+    family <- get(family, mode = "function", envir = asNamespace("mgcv"))
+  }
+  if (is.function(family)) family <- family()
+  family
 }
 
 # ---------------------------------------------------------------

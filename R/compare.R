@@ -258,7 +258,8 @@ print.janusplot_compare <- function(x, ...) {
 # Names of the fit settings, other than adjust, that differ between the
 # two fits and can change a shape label on their own.
 .compare_settings_differ <- function(settings_a, settings_b) {
-  checked <- c("engine", "method", "k", "bs", "n_grid", "shape_cutoffs")
+  checked <- c("engine", "method", "k", "bs", "n_grid", "shape_cutoffs",
+               "family", "link", "discrete", "nthreads")
   same <- vapply(checked, function(nm) {
     identical(settings_a[[nm]], settings_b[[nm]])
   }, logical(1L))

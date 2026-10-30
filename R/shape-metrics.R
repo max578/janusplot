@@ -655,7 +655,8 @@ janusplot_shape_hierarchy <- function() {
   if (all(is.na(pred$fit))) return(.na_shape_raw())
 
   x  <- pred$x
-  y  <- pred$fit
+  # Under a non-identity link the label describes the linear predictor.
+  y  <- pred$fit_link %||% pred$fit
   ok <- is.finite(x) & is.finite(y)
   if (sum(ok) < 3L) return(.na_shape_raw())
   x <- x[ok]
