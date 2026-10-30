@@ -169,6 +169,23 @@ test_that("auto_refit_k doubling never exceeds the distinct-value cap", {
   expect_lte(p$k_check_yx$k_final, 25L)
 })
 
+test_that("a refit that stops at the distinct-value cap sets k_capped", {
+  skip_if_no_mgcv()
+  df <- withr::with_seed(13L, {
+    n  <- 420L
+    x  <- rep(seq(0, 10, length.out = 21L), length.out = n)
+    data.frame(x = x, y = sin(3 * x) + stats::rnorm(n, sd = 0.2))
+  })
+  res <- suppressMessages(
+    janusplot_fit(df, auto_refit_k = TRUE, k_max_iter = 4L)
+  )
+  p <- res$pairs[[1L]]
+  # 21 distinct x values: the loop doubles 10 -> 20, which is the cap.
+  expect_true(p$k_check_yx$k_at_cap)
+  expect_true(p$k_capped_yx)
+  expect_true(summary(res)$k_capped[summary(res)$var_x == "x"])
+})
+
 test_that("a predictor below the basis minimum is not reported as capped", {
   skip_if_no_mgcv()
   df <- withr::with_seed(2026L, {

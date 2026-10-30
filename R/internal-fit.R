@@ -1007,7 +1007,7 @@
     method   = resolved_method,
     k_requested = k_res$k_requested,
     k_used      = k_used,
-    k_capped    = k_res$k_capped,
+    k_capped    = isTRUE(k_res$k_capped) || k_at_cap,
     prediction_reference = pred_ref,
     k_check  = list(
       k_prime         = k_diag$k_prime,
@@ -1385,7 +1385,7 @@
   n_capped <- length(capped)                                     # nolint: object_usage_linter.
   cli::cli_inform(c(
     i = paste(
-      "Capped the basis dimension at the number of distinct predictor",
+      "Capped the basis dimension by the number of distinct predictor",
       "values in {n_capped} cell{?s}: {items}."
     ),
     i = "See {.code k_requested}, {.code k_used} and {.code k_capped} in the returned data."

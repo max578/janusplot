@@ -37,7 +37,9 @@
 #' in `[-1, 1]`, positive when the fit of `var_j` on `var_i` is the more
 #' complex direction; `directional_complexity_xy` is its negative and
 #' `asymmetry_index` its magnitude. A is unreliable when either direction
-#' had its basis dimension capped (`k_capped_yx` or `k_capped_xy`).
+#' had its basis dimension capped (`k_capped_yx` or `k_capped_xy`), either
+#' at the first fit or when an `auto_refit_k` refit reached the cap
+#' (`k_at_cap` in the k-check columns).
 #'
 #' `shape_borderline` is the smallest absolute gap between a shape index
 #' and a classification cutoff whose crossing by that index alone would
@@ -72,7 +74,8 @@
 #' @param k Basis dimension for `s()`: a single integer, or a named list
 #'   of integers keyed by variable name. `-1L` (the default) leaves the
 #'   choice to mgcv. Each cell's basis is capped at the number of distinct
-#'   predictor values in its rows; capped cells are listed in
+#'   predictor values in its rows, and an `auto_refit_k` refit stops one
+#'   below that number; capped cells are listed in
 #'   `flags$k_capped` and recorded as `k_requested`, `k_used` and
 #'   `k_capped`.
 #' @param bs Basis type for `s()`; `"tp"` (thin plate) by default.
