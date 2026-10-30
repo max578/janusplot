@@ -24,7 +24,8 @@ test_that("janusplot_fit() returns the documented fields in order", {
   expect_named(fit$settings, c(
     "engine", "method", "k", "bs", "na_action", "n_grid", "derivatives",
     "derivative_ci", "derivative_ci_nsim", "p_adjust", "shape_cutoffs",
-    "k_check_thresholds", "auto_refit_k", "k_max_iter"
+    "k_check_thresholds", "auto_refit_k", "k_max_iter",
+    "family", "link", "discrete", "nthreads"
   ))
   expect_named(fit$flags, c("failed", "k_capped", "k_flagged", "sparse"))
 })
