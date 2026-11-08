@@ -173,8 +173,11 @@ janusplot_pair <- function(
                   grid::unit(0.9, "cm"))
   keep <- !vapply(rows, is.null, logical(1L))
   if (sum(keep) == 1L) return(body)
+  # `nrow`, not `ncol = 1`: patchwork's `/` appends into a one-column
+  # stack, so `pair / pair` would hit this stack's fixed row heights.
   patchwork::wrap_plots(
-    rows[keep], ncol = 1L, heights = do.call(grid::unit.c, heights[keep])
+    rows[keep], nrow = sum(keep),
+    heights = do.call(grid::unit.c, heights[keep])
   )
 }
 
@@ -495,7 +498,7 @@ janusplot_pair <- function(
   strip <- paste(
     c(if (!is.na(pair$asymmetry_index)) {
       if (.pair_not_significant(pair)) {
-        "A \u2013"
+        paste("A", .a_dash(style$glyph_style))
       } else {
         sprintf("A %.2f", pair$asymmetry_index)
       }

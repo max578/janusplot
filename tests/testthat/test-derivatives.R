@@ -304,7 +304,7 @@ test_that("diagonal validation rejects unknown value", {
 
 test_that(".display_title emits the three mode labels", {
   skip_on_cran()
-  expect_match(janusplot:::.display_title("fit"), "Direct fit")
+  expect_match(janusplot:::.display_title("fit"), "Fitted curves")
   expect_match(janusplot:::.display_title("d1"), "First derivative")
   expect_match(janusplot:::.display_title("d2"), "Second derivative")
   # Unicode primes when glyph_style = "unicode"

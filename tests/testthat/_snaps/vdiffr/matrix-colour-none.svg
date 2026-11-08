@@ -575,9 +575,9 @@
 <text x='694.72' y='316.14' style='font-size: 9.00px; font-family: sans;' textLength='5.01px' lengthAdjust='spacingAndGlyphs'>0</text>
 <text x='694.72' y='115.98' style='font-size: 9.00px; font-family: sans;' textLength='5.01px' lengthAdjust='spacingAndGlyphs'>1</text>
 <text x='8.47' y='531.02' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='251.39px' lengthAdjust='spacingAndGlyphs'>Each cell: row ~ s(column), the row variable on the vertical axis</text>
-<text x='8.47' y='542.90' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='285.82px' lengthAdjust='spacingAndGlyphs'>A = asymmetry index |EDF_yx - EDF_xy| / (EDF_yx + EDF_xy), in [0, 1]</text>
+<text x='8.47' y='542.90' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='459.93px' lengthAdjust='spacingAndGlyphs'>A = asymmetry index |EDF_yx - EDF_xy| / (EDF_yx + EDF_xy), in [0, 1]; a dash when neither direction is significant</text>
 <text x='8.47' y='554.78' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='331.73px' lengthAdjust='spacingAndGlyphs'>Cell background encodes Pearson r of the pair: white at 0, deeper towards -1 and 1</text>
 <text x='8.47' y='566.66' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='237.68px' lengthAdjust='spacingAndGlyphs'>Signif. of smooth F-test: *** p&lt;.001, ** p&lt;.01, * p&lt;.05, · p&lt;.1</text>
-<text x='8.47' y='16.42' style='font-size: 13.00px; font-weight: bold; fill: #1A1A1A; font-family: sans;' textLength='47.67px' lengthAdjust='spacingAndGlyphs'>Direct fit</text>
+<text x='8.47' y='16.42' style='font-size: 13.00px; font-weight: bold; fill: #1A1A1A; font-family: sans;' textLength='74.43px' lengthAdjust='spacingAndGlyphs'>Fitted curves</text>
 </g>
 </svg>

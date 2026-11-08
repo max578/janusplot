@@ -1111,7 +1111,7 @@
 <rect x='500.25' y='234.32' width='120.57' height='120.57' style='stroke-width: 6.00; stroke: #440154;' />
 </g>
 <g clip-path='url(#cpMC4wMHw3MjAuMDB8MC4wMHw1NzYuMDA=)'>
-<text x='465.05' y='231.17' style='font-size: 8.00px; fill: #595959; font-family: sans;' textLength='84.71px' lengthAdjust='spacingAndGlyphs'>A 0.00  EDF 1.0  ↗  n.s.</text>
+<text x='465.05' y='231.17' style='font-size: 8.00px; fill: #595959; font-family: sans;' textLength='73.59px' lengthAdjust='spacingAndGlyphs'>A –  EDF 1.0  ↗  n.s.</text>
 <rect x='8.47' y='369.53' width='56.69' height='120.57' style='stroke-width: 0.00; stroke: none;' />
 <text x='62.58' y='433.26' text-anchor='end' style='font-size: 10.00px; fill: #1A1A1A; font-family: sans;' textLength='10.57px' lengthAdjust='spacingAndGlyphs'>x3</text>
 </g>
@@ -1545,7 +1545,7 @@
 <rect x='303.30' y='369.53' width='120.57' height='120.57' style='stroke-width: 6.00; stroke: #440154;' />
 </g>
 <g clip-path='url(#cpMC4wMHw3MjAuMDB8MC4wMHw1NzYuMDA=)'>
-<text x='268.09' y='366.38' style='font-size: 8.00px; fill: #595959; font-family: sans;' textLength='84.71px' lengthAdjust='spacingAndGlyphs'>A 0.00  EDF 1.0  ↗  n.s.</text>
+<text x='268.09' y='366.38' style='font-size: 8.00px; fill: #595959; font-family: sans;' textLength='73.59px' lengthAdjust='spacingAndGlyphs'>A –  EDF 1.0  ↗  n.s.</text>
 </g>
 <defs>
   <clipPath id='cpNTAwLjI1fDYyMC44M3wzNjkuNTN8NDkwLjEx'>
@@ -1661,11 +1661,11 @@
 <text x='693.48' y='404.17' style='font-size: 9.00px; font-family: sans;' textLength='5.01px' lengthAdjust='spacingAndGlyphs'>0</text>
 <text x='693.48' y='315.44' style='font-size: 9.00px; font-family: sans;' textLength='5.01px' lengthAdjust='spacingAndGlyphs'>1</text>
 <text x='8.47' y='507.26' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='251.39px' lengthAdjust='spacingAndGlyphs'>Each cell: row ~ s(column), the row variable on the vertical axis</text>
-<text x='8.47' y='519.14' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='285.82px' lengthAdjust='spacingAndGlyphs'>A = asymmetry index |EDF_yx - EDF_xy| / (EDF_yx + EDF_xy), in [0, 1]</text>
+<text x='8.47' y='519.14' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='459.93px' lengthAdjust='spacingAndGlyphs'>A = asymmetry index |EDF_yx - EDF_xy| / (EDF_yx + EDF_xy), in [0, 1]; a dash when neither direction is significant</text>
 <text x='8.47' y='531.02' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='199.38px' lengthAdjust='spacingAndGlyphs'>EDF = effective degrees of freedom of the smooth</text>
 <text x='8.47' y='542.90' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='289.99px' lengthAdjust='spacingAndGlyphs'>Shape glyph = objective shape category (see shape-types legend below)</text>
 <text x='8.47' y='554.78' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='271.14px' lengthAdjust='spacingAndGlyphs'>Cell border encodes non-linearity, EDF - 1 (see right-margin legend)</text>
 <text x='8.47' y='566.66' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='331.73px' lengthAdjust='spacingAndGlyphs'>Cell background encodes Pearson r of the pair: white at 0, deeper towards -1 and 1</text>
-<text x='8.47' y='16.42' style='font-size: 13.00px; font-weight: bold; fill: #1A1A1A; font-family: sans;' textLength='47.67px' lengthAdjust='spacingAndGlyphs'>Direct fit</text>
+<text x='8.47' y='16.42' style='font-size: 13.00px; font-weight: bold; fill: #1A1A1A; font-family: sans;' textLength='74.43px' lengthAdjust='spacingAndGlyphs'>Fitted curves</text>
 </g>
 </svg>

@@ -15,7 +15,10 @@ test_that("A is a dash in the strip when neither direction is significant", {
   face <- janusplot:::.pair_face(pr, "yx")
   expect_true(face$pair_not_significant)
   expect_match(janusplot:::.cell_strip_text(face, c("A", "signif")),
-               "^A –")
+               "^A -( |$)")
+  expect_match(janusplot:::.cell_strip_text(face, c("A", "signif"),
+                                            glyph_style = "unicode"),
+               "^A \u2013")
   face$pair_not_significant <- FALSE
   expect_match(janusplot:::.cell_strip_text(face, c("A", "signif")),
                "^A [0-9]\\.[0-9]{2}")
@@ -85,4 +88,20 @@ test_that("janusplot_curves() returns both directions in long form", {
   expect_error(janusplot_curves(fit, what = "d2"), "derivative order")
   expect_error(janusplot_curves(fit, "x1"), "both")
   expect_error(janusplot_curves(fit, "x1", "nope"), "not a fitted variable")
+})
+
+test_that("pairs and matrices compose with `/` and `|`", {
+  d <- withr::with_seed(1L, data.frame(a = stats::rnorm(90L),
+                                       b = stats::rnorm(90L),
+                                       g = factor(rep(c("u", "v", "w"), 30L))))
+  d$b <- d$b + d$a
+  fit <- janusplot_fit(d, engine = "gam", derivatives = integer(),
+                       adjust = ~ g)
+  p <- janusplot_pair(fit, "a", "b", group = "g")
+  path <- withr::local_tempfile(fileext = ".png")
+  expect_no_error(ggplot2::ggsave(path, p / p, width = 6, height = 8))
+  expect_no_error(ggplot2::ggsave(path, p | p, width = 8, height = 4))
+  m <- plot(fit, group = "g")
+  expect_no_error(ggplot2::ggsave(path, m / m, width = 6, height = 10))
+  expect_no_error(ggplot2::ggsave(path, m | m, width = 10, height = 6))
 })

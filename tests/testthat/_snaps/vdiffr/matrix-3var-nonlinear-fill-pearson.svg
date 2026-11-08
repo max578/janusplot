@@ -1115,7 +1115,7 @@
 <rect x='510.10' y='242.24' width='128.49' height='128.49' style='stroke-width: 0.75; stroke: #8C8C8C;' />
 </g>
 <g clip-path='url(#cpMC4wMHw3MjAuMDB8MC4wMHw1NzYuMDA=)'>
-<text x='476.10' y='239.09' style='font-size: 8.00px; fill: #595959; font-family: sans;' textLength='30.24px' lengthAdjust='spacingAndGlyphs'>A 0.00  ·</text>
+<text x='476.10' y='239.09' style='font-size: 8.00px; fill: #595959; font-family: sans;' textLength='17.33px' lengthAdjust='spacingAndGlyphs'>A -  ·</text>
 <rect x='8.47' y='385.37' width='56.69' height='128.49' style='stroke-width: 0.00; stroke: none;' />
 <text x='62.58' y='453.06' text-anchor='end' style='font-size: 10.00px; fill: #1A1A1A; font-family: sans;' textLength='10.57px' lengthAdjust='spacingAndGlyphs'>x3</text>
 </g>
@@ -1551,7 +1551,7 @@
 <rect x='307.62' y='385.37' width='128.49' height='128.49' style='stroke-width: 0.75; stroke: #8C8C8C;' />
 </g>
 <g clip-path='url(#cpMC4wMHw3MjAuMDB8MC4wMHw1NzYuMDA=)'>
-<text x='273.62' y='382.22' style='font-size: 8.00px; fill: #595959; font-family: sans;' textLength='30.24px' lengthAdjust='spacingAndGlyphs'>A 0.00  ·</text>
+<text x='273.62' y='382.22' style='font-size: 8.00px; fill: #595959; font-family: sans;' textLength='17.33px' lengthAdjust='spacingAndGlyphs'>A -  ·</text>
 </g>
 <defs>
   <clipPath id='cpNTEwLjEwfDYzOC42MHwzODUuMzd8NTEzLjg3'>
@@ -1635,9 +1635,9 @@
 <text x='698.02' y='204.30' style='font-size: 9.00px; font-family: sans;' textLength='12.51px' lengthAdjust='spacingAndGlyphs'>0.5</text>
 <text x='698.02' y='100.31' style='font-size: 9.00px; font-family: sans;' textLength='12.51px' lengthAdjust='spacingAndGlyphs'>1.0</text>
 <text x='8.47' y='531.02' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='251.39px' lengthAdjust='spacingAndGlyphs'>Each cell: row ~ s(column), the row variable on the vertical axis</text>
-<text x='8.47' y='542.90' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='285.82px' lengthAdjust='spacingAndGlyphs'>A = asymmetry index |EDF_yx - EDF_xy| / (EDF_yx + EDF_xy), in [0, 1]</text>
+<text x='8.47' y='542.90' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='459.93px' lengthAdjust='spacingAndGlyphs'>A = asymmetry index |EDF_yx - EDF_xy| / (EDF_yx + EDF_xy), in [0, 1]; a dash when neither direction is significant</text>
 <text x='8.47' y='554.78' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='183.61px' lengthAdjust='spacingAndGlyphs'>Cell colour encodes Pearson correlation (corr)</text>
 <text x='8.47' y='566.66' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='237.68px' lengthAdjust='spacingAndGlyphs'>Signif. of smooth F-test: *** p&lt;.001, ** p&lt;.01, * p&lt;.05, · p&lt;.1</text>
-<text x='8.47' y='16.42' style='font-size: 13.00px; font-weight: bold; fill: #1A1A1A; font-family: sans;' textLength='47.67px' lengthAdjust='spacingAndGlyphs'>Direct fit</text>
+<text x='8.47' y='16.42' style='font-size: 13.00px; font-weight: bold; fill: #1A1A1A; font-family: sans;' textLength='74.43px' lengthAdjust='spacingAndGlyphs'>Fitted curves</text>
 </g>
 </svg>

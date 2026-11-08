@@ -730,6 +730,12 @@
   if (identical(glyph_style, "unicode")) "\u26A0" else "!"
 }
 
+# The dash shown in place of A when neither direction is significant. An
+# en dash only under "unicode": the default pdf() device cannot encode it.
+.a_dash <- function(glyph_style = "ascii") {
+  if (identical(glyph_style, "unicode")) "\u2013" else "-"
+}
+
 # ---------------------------------------------------------------
 # The strip: one line of small grey text above the data area, e.g.
 # "A 0.32  EDF 2.4  **" or, compact, "A 0.32 E 2.4 **". NULL when no
@@ -755,7 +761,7 @@
     # Neither direction significant: the index would compare two smooths
     # of noise, so the strip shows a dash in its place.
     parts <- c(parts, if (isTRUE(face$pair_not_significant)) {
-      "A \u2013"
+      paste("A", .a_dash(glyph_style))
     } else {
       sprintf("A %.2f", face$asymmetry_index)
     })
@@ -909,7 +915,7 @@
   }
   if ("A" %in% annotations && !is.na(face$asymmetry_index)) {
     bl_lines <- c(bl_lines, if (isTRUE(face$pair_not_significant)) {
-      "A = \u2013"
+      paste("A =", .a_dash(style$glyph_style))
     } else {
       sprintf("A = %.2f", face$asymmetry_index)
     })

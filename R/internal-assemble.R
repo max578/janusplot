@@ -150,9 +150,11 @@
     side_col <- patchwork::wrap_plots(side, ncol = 1L)
   }
   top_row <- if (length(side)) {
+    # `ncol`, not `nrow = 1`: patchwork's `|` appends into a one-row
+    # layout, which these fixed widths cannot take.
     patchwork::wrap_plots(
       list(matrix_grid, side_col),
-      nrow   = 1L,
+      ncol   = 2L,
       widths = grid::unit.c(grid::unit(1, "null"), grid::unit(1, "pt"))
     )
   } else {
@@ -172,9 +174,10 @@
   }
   if (length(rows) == 1L) return(top_row)
 
+  # `nrow`, not `ncol = 1`, so `/` stacks matrices instead of appending.
   patchwork::wrap_plots(
     rows,
-    ncol    = 1L,
+    nrow    = length(rows),
     heights = do.call(grid::unit.c, heights)
   )
 }
