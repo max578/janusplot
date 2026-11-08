@@ -12,6 +12,8 @@ janusplot_style(
   background_strength = 0.35,
   annotation_position = c("strip", "corners"),
   show_data = TRUE,
+  adjusted_points = c("partial", "raw"),
+  identity_line = FALSE,
   show_ci = TRUE,
   point_size = 0.4,
   point_alpha = 0.25,
@@ -57,7 +59,9 @@ correlation \code{colour_by} is replaced by \code{"RdBu"}.}
 
 \item{background_palette}{Diverging palette of the correlation
 background, one of \code{"RdBu"} (the default: blue negative, red
-positive), \code{"RdYlBu"}, \code{"PuOr"} and \code{"Spectral"}.}
+positive), \code{"BuOr"} (blue negative, orange positive; its two sides
+stay the furthest apart under simulated red-green and blue-yellow
+colour-vision deficiency), \code{"RdYlBu"}, \code{"PuOr"} and \code{"Spectral"}.}
 
 \item{background_strength}{Number in \verb{(0, 1]}, \code{0.35} by default: how
 far from white towards the palette end the background of a cell with
@@ -73,6 +77,19 @@ glyph bottom-right).}
 \item{show_data}{Logical. \code{TRUE} (the default) draws the raw points of
 each cell behind the curve on fit cells; derivative cells never
 carry points.}
+
+\item{adjusted_points}{Points of a fit with \code{adjust}: \code{"partial"} (the
+default) draws partial residuals, each observation with its own
+adjustment replaced by the average adjustment, so the points sit
+around the curve as they do without adjustment; \code{"raw"} draws the
+observed values. Partial residuals need the identity link; with
+another link the points stay raw.}
+
+\item{identity_line}{Logical. \code{TRUE} adds the dashed line \code{y = x} to
+the z-score panels of \code{\link[=janusplot_pair]{janusplot_pair()}} with \code{display = "both"}.
+There it is the standard-deviation line: a curve flatter than it,
+read along its own predictor axis, regresses towards the mean.
+\code{FALSE} (the default) leaves it out.}
 
 \item{show_ci}{Logical. \code{TRUE} (the default) draws the 95 percent band
 around the curve, and around a derivative curve when the fit stored
@@ -166,7 +183,7 @@ outside the \code{focus_by} selection; \code{0.25} by default.}
 \item{...}{Ignored by the \code{print()} method.}
 }
 \value{
-A named list of class \code{janusplot_style} holding the 30 values
+A named list of class \code{janusplot_style} holding the 32 values
 above, with \code{text_size} stored as given. \code{print()} lists the values
 that differ from the defaults and returns \code{x} invisibly.
 }
@@ -231,9 +248,11 @@ object as \code{style}.
 Other smooth-associations:
 \code{\link[=janusplot]{janusplot()}},
 \code{\link[=janusplot_compare]{janusplot_compare()}},
+\code{\link[=janusplot_curves]{janusplot_curves()}},
 \code{\link[=janusplot_direction]{janusplot_direction()}},
 \code{\link[=janusplot_fit]{janusplot_fit()}},
 \code{\link[=janusplot_pair]{janusplot_pair()}},
+\code{\link[=janusplot_reference]{janusplot_reference()}},
 \code{\link[=plot.janusplot_compare]{plot.janusplot_compare()}},
 \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}}
 }

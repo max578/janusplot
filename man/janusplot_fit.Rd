@@ -47,10 +47,15 @@ other; their cells are listed in \code{flags$failed}.}
 \item{adjust}{One-sided formula of covariates and random effects added
 to every pairwise model, for example \code{~ s(age) + s(site, bs = "re")}.
 \code{NULL} (the default) fits unadjusted smooths. Character and logical
-\code{adjust} columns are converted to factor before fitting. Predictions
-hold numeric covariates at their mean and fixed factors at their
-most frequent level, and exclude random-effect smooths, so the curve
-and its band are population-level.}
+\code{adjust} columns are converted to factor before fitting. Random-effect
+smooths are excluded from prediction, so the curve and its band are
+population-level. With the identity link (the Gaussian default) the
+curve is the smooth averaged over the adjustment covariates of the
+data, and the plots draw each point as a partial residual: the
+observation with its own adjustment replaced by that average, so
+points and curve share one level (\code{style$adjusted_points}). With
+another link, numeric covariates are held at their mean and fixed
+factors at their most frequent level, and points stay raw.}
 
 \item{k}{Basis dimension for \code{s()}: a single integer, or a named list
 of integers keyed by variable name. \code{-1L} (the default) leaves the
@@ -139,7 +144,9 @@ response scale, while the derivatives, the shape indices and the
 shape label describe the linear predictor (the link scale). The two
 agree on monotone labels; a curvature label can differ, for example
 a log-linear Poisson mean is \code{linear_up} on the link scale and convex
-on the response scale.}
+on the response scale. A \code{family} applies to every cell of the
+matrix, so fit count or binary columns in their own call, not beside
+continuous ones.}
 
 \item{x}{A \code{janusplot_fit} object.}
 
@@ -155,7 +162,9 @@ element carries \code{i}, \code{j}, \code{var_i}, \code{var_j}, \code{fit_yx}, \
 (\code{NULL} unless \code{keep_fits = TRUE}), the prediction grids \code{pred_yx},
 \code{pred_xy} (data frames with \code{x}, \code{fit}, \code{se}, \code{lo}, \code{hi} on the
 response scale, \code{se} on the link scale, and \code{fit_link} when the
-link is not the identity),
+link is not the identity), the partial residuals \code{partial_yx},
+\code{partial_xy} (numeric, one per row the cell was fitted on; \code{NULL}
+without \code{adjust} or with a non-identity link),
 \code{edf_yx}, \code{edf_xy}, \code{association_p_yx}, \code{association_p_xy},
 \code{association_p_adj_yx}, \code{association_p_adj_xy}, \code{dev_exp_yx},
 \code{dev_exp_xy}, \code{deviance_gap_yx}, \code{deviance_gap_xy}, \code{n_used},
@@ -276,8 +285,10 @@ classification thresholds.
 Other smooth-associations:
 \code{\link[=janusplot]{janusplot()}},
 \code{\link[=janusplot_compare]{janusplot_compare()}},
+\code{\link[=janusplot_curves]{janusplot_curves()}},
 \code{\link[=janusplot_direction]{janusplot_direction()}},
 \code{\link[=janusplot_pair]{janusplot_pair()}},
+\code{\link[=janusplot_reference]{janusplot_reference()}},
 \code{\link[=janusplot_style]{janusplot_style()}},
 \code{\link[=plot.janusplot_compare]{plot.janusplot_compare()}},
 \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}}

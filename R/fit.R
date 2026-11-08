@@ -71,10 +71,15 @@
 #' @param adjust One-sided formula of covariates and random effects added
 #'   to every pairwise model, for example `~ s(age) + s(site, bs = "re")`.
 #'   `NULL` (the default) fits unadjusted smooths. Character and logical
-#'   `adjust` columns are converted to factor before fitting. Predictions
-#'   hold numeric covariates at their mean and fixed factors at their
-#'   most frequent level, and exclude random-effect smooths, so the curve
-#'   and its band are population-level.
+#'   `adjust` columns are converted to factor before fitting. Random-effect
+#'   smooths are excluded from prediction, so the curve and its band are
+#'   population-level. With the identity link (the Gaussian default) the
+#'   curve is the smooth averaged over the adjustment covariates of the
+#'   data, and the plots draw each point as a partial residual: the
+#'   observation with its own adjustment replaced by that average, so
+#'   points and curve share one level (`style$adjusted_points`). With
+#'   another link, numeric covariates are held at their mean and fixed
+#'   factors at their most frequent level, and points stay raw.
 #' @param k Basis dimension for `s()`: a single integer, or a named list
 #'   of integers keyed by variable name. `-1L` (the default) leaves the
 #'   choice to mgcv. Each cell's basis is capped at the number of distinct
@@ -144,7 +149,9 @@
 #'   shape label describe the linear predictor (the link scale). The two
 #'   agree on monotone labels; a curvature label can differ, for example
 #'   a log-linear Poisson mean is `linear_up` on the link scale and convex
-#'   on the response scale.
+#'   on the response scale. A `family` applies to every cell of the
+#'   matrix, so fit count or binary columns in their own call, not beside
+#'   continuous ones.
 #' @param x A `janusplot_fit` object.
 #' @param object A `janusplot_fit` object.
 #'
@@ -157,7 +164,9 @@
 #'     (`NULL` unless `keep_fits = TRUE`), the prediction grids `pred_yx`,
 #'     `pred_xy` (data frames with `x`, `fit`, `se`, `lo`, `hi` on the
 #'     response scale, `se` on the link scale, and `fit_link` when the
-#'     link is not the identity),
+#'     link is not the identity), the partial residuals `partial_yx`,
+#'     `partial_xy` (numeric, one per row the cell was fitted on; `NULL`
+#'     without `adjust` or with a non-identity link),
 #'     `edf_yx`, `edf_xy`, `association_p_yx`, `association_p_xy`,
 #'     `association_p_adj_yx`, `association_p_adj_xy`, `dev_exp_yx`,
 #'     `dev_exp_xy`, `deviance_gap_yx`, `deviance_gap_xy`, `n_used`,
@@ -279,6 +288,7 @@ janusplot_fit <- function(
   )
   .warn_failed_cells(fits)
   .inform_k_capped(fits)
+  .warn_low_residual_df(fits)
   .summarise_k_check(fits, k_thresholds, auto_refit_k)
 
   # Matrix-wide quantities and the object --------------------------------
@@ -474,6 +484,8 @@ janusplot_fit <- function(
         fit_xy                    = if (keep_fits) f_xy$fit else NULL,
         pred_yx                   = f_yx$pred,
         pred_xy                   = f_xy$pred,
+        partial_yx                = f_yx$partial,
+        partial_xy                = f_xy$partial,
         edf_yx                    = f_yx$edf,
         edf_xy                    = f_xy$edf,
         association_p_yx          = f_yx$pvalue,
@@ -740,12 +752,21 @@ summary.janusplot_fit <- function(object, ...) {
   paste0("flags: ", paste(items, collapse = ", "))
 }
 
-# The n_top largest asymmetries, one formatted line each; pairs without
-# an index are left out.
+# The n_top largest asymmetries, one formatted line each. Pairs without
+# an index are left out, and so are pairs in which neither direction is
+# significant: there the index compares two smooths of noise. A last line
+# counts the pairs left out for that reason.
 .format_top_asymmetries <- function(pairs, n_top = 5L, p_adjust = "none") {
   a  <- vapply(pairs, function(p) as.numeric(p$asymmetry_index), numeric(1L))
-  ok <- which(is.finite(a))
-  if (!length(ok)) return("(no pair has an asymmetry index)")
+  ns <- vapply(pairs, .pair_not_significant, logical(1L))
+  if (!any(is.finite(a))) return("(no pair has an asymmetry index)")
+  ok <- which(is.finite(a) & !ns)
+  n_ns <- sum(is.finite(a) & ns)
+  note <- if (n_ns > 0L) {
+    sprintf("(%d %s with neither direction significant, not ranked)", n_ns,
+            if (n_ns == 1L) "pair" else "pairs")
+  }
+  if (!length(ok)) return(c("(no pair has a significant direction)", note))
   top <- ok[order(-a[ok])][seq_len(min(n_top, length(ok)))]
   p_name <- if (identical(p_adjust, "none")) "p" else "p_adj"
   direction <- function(y, x, edf, p, shape) {
@@ -759,7 +780,7 @@ summary.janusplot_fit <- function(object, ...) {
     ns <- if (is.finite(p) && p >= 0.05) " n.s." else ""
     sprintf("%s ~ %s: EDF %.1f, %s, %s%s", y, x, edf, p_txt, shape, ns)
   }
-  vapply(pairs[top], function(p) {
+  lines <- vapply(pairs[top], function(p) {
     sprintf("%s <-> %s  A = %.2f  %s | %s",
             p$var_i, p$var_j, p$asymmetry_index,
             direction(p$var_j, p$var_i, p$edf_yx,
@@ -767,4 +788,14 @@ summary.janusplot_fit <- function(object, ...) {
             direction(p$var_i, p$var_j, p$edf_xy,
                       p$association_p_adj_xy, p$shape_xy))
   }, character(1L), USE.NAMES = FALSE)
+  c(lines, note)
+}
+
+# TRUE when neither direction of a pair has a p-value below 0.05 (the
+# adjusted one, which equals the raw one under p_adjust = "none"). A pair
+# with a missing p-value in either direction is not called n.s. here.
+.pair_not_significant <- function(pair) {
+  p <- c(pair$association_p_adj_yx, pair$association_p_adj_xy)
+  p <- as.numeric(unlist(lapply(p, function(v) v %||% NA_real_)))
+  length(p) == 2L && !anyNA(p) && all(p >= 0.05)
 }

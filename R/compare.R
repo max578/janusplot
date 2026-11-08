@@ -380,7 +380,7 @@ plot.janusplot_compare <- function(
                                  lookup_a$direction[row_a]),
       face_b        = face_b,
       points        = .cell_points(fit_b, face_b$var_x, face_b$var_y,
-                                   grouping),
+                                   grouping, .face_partial(face_b, style)),
       shape_changed = x$table$shape_changed[match(key, key_tab)],
       style         = style,
       text_sizes    = text_sizes,
@@ -425,10 +425,11 @@ plot.janusplot_compare <- function(
   )
   .finalize_plot(
     composite,
-    title   = sprintf("Direct fit: %s against %s",
+    title   = sprintf("Fitted curves: %s against %s",
                       x$labels[1L], x$labels[2L]),
     caption = if (isTRUE(style$show_glossary)) {
-      .compare_caption(x$labels, style)
+      .compare_caption(x$labels, style,
+                       partial = .partial_points_shown(x$fit_b, style))
     } else {
       NULL
     },
@@ -473,7 +474,7 @@ plot.janusplot_compare <- function(
 }
 
 # The caption keying the two curves and the red border.
-.compare_caption <- function(labels, style) {
+.compare_caption <- function(labels, style, partial = FALSE) {
   solid <- if (identical(style$curve_colour, janusplot_style()$curve_colour)) {
     "solid blue"
   } else {
@@ -483,6 +484,12 @@ plot.janusplot_compare <- function(
   paste(
     sprintf("grey dashed: %s; %s: %s", labels[1L], solid, labels[2L]),
     "red border: shape label changed",
+    if (partial) {
+      sprintf("points: %s, partial residuals (adjustment replaced by its average)",
+              labels[2L])
+    } else {
+      sprintf("points: %s", labels[2L])
+    },
     sprintf("EDF = effective degrees of freedom of the smooth, %s %s %s",
             labels[1L], .compare_arrow(style$glyph_style), labels[2L]),
     sep = "\n"

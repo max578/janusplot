@@ -79,9 +79,11 @@ cmp$table[, c("var_x", "var_y", "edf_a", "edf_b", "shape_changed")]
 
 Other smooth-associations:
 \code{\link[=janusplot]{janusplot()}},
+\code{\link[=janusplot_curves]{janusplot_curves()}},
 \code{\link[=janusplot_direction]{janusplot_direction()}},
 \code{\link[=janusplot_fit]{janusplot_fit()}},
 \code{\link[=janusplot_pair]{janusplot_pair()}},
+\code{\link[=janusplot_reference]{janusplot_reference()}},
 \code{\link[=janusplot_style]{janusplot_style()}},
 \code{\link[=plot.janusplot_compare]{plot.janusplot_compare()}},
 \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}}

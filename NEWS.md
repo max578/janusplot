@@ -228,6 +228,37 @@ residual-independence test of direction (`janusplot_direction()`).
 
 ## New features
 
+* Under `adjust` with the identity link, every view draws each point as a
+  partial residual: the observation with its own adjustment replaced by
+  the average adjustment, so the points sit around the curve. The curve
+  is the smooth averaged over the fixed adjustment covariates of the
+  data, with random effects at zero. A Simpson's-paradox reversal then
+  shows as a cloud that changes direction. `janusplot_style(adjusted_points
+  = "raw")` draws the observed values. Each pair stores the residuals as
+  `partial_yx` and `partial_xy`. With a non-identity link the points stay
+  raw and covariates are held at typical values.
+* `janusplot_reference()` (experimental) gives a bootstrap reference for
+  the asymmetry index of chosen pairs. For each direction it simulates
+  that direction's fitted smooth with resampled additive residuals,
+  keeping the predictor and the adjustment, refits both directions and
+  reports the median, the 95th percentile and the share of replicates at
+  or above the observed index. `print()` adds a one-line reading per
+  pair and `plot()` draws the reference distributions.
+* `janusplot_curves()` (experimental) returns the fitted curves, or their
+  derivatives, as one long data frame (`var_x`, `var_y`, `position`, `x`,
+  `fit`, `se`, `lo`, `hi`) for drawing with any tool.
+* `janusplot_style(identity_line = TRUE)` adds the line `y = x` to the
+  z-score panels of `janusplot_pair(display = "both")`. There it is the
+  standard-deviation line, and a curve flatter than it along its own
+  predictor axis regresses towards the mean.
+* The strip shows `A` as a dash when neither direction of the pair is
+  significant at 0.05, and `print()` leaves such pairs out of its ranking
+  and counts them on a line of their own: there the index compares two
+  smooths of noise.
+* `janusplot_fit()` warns, naming the cells, when a smooth keeps fewer
+  than five residual degrees of freedom and so nearly passes through
+  every point, as eleven rows with the default basis do.
+
 * `janusplot_fit()` fits every ordered pair once and returns a
   `janusplot_fit` object: `$vars`, `$pairs` (one element per unordered
   pair, the fields `janusplot_data()` returned plus the ones below),
@@ -385,6 +416,12 @@ residual-independence test of direction (`janusplot_direction()`).
   (`"minimum"`, `"maximum"` or `NA`).
 
 ## Bug fixes and robustness
+
+* Model formulas longer than 32 characters wrap after `~` in the titles
+  and strips of `janusplot_pair()`, so neighbouring panels no longer
+  overlap. Points coloured by `group` are drawn at an opacity of at least
+  0.5 so the colours stay distinguishable. The matrix title reads
+  "Fitted curves" in place of "Direct fit".
 
 * Column names that are not syntactic R names (`"grain yield (t/ha)"`,
   `"N-rate %"`, `"2019_yield"`) no longer fail every cell. `janusplot_fit()`

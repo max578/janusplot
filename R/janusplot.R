@@ -368,14 +368,14 @@ janusplot <- function(
   glyph_style <- rlang::arg_match(glyph_style)
   if (glyph_style == "unicode") {
     switch(display,
-      fit = "Direct fit",
+      fit = "Fitted curves",
       d1  = "First derivative  f\u2032(x)",
       d2  = "Second derivative  f\u2033(x)",
       display
     )
   } else {
     switch(display,
-      fit = "Direct fit",
+      fit = "Fitted curves",
       d1  = "First derivative  df/dx",
       d2  = "Second derivative  d^2 f / dx^2",
       display
@@ -394,14 +394,16 @@ janusplot <- function(
                                  display = "fit",
                                  derivative_ci = "pointwise",
                                  background_by = "none",
-                                 adjusted = FALSE) {
+                                 adjusted = FALSE,
+                                 partial = FALSE) {
   parts <- "Each cell: row ~ s(column), the row variable on the vertical axis"
   if ("formula" %in% annotations) {
     parts <- c(parts, "Strip formula = response ~ predictor of the cell")
   }
   if (display == "fit" && "A" %in% annotations) {
     parts <- c(parts,
-      "A = asymmetry index |EDF_yx - EDF_xy| / (EDF_yx + EDF_xy), in [0, 1]")
+      paste("A = asymmetry index |EDF_yx - EDF_xy| / (EDF_yx + EDF_xy), in [0, 1];",
+            "a dash when neither direction is significant"))
   }
   if (display == "fit" && "edf" %in% annotations) {
     parts <- c(parts,
@@ -451,6 +453,12 @@ janusplot <- function(
   } else if (adjusted) {
     parts <- c(parts,
       "No cell background: the curves are adjusted, the correlations marginal")
+  }
+  if (display == "fit" && partial) {
+    parts <- c(parts, paste(
+      "Points: partial residuals, each row's adjustment replaced by the",
+      "average; the curve is averaged over the adjustment"
+    ))
   }
   if (display == "fit" && "signif" %in% annotations) {
     parts <- c(parts,

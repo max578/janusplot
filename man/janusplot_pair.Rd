@@ -88,7 +88,15 @@ vertical. \code{y ~ s(x)} is drawn in \code{style$curve_colour} and \code{x ~ s(
 orange, with its axes swapped into the same plane, so the two curves
 can be compared directly. One key below the panels names each colour:
 by its formula for one pair, as vertical on horizontal and horizontal
-on vertical for several.
+on vertical for several. \code{style$identity_line = TRUE} adds the line
+\code{y = x}, which in this plane is the standard-deviation line: when both
+curves are flatter than it along their own predictor axis, each
+variable regresses towards the mean of the other. The overlay draws the
+observed points, also under \code{adjust}, because the partial residuals of
+the two directions differ.
+
+Under \code{adjust} with the identity link, the side-by-side panels draw
+partial residuals (see \code{adjusted_points} in \code{\link[=janusplot_style]{janusplot_style()}}).
 
 Points are drawn in grey, coloured by \code{group} with one legend below the
 panels, or as a light grey binned density when the pair has more rows
@@ -121,8 +129,10 @@ test of a pair.
 Other smooth-associations:
 \code{\link[=janusplot]{janusplot()}},
 \code{\link[=janusplot_compare]{janusplot_compare()}},
+\code{\link[=janusplot_curves]{janusplot_curves()}},
 \code{\link[=janusplot_direction]{janusplot_direction()}},
 \code{\link[=janusplot_fit]{janusplot_fit()}},
+\code{\link[=janusplot_reference]{janusplot_reference()}},
 \code{\link[=janusplot_style]{janusplot_style()}},
 \code{\link[=plot.janusplot_compare]{plot.janusplot_compare()}},
 \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}}

@@ -80,9 +80,11 @@ for the matrix of one fit.
 Other smooth-associations:
 \code{\link[=janusplot]{janusplot()}},
 \code{\link[=janusplot_compare]{janusplot_compare()}},
+\code{\link[=janusplot_curves]{janusplot_curves()}},
 \code{\link[=janusplot_direction]{janusplot_direction()}},
 \code{\link[=janusplot_fit]{janusplot_fit()}},
 \code{\link[=janusplot_pair]{janusplot_pair()}},
+\code{\link[=janusplot_reference]{janusplot_reference()}},
 \code{\link[=janusplot_style]{janusplot_style()}},
 \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}}
 }

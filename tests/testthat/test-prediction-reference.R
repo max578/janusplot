@@ -52,23 +52,40 @@ test_that("the random effect is recorded as excluded", {
   expect_true(is.na(ref$value))
 })
 
-test_that("a numeric fixed covariate is held at its mean and recorded", {
+test_that("a numeric fixed covariate is averaged over the data and recorded", {
   d <- make_site_data()
   pr <- curve_yx(d, adjust = ~ s(z) + s(site, bs = "re"))
   expect_true(all(is.finite(pr$pred_yx$fit)))
   ref <- pr$prediction_reference_yx
   expect_identical(ref$variable, c("z", "site"))
-  expect_equal(ref$value[1L], mean(d$z))
+  expect_identical(ref$reference[1L], "averaged over the data")
+  expect_true(is.na(ref$value[1L]))
   expect_identical(ref$reference[2L], "excluded (random effect)")
   expect_lt(abs(mean(pr$pred_yx$fit - sin(2 * pi * pr$pred_yx$x))), 0.15)
 })
 
-test_that("a fixed factor is held at its most frequent level", {
+test_that("a fixed factor is averaged over the data, not held at a level", {
   d <- make_site_data(modal_site = 3L)
   pr <- curve_yx(d, adjust = ~ site)
   ref <- pr$prediction_reference_yx
   expect_identical(ref$variable, "site")
-  expect_identical(ref$reference, "3")
+  expect_identical(ref$reference, "averaged over the data")
+  # Site effects weighted by their row counts: the averaged curve sits
+  # that far from f, where the level of site 3 would sit at b[3] = -1.
+  b <- c(-3, -2, -1, -0.5, 0.5, 1, 2, 3)
+  w <- c(50, 50, 80, 50, 50, 50, 50, 50)
+  avg <- sum(w * b) / sum(w)
+  expect_lt(abs(mean(pr$pred_yx$fit - sin(2 * pi * pr$pred_yx$x)) - avg), 0.15)
+})
+
+test_that("a non-identity link keeps the typical-value reference", {
+  d <- make_site_data(modal_site = 3L)
+  d$count <- withr::with_seed(7L, stats::rpois(nrow(d), exp(1 + d$x)))
+  fit <- suppressWarnings(janusplot_fit(d, vars = c("x", "count"),
+                                        adjust = ~ site, family = poisson()))
+  pr <- fit$pairs[[1L]]
+  expect_identical(pr$prediction_reference_yx$reference, "3")
+  expect_null(pr$partial_yx)
 })
 
 test_that("an unadjusted fit records an empty reference", {

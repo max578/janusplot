@@ -240,8 +240,10 @@ directions drawn side by side.
 Other smooth-associations:
 \code{\link[=janusplot]{janusplot()}},
 \code{\link[=janusplot_compare]{janusplot_compare()}},
+\code{\link[=janusplot_curves]{janusplot_curves()}},
 \code{\link[=janusplot_fit]{janusplot_fit()}},
 \code{\link[=janusplot_pair]{janusplot_pair()}},
+\code{\link[=janusplot_reference]{janusplot_reference()}},
 \code{\link[=janusplot_style]{janusplot_style()}},
 \code{\link[=plot.janusplot_compare]{plot.janusplot_compare()}},
 \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}}

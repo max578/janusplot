@@ -502,6 +502,40 @@
 }
 
 # ---------------------------------------------------------------
+# Partial residuals under adjustment (identity link only)
+#
+# For row i the fit's linear predictor is eta_i = f(x_i) + a_i + b_i, where
+# a_i is the contribution of the fixed adjust terms at that row's
+# covariates and b_i that of its random effects. The reference curve
+# f(x) + a_ref holds the covariates at typical values with random effects
+# excluded. Then
+#   offset_i  = eta_i - (f(x_i) + a_ref)      (this row's whole adjustment)
+#   shift     = mean(a_i - a_ref)              (the average fixed adjustment)
+#   partial_i = y_i - offset_i + shift
+# and the curve is moved up by `shift`. Every point keeps its residual
+# from the fit, the cloud and the curve share one level, and the curve is
+# the smooth averaged over the data's fixed adjustment covariates with
+# random effects at their population mean of zero. Returns NULL when the
+# predictions cannot be formed, so the caller keeps raw points.
+# ---------------------------------------------------------------
+
+.partial_residuals <- function(fit, dat, x_name, y_name, adjust, re_terms) {
+  eta_obs <- tryCatch(as.numeric(stats::predict(fit, newdata = dat)),
+                      error = function(e) NULL)
+  eta_fixed <- tryCatch(as.numeric(.predict_population(fit, dat, re_terms)),
+                        error = function(e) NULL)
+  nd_ref <- .typical_newdata(dat, x_name, dat[[x_name]], adjust)
+  eta_ref <- tryCatch(as.numeric(.predict_population(fit, nd_ref, re_terms)),
+                      error = function(e) NULL)
+  n <- nrow(dat)
+  ok <- function(v) !is.null(v) && length(v) == n && !anyNA(v)
+  if (!ok(eta_obs) || !ok(eta_fixed) || !ok(eta_ref)) return(NULL)
+  offset <- eta_obs - eta_ref
+  shift <- mean(eta_fixed - eta_ref)
+  list(partial = dat[[y_name]] - offset + shift, shift = shift)
+}
+
+# ---------------------------------------------------------------
 # Analytic pointwise derivatives of a univariate mgcv::gam smooth via
 # the LP (linear-predictor) matrix. Let X_p be the LP matrix evaluated
 # on the plotting grid, with beta = coef(fit) and V_p = fit$Vp the
@@ -961,6 +995,26 @@
     if (!identical(fit$family$link, "identity")) pred_df$fit_link <- eta
   }
 
+  # Under adjustment with an identity link, the curve is moved to the
+  # average adjustment and each point is drawn as a partial residual, so
+  # the cloud and the curve share one level (see .partial_residuals()).
+  partial <- NULL
+  if (!is.null(adjust) && !is.null(preds) &&
+      identical(fit$family$link, "identity")) {
+    pr <- .partial_residuals(fit, dat, x_name, y_name, adjust, re_terms)
+    if (!is.null(pr)) {
+      partial <- pr$partial
+      pred_df$fit <- pred_df$fit + pr$shift
+      pred_df$lo  <- pred_df$lo + pr$shift
+      pred_df$hi  <- pred_df$hi + pr$shift
+      fixed <- pred_ref$reference != "excluded (random effect)"
+      if (any(fixed)) {
+        pred_ref$reference[fixed] <- "averaged over the data"
+        pred_ref$value[fixed] <- NA_real_
+      }
+    }
+  }
+
   deriv_list <- if (length(derivatives)) {
     .derivatives_lpmatrix(fit, nd, x_grid, derivatives, exclude = re_terms)
   } else {
@@ -997,6 +1051,8 @@
     pred     = pred_df,
     deriv    = deriv_list,
     raw      = dat[, c(x_name, y_name), drop = FALSE],
+    partial  = partial,
+    df_residual = as.numeric(fit$df.residual %||% NA_real_),
     edf      = edf,
     pvalue   = pval,
     dev_exp  = dev_exp,
@@ -1367,6 +1423,29 @@
 # One message per call naming every predictor whose basis dimension was
 # capped at its distinct-value count, with the k used. A predictor capped
 # at one k in every pair is listed once; otherwise each pair is listed.
+# A smooth with fewer than 5 residual degrees of freedom passes close to
+# every point (11 rows and the default basis reach EDF 9), so its shape
+# says little. One warning names every such cell.
+.warn_low_residual_df <- function(fits, floor = 5) {
+  low <- Filter(function(f) {
+    df <- f$df_residual
+    !is.null(df) && is.finite(df) && df < floor
+  }, fits)
+  if (!length(low)) return(invisible(NULL))
+  cells <- vapply(low, function(f) {                             # nolint: object_usage_linter.
+    sprintf("%s ~ s(%s) (n %d, EDF %.1f)", f$y_name, f$x_name,
+            as.integer(f$n_used), f$edf)
+  }, character(1L))
+  cli::cli_warn(c(
+    "!" = paste(
+      "{length(low)} cell{?s} nearly interpolate{?s/} the data, with fewer",
+      "than {floor} residual degrees of freedom: {cells}."
+    ),
+    i = "Read their shapes with care, or set a smaller {.arg k}, such as {.code k = 3L}."
+  ))
+  invisible(NULL)
+}
+
 .inform_k_capped <- function(fits) {
   capped <- Filter(function(f) isTRUE(f$k_capped), fits)
   if (!length(capped)) return(invisible(NULL))

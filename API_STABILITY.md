@@ -31,6 +31,9 @@ vocabulary for individual symbols.
 | `print.janusplot_compare()`, `plot.janusplot_compare()` | S3 methods | stable | 1.0.0 | Counts of changed cells; the matrix with both curves. |
 | `janusplot_direction()` | function | experimental | 1.0.0 | HSIC residual-independence verdict on one pair of a fit. |
 | `print.janusplot_direction()` | S3 method | experimental | 1.0.0 | Verdict, reason, p-values and rows used. |
+| `janusplot_curves()` | function | experimental | 1.0.0 | The fitted curves or their derivatives as one long data frame. |
+| `janusplot_reference()` | function | experimental | 1.0.0 | Bootstrap reference for the asymmetry index of chosen pairs. |
+| `print.janusplot_reference()`, `plot.janusplot_reference()` | S3 methods | experimental | 1.0.0 | One reading per pair; the reference distributions. |
 | `janusplot_style()` | function | stable | 1.0.0 | Every appearance setting, validated. |
 | `print.janusplot_style()` | S3 method | stable | 1.0.0 | The settings that differ from the defaults. |
 | `janusplot_shape_metrics()` | function | experimental | 0.1.0 | Shape indices, counts and label for any mgcv smooth. |

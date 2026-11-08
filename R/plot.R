@@ -216,7 +216,8 @@ plot.janusplot_fit <- function(
     cells_by_ij[[idx]] <- .render_cell(
       pair             = x$pairs[[cell_index$pair[idx]]],
       direction        = cell_index$direction[idx],
-      points           = .cell_points(x, face$var_x, face$var_y, grouping),
+      points           = .cell_points(x, face$var_x, face$var_y, grouping,
+                                      .face_partial(face, style)),
       style            = style,
       text_sizes       = text_sizes,
       annotations      = annotations,
@@ -289,7 +290,8 @@ plot.janusplot_fit <- function(
         annotations, colour_by, style$colour_channel, display,
         derivative_ci = x$settings$derivative_ci,
         background_by = background_by,
-        adjusted = !is.null(x$adjust)
+        adjusted = !is.null(x$adjust),
+        partial = .partial_points_shown(x, style)
       )
     } else {
       NULL
@@ -501,10 +503,26 @@ plot.janusplot_fit <- function(
   which(stats::complete.cases(fit$data[, cols, drop = FALSE]))
 }
 
-# The raw points of a cell, with the group level of each row when given.
-.cell_points <- function(fit, x, y, grouping = NULL) {
+# TRUE when the cells of `fit` draw partial residuals: the fit has
+# `adjust`, the style asks for partial points, and some cell stored them
+# (identity link).
+.partial_points_shown <- function(fit, style) {
+  if (is.null(fit$adjust) || identical(style$adjusted_points, "raw")) {
+    return(FALSE)
+  }
+  any(vapply(fit$pairs, function(p) {
+    !is.null(p$partial_yx) || !is.null(p$partial_xy)
+  }, logical(1L)))
+}
+
+# The points of a cell, with the group level of each row when given. With
+# `partial` (the face's partial residuals, one per fitted row) the
+# vertical coordinate is the partial residual instead of the raw value.
+.cell_points <- function(fit, x, y, grouping = NULL, partial = NULL) {
   rows <- .cell_rows(fit, x, y)
-  out <- data.frame(x = fit$data[[x]][rows], y = fit$data[[y]][rows])
+  y_vals <- fit$data[[y]][rows]
+  if (!is.null(partial) && length(partial) == length(rows)) y_vals <- partial
+  out <- data.frame(x = fit$data[[x]][rows], y = y_vals)
   if (!is.null(grouping)) out$group <- grouping$values[rows]
   out
 }

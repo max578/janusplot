@@ -104,7 +104,9 @@
   "YlOrRd", "YlGnBu", "Blues", "Greens"
 )
 
-.palettes_diverging <- c("RdYlBu", "RdBu", "PuOr", "Spectral")
+# BuOr pairs RdBu's blue with PuOr's orange; it is a background palette
+# only (no ColorBrewer scale carries the name).
+.palettes_diverging <- c("RdYlBu", "RdBu", "PuOr", "Spectral", "BuOr")
 
 .palette_is_cb_safe <- function(palette) {
   cb_safe <- c(
@@ -128,6 +130,7 @@
     RdBu    = c(low = "#2166AC", mid = "#F7F7F7", high = "#B2182B"),
     RdYlBu  = c(low = "#313695", mid = "#FFFFBF", high = "#A50026"),
     PuOr    = c(low = "#542788", mid = "#F7F7F7", high = "#B35806"),
+    BuOr    = c(low = "#2166AC", mid = "#F7F7F7", high = "#B35806"),
     Spectral = c(low = "#3288BD", mid = "#FFFFBF", high = "#D53E4F"),
     c(low = "#2166AC", mid = "#F7F7F7", high = "#B2182B")
   )
@@ -673,6 +676,7 @@
     var_x                  = if (swap) pair$var_j else pair$var_i,
     var_y                  = if (swap) pair$var_i else pair$var_j,
     pred                   = field("pred"),
+    partial                = field("partial"),
     deriv                  = field("deriv"),
     edf                    = field("edf"),
     association_p          = field("association_p"),
@@ -687,10 +691,18 @@
     error                  = field("error"),
     n_used                 = pair$n_used,
     asymmetry_index        = pair$asymmetry_index,
+    pair_not_significant   = .pair_not_significant(pair),
     cor_pearson            = pair$cor_pearson,
     cor_spearman           = pair$cor_spearman,
     cor_kendall            = pair$cor_kendall
   )
+}
+
+# The face's partial residuals when the style asks for them, else NULL
+# (raw points).
+.face_partial <- function(face, style) {
+  if (identical(style$adjusted_points, "raw")) return(NULL)
+  face$partial
 }
 
 # The significance glyph of a face: from the adjusted p-value when the
@@ -740,7 +752,13 @@
     if (not_signif) parts <- c(parts, "n.s.")
   }
   if ("A" %in% annotations && !is.na(face$asymmetry_index)) {
-    parts <- c(parts, sprintf("A %.2f", face$asymmetry_index))
+    # Neither direction significant: the index would compare two smooths
+    # of noise, so the strip shows a dash in its place.
+    parts <- c(parts, if (isTRUE(face$pair_not_significant)) {
+      "A \u2013"
+    } else {
+      sprintf("A %.2f", face$asymmetry_index)
+    })
   }
   if ("edf" %in% annotations && !is.na(face$edf)) {
     parts <- c(parts, sprintf(if (compact) "E %.1f" else "EDF %.1f", face$edf))
@@ -849,11 +867,13 @@
       inherit.aes = FALSE
     ))
   }
+  # Coloured points keep an opacity of at least 0.5 so the group colours
+  # stay legible against each other.
   list(
     ggplot2::geom_point(
       data = points,
       ggplot2::aes(x = .data$x, y = .data$y, colour = .data$group),
-      size = style$point_size, alpha = style$point_alpha,
+      size = style$point_size, alpha = max(style$point_alpha, 0.5),
       inherit.aes = FALSE
     ),
     ggplot2::scale_colour_manual(values = group_colours, na.value = "grey70",
@@ -888,7 +908,11 @@
     bl_lines <- c(bl_lines, sprintf("%s ~ %s", face$var_y, face$var_x))
   }
   if ("A" %in% annotations && !is.na(face$asymmetry_index)) {
-    bl_lines <- c(bl_lines, sprintf("A = %.2f", face$asymmetry_index))
+    bl_lines <- c(bl_lines, if (isTRUE(face$pair_not_significant)) {
+      "A = \u2013"
+    } else {
+      sprintf("A = %.2f", face$asymmetry_index)
+    })
   }
   if ("edf" %in% annotations && !is.na(face$edf)) {
     bl_lines <- c(bl_lines, sprintf("EDF = %.2f", face$edf))

@@ -332,14 +332,16 @@ test_that("print() has six sections and names the top pair", {
   fit <- janusplot_fit(make_nonlinear_data(n = 150L), engine = "gam")
   lines <- testthat::capture_output_lines(out <- print(fit))
   expect_identical(out, fit)
-  n_top <- min(5L, length(fit$pairs))
-  expect_length(lines, 6L + n_top)
+  ns <- vapply(fit$pairs, janusplot:::.pair_not_significant, logical(1L))
+  n_top <- min(5L, sum(!ns))
+  expect_length(lines, 6L + n_top + as.integer(any(ns)))
   expect_match(lines[1L], "^janusplot fit: 4 variables \\(x1, x2, x3, x4\\)$")
   expect_match(lines[2L], "^6 pairs, 12 directed cells$")
   expect_match(lines[3L], "^engine = gam, method = REML, adjust = none$")
   expect_match(lines[4L], "^no flags$")
   expect_match(lines[5L], "^Largest asymmetries:$")
   a <- vapply(fit$pairs, function(p) p$asymmetry_index, numeric(1L))
+  a[ns] <- -Inf
   top <- fit$pairs[[which.max(a)]]
   expect_match(lines[6L], paste0(
     "^  ", top$var_i, " <-> ", top$var_j, "  A = [0-9]\\.[0-9]{2}  ",
@@ -351,7 +353,7 @@ test_that("print() has six sections and names the top pair", {
   expect_match(lines[length(lines)], "summary\\(\\).*plot\\(\\)")
 })
 
-test_that("print() marks a non-significant direction n.s. and names p_adj", {
+test_that("print() leaves out pairs with no significant direction and names p_adj", {
   withr::local_seed(2026L)
   d <- data.frame(a = stats::rnorm(120L), b = stats::rnorm(120L))
   d$c <- d$a + stats::rnorm(120L, sd = 0.3)
@@ -360,10 +362,13 @@ test_that("print() marks a non-significant direction n.s. and names p_adj", {
   lines <- testthat::capture_output_lines(print(fit))
   top <- grep(" <-> ", lines, value = TRUE)
   expect_true(all(grepl("p_adj", top)))
+  # a and b are independent: neither direction is significant, so the
+  # pair is left out of the ranking and counted on the last line.
   ab <- grep("^  (a <-> b|b <-> a)", top, value = TRUE)
-  expect_length(ab, 1L)
-  expect_identical(lengths(regmatches(ab, gregexpr("n\\.s\\.", ab))), 2L)
+  expect_length(ab, 0L)
+  expect_true(any(grepl("neither direction significant, not ranked", lines)))
   ac <- grep("^  (a <-> c|c <-> a)", top, value = TRUE)
+  expect_length(ac, 1L)
   expect_false(grepl("n\\.s\\.", ac))
 })
 

@@ -45,7 +45,15 @@
 #' orange, with its axes swapped into the same plane, so the two curves
 #' can be compared directly. One key below the panels names each colour:
 #' by its formula for one pair, as vertical on horizontal and horizontal
-#' on vertical for several.
+#' on vertical for several. `style$identity_line = TRUE` adds the line
+#' `y = x`, which in this plane is the standard-deviation line: when both
+#' curves are flatter than it along their own predictor axis, each
+#' variable regresses towards the mean of the other. The overlay draws the
+#' observed points, also under `adjust`, because the partial residuals of
+#' the two directions differ.
+#'
+#' Under `adjust` with the identity link, the side-by-side panels draw
+#' partial residuals (see `adjusted_points` in [janusplot_style()]).
 #'
 #' Points are drawn in grey, coloured by `group` with one legend below the
 #' panels, or as a light grey binned density when the pair has more rows
@@ -126,7 +134,11 @@ janusplot_pair <- function(
   # with its columns; titles wrap after "~" once there are more than two.
   across <- stacks$ncol * (if (display == "both") 1L else 2L)
   text_sizes <- .cell_text_sizes(max(3L, across), style$text_size)
-  wrap_titles <- across > 2L
+  # Titles and strips also wrap when the longest model formula would run
+  # into the neighbouring panel at two panels across.
+  longest <- max(nchar(c(.pair_formula(pairs$y, pairs$x, fit$adjust),
+                         .pair_formula(pairs$x, pairs$y, fit$adjust))))
+  wrap_titles <- across > 2L || longest > 32L
   family <- style$base_family
   group_legend <- if (is.null(grouping)) {
     NULL
@@ -330,7 +342,8 @@ janusplot_pair <- function(
     p <- .render_cell(
       pair          = pair,
       direction     = direction,
-      points        = .cell_points(fit, face$var_x, face$var_y, grouping),
+      points        = .cell_points(fit, face$var_x, face$var_y, grouping,
+                                   .face_partial(face, style)),
       style         = style,
       text_sizes    = text_sizes,
       annotations   = c("A", "edf", "r", "signif", "n"),
@@ -481,7 +494,11 @@ janusplot_pair <- function(
   }
   strip <- paste(
     c(if (!is.na(pair$asymmetry_index)) {
-      sprintf("A %.2f", pair$asymmetry_index)
+      if (.pair_not_significant(pair)) {
+        "A \u2013"
+      } else {
+        sprintf("A %.2f", pair$asymmetry_index)
+      }
     }, edf_part(face_f), edf_part(face_r)),
     collapse = "   "
   )
@@ -507,6 +524,14 @@ janusplot_pair <- function(
     points$y <- to_zy(points$y)
     p <- p + .cell_points_layer(points, style, grouping$colours,
                                 n_used = face_f$n_used)
+  }
+
+  # In the z-score plane y = x is the SD line: a curve flatter than it on
+  # its own axis regresses towards the mean.
+  if (isTRUE(style$identity_line)) {
+    p <- p + ggplot2::geom_abline(intercept = 0, slope = 1,
+                                  colour = "grey45", linewidth = 0.4,
+                                  linetype = "22")
   }
 
   # Bands, then curves -----------------------------------------------------

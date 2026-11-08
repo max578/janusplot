@@ -63,7 +63,9 @@
 #'   correlation `colour_by` is replaced by `"RdBu"`.
 #' @param background_palette Diverging palette of the correlation
 #'   background, one of `"RdBu"` (the default: blue negative, red
-#'   positive), `"RdYlBu"`, `"PuOr"` and `"Spectral"`.
+#'   positive), `"BuOr"` (blue negative, orange positive; its two sides
+#'   stay the furthest apart under simulated red-green and blue-yellow
+#'   colour-vision deficiency), `"RdYlBu"`, `"PuOr"` and `"Spectral"`.
 #' @param background_strength Number in `(0, 1]`, `0.35` by default: how
 #'   far from white towards the palette end the background of a cell with
 #'   correlation of magnitude one is drawn. A cell with correlation `r` is
@@ -76,6 +78,17 @@
 #' @param show_data Logical. `TRUE` (the default) draws the raw points of
 #'   each cell behind the curve on fit cells; derivative cells never
 #'   carry points.
+#' @param adjusted_points Points of a fit with `adjust`: `"partial"` (the
+#'   default) draws partial residuals, each observation with its own
+#'   adjustment replaced by the average adjustment, so the points sit
+#'   around the curve as they do without adjustment; `"raw"` draws the
+#'   observed values. Partial residuals need the identity link; with
+#'   another link the points stay raw.
+#' @param identity_line Logical. `TRUE` adds the dashed line `y = x` to
+#'   the z-score panels of [janusplot_pair()] with `display = "both"`.
+#'   There it is the standard-deviation line: a curve flatter than it,
+#'   read along its own predictor axis, regresses towards the mean.
+#'   `FALSE` (the default) leaves it out.
 #' @param show_ci Logical. `TRUE` (the default) draws the 95 percent band
 #'   around the curve, and around a derivative curve when the fit stored
 #'   one.
@@ -143,7 +156,7 @@
 #' @param x A `janusplot_style` object.
 #' @param ... Ignored by the `print()` method.
 #'
-#' @returns A named list of class `janusplot_style` holding the 30 values
+#' @returns A named list of class `janusplot_style` holding the 32 values
 #'   above, with `text_size` stored as given. `print()` lists the values
 #'   that differ from the defaults and returns `x` invisibly.
 #'
@@ -170,6 +183,8 @@ janusplot_style <- function(
   background_strength = 0.35,
   annotation_position = c("strip", "corners"),
   show_data = TRUE,
+  adjusted_points = c("partial", "raw"),
+  identity_line = FALSE,
   show_ci = TRUE,
   point_size = 0.4,
   point_alpha = 0.25,
@@ -201,12 +216,14 @@ janusplot_style <- function(
   diagonal            <- rlang::arg_match(diagonal)
   glyph_style         <- rlang::arg_match(glyph_style)
   compact             <- rlang::arg_match(compact)
+  adjusted_points     <- rlang::arg_match(adjusted_points)
   palette             <- .check_palette(palette)
   background_palette  <- rlang::arg_match(background_palette,
                                           .palettes_diverging)
   .check_strength(background_strength)
   .check_flag(show_data, "show_data")
   .check_flag(show_ci, "show_ci")
+  .check_flag(identity_line, "identity_line")
   .check_flag_or_auto(show_shape_legend, "show_shape_legend")
   .check_flag(show_glossary, "show_glossary")
   .check_flag(show_key, "show_key")
@@ -240,6 +257,8 @@ janusplot_style <- function(
     background_strength = background_strength,
     annotation_position = annotation_position,
     show_data           = show_data,
+    adjusted_points     = adjusted_points,
+    identity_line       = identity_line,
     show_ci             = show_ci,
     point_size          = point_size,
     point_alpha         = point_alpha,

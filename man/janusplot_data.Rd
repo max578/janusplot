@@ -19,10 +19,15 @@ other; their cells are listed in \code{flags$failed}.}
     \item{\code{adjust}}{One-sided formula of covariates and random effects added
 to every pairwise model, for example \code{~ s(age) + s(site, bs = "re")}.
 \code{NULL} (the default) fits unadjusted smooths. Character and logical
-\code{adjust} columns are converted to factor before fitting. Predictions
-hold numeric covariates at their mean and fixed factors at their
-most frequent level, and exclude random-effect smooths, so the curve
-and its band are population-level.}
+\code{adjust} columns are converted to factor before fitting. Random-effect
+smooths are excluded from prediction, so the curve and its band are
+population-level. With the identity link (the Gaussian default) the
+curve is the smooth averaged over the adjustment covariates of the
+data, and the plots draw each point as a partial residual: the
+observation with its own adjustment replaced by that average, so
+points and curve share one level (\code{style$adjusted_points}). With
+another link, numeric covariates are held at their mean and fixed
+factors at their most frequent level, and points stay raw.}
     \item{\code{k}}{Basis dimension for \code{s()}: a single integer, or a named list
 of integers keyed by variable name. \code{-1L} (the default) leaves the
 choice to mgcv. Each cell's basis is capped at the number of distinct

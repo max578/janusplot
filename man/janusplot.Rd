@@ -33,10 +33,15 @@ other; their cells are listed in \code{flags$failed}.}
 \item{adjust}{One-sided formula of covariates and random effects added
 to every pairwise model, for example \code{~ s(age) + s(site, bs = "re")}.
 \code{NULL} (the default) fits unadjusted smooths. Character and logical
-\code{adjust} columns are converted to factor before fitting. Predictions
-hold numeric covariates at their mean and fixed factors at their
-most frequent level, and exclude random-effect smooths, so the curve
-and its band are population-level.}
+\code{adjust} columns are converted to factor before fitting. Random-effect
+smooths are excluded from prediction, so the curve and its band are
+population-level. With the identity link (the Gaussian default) the
+curve is the smooth averaged over the adjustment covariates of the
+data, and the plots draw each point as a partial residual: the
+observation with its own adjustment replaced by that average, so
+points and curve share one level (\code{style$adjusted_points}). With
+another link, numeric covariates are held at their mean and fixed
+factors at their most frequent level, and points stay raw.}
 
 \item{colour_by}{The quantity painted on each cell: \code{"nonlinearity"}
 (the default; EDF minus 1 of the cell's smooth, sequential from 0),
@@ -198,9 +203,11 @@ for the appearance settings.
 
 Other smooth-associations:
 \code{\link[=janusplot_compare]{janusplot_compare()}},
+\code{\link[=janusplot_curves]{janusplot_curves()}},
 \code{\link[=janusplot_direction]{janusplot_direction()}},
 \code{\link[=janusplot_fit]{janusplot_fit()}},
 \code{\link[=janusplot_pair]{janusplot_pair()}},
+\code{\link[=janusplot_reference]{janusplot_reference()}},
 \code{\link[=janusplot_style]{janusplot_style()}},
 \code{\link[=plot.janusplot_compare]{plot.janusplot_compare()}},
 \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}}
