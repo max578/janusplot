@@ -305,6 +305,17 @@ residual-independence test of direction (`janusplot_direction()`).
   of the first two variables headed "each cell: row ~ s(column)"
   (`janusplot_style(show_key = )`). When either name is longer than seven
   characters, the key reads `v1` and `v2`.
+* `janusplot_style(legend_position = "bottom")` draws the colour bars as
+  horizontal bars under the matrix, beside the group legend, and moves the
+  key from the corner to their left. The top border then holds the
+  variable names alone and the cells take the full width, which suits a
+  figure one page wide. `"right"` (the default) keeps the bars in a column
+  beside the matrix.
+* The matrix views draw the raw points without an outline and shrink them
+  with the variable count, as they shrink the text: at the default
+  `janusplot_style(point_size = )` a point is about 1.25 points across at
+  four variables and 0.85 at eight. `janusplot_pair()` draws the size as
+  given.
 * `janusplot_style()` collects every appearance knob into one validated
   object with a `print()` method listing the values changed from their
   defaults.
@@ -356,6 +367,10 @@ residual-independence test of direction (`janusplot_direction()`).
   and the stacks sit side by side (`ncol` stacks), sharing text sizes and
   one legend. The panels take the signed correlation background
   (`janusplot_style(pair_background = )`) for a fit without `adjust`.
+  `annotations` chooses what the strips show, as in `plot()`.
+  `arrange = "stacked"` draws `y ~ s(x)` above `x ~ s(y)`, so several
+  pairs sit side by side with the forward panels in one row and the
+  reverse panels in the next.
 
   ```r
   fit <- janusplot_fit(airquality[, c("Ozone", "Temp", "Wind")])

@@ -140,6 +140,13 @@ The default sizes are set for a figure one page wide (170 mm). At one
 journal column (85 mm), draw at most four variables with
 \code{janusplot_style(text_size = 6, show_shape_legend = FALSE, show_glossary = FALSE)}.
 
+The colour bars sit in a column to the right of the matrix, which suits
+a wide screen. For a printed page,
+\code{janusplot_style(legend_position = "bottom", label_srt = 0)} puts the
+bars and the key under the matrix, so the cells take the full width,
+and \code{show_glossary = FALSE} leaves the explanation to the figure
+caption.
+
 \code{colour_by = "edf"} is accepted for one release and mapped to
 \code{"nonlinearity"} with a deprecation message.
 }

@@ -853,9 +853,12 @@
 
 # The raw points of a cell: grey points, points coloured by group, or a
 # light grey binned density when the cell has more rows than
-# style$density_threshold and no grouping.
+# style$density_threshold and no grouping. With `point_scale` (the matrix
+# views pass .matrix_point_scale()) the points are drawn without an
+# outline at that multiple of style$point_size; without it (the pair
+# view) at style$point_size with the outline ggplot2 gives a point.
 .cell_points_layer <- function(points, style, group_colours = NULL,
-                               n_used = nrow(points)) {
+                               n_used = nrow(points), point_scale = NULL) {
   if (is.null(group_colours) && isTRUE(n_used > style$density_threshold)) {
     return(list(
       ggplot2::geom_bin2d(
@@ -866,25 +869,39 @@
                                    guide = "none")
     ))
   }
+  shape <- if (is.null(point_scale)) {
+    list(size = style$point_size)
+  } else {
+    list(size = style$point_size * point_scale, stroke = 0)
+  }
   if (is.null(group_colours)) {
-    return(ggplot2::geom_point(
-      data = points, ggplot2::aes(x = .data$x, y = .data$y),
-      colour = "grey25", size = style$point_size, alpha = style$point_alpha,
-      inherit.aes = FALSE
-    ))
+    return(do.call(ggplot2::geom_point, c(
+      list(data = points, mapping = ggplot2::aes(x = .data$x, y = .data$y),
+           colour = "grey25", alpha = style$point_alpha, inherit.aes = FALSE),
+      shape
+    )))
   }
   # Coloured points keep an opacity of at least 0.5 so the group colours
   # stay legible against each other.
   list(
-    ggplot2::geom_point(
-      data = points,
-      ggplot2::aes(x = .data$x, y = .data$y, colour = .data$group),
-      size = style$point_size, alpha = max(style$point_alpha, 0.5),
-      inherit.aes = FALSE
-    ),
+    do.call(ggplot2::geom_point, c(
+      list(data = points,
+           mapping = ggplot2::aes(x = .data$x, y = .data$y,
+                                  colour = .data$group),
+           alpha = max(style$point_alpha, 0.5), inherit.aes = FALSE),
+      shape
+    )),
     ggplot2::scale_colour_manual(values = group_colours, na.value = "grey70",
                                  guide = "none")
   )
+}
+
+# Multiple of style$point_size at which a matrix of k variables draws its
+# outline-free points: 1.1 at four variables (a point 1.25 points across
+# at the default size, 0.6 of its width in the pair view), falling with
+# the cell size as the text does.
+.matrix_point_scale <- function(k) {
+  1.28 * .text_auto_scale(k)
 }
 
 # The 0.2.0 corner placement of the annotations, used when
@@ -1011,7 +1028,8 @@
   border_linewidth = .border_linewidth(4L, style$border_width),
   background_by = "pearson",
   wrap_strip = FALSE,
-  adjusted = FALSE
+  adjusted = FALSE,
+  point_scale = NULL
 ) {
   face <- .pair_face(pair, direction)
   tier <- as.integer(tier)
@@ -1078,7 +1096,8 @@
     points$x <- tf_x(points$x)
     points$y <- tf_y(points$y)
     p <- p + .cell_points_layer(points, style, group_colours,
-                                n_used = face$n_used)
+                                n_used = face$n_used,
+                                point_scale = point_scale)
   }
   if (show_ci) {
     pred_ci <- face$pred

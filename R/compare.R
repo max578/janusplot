@@ -302,7 +302,8 @@ print.janusplot_compare <- function(x, ...) {
 #' @details
 #' The layout follows [plot.janusplot_fit()]: every cell `[r, c]` shows
 #' `vars[r] ~ s(vars[c])`, over the variables of the second fit, with the
-#' key of that convention in the top-left corner. There is no colour scale
+#' key of that convention in the top-left corner, or under the matrix with
+#' `janusplot_style(legend_position = "bottom")`. There is no colour scale
 #' and no background. The caption keys the two curves by `x$labels` when
 #' `style$show_glossary` is `TRUE`.
 #'
@@ -403,7 +404,8 @@ plot.janusplot_compare <- function(
       text_sizes    = text_sizes,
       tier          = tier,
       group_colours = grouping$colours,
-      border_linewidth = border_lw
+      border_linewidth = border_lw,
+      point_scale   = .matrix_point_scale(k_n)
     )
   }
 
@@ -426,7 +428,8 @@ plot.janusplot_compare <- function(
   } else {
     NULL
   }
-  group_legend_plot <- if (!is.null(grouping)) {
+  legend_bottom <- identical(style$legend_position, "bottom")
+  group_legend_plot <- if (!is.null(grouping) && !legend_bottom) {
     .build_group_legend_plot(grouping, text_pt = text_sizes$pt$legend,
                              family = style$base_family)
   } else {
@@ -439,7 +442,8 @@ plot.janusplot_compare <- function(
     group_legend_plot = group_legend_plot,
     labels = style$labels, label_srt = style$label_srt,
     text_pt = text_sizes$pt, show_key = style$show_key,
-    family = style$base_family
+    family = style$base_family,
+    legend_position = style$legend_position, grouping = grouping
   )
   .finalize_plot(
     composite,
@@ -530,7 +534,8 @@ plot.janusplot_compare <- function(
   text_sizes,
   tier = 0L,
   group_colours = NULL,
-  border_linewidth = 1.2
+  border_linewidth = 1.2,
+  point_scale = NULL
 ) {
   tier <- as.integer(tier)
   show_data   <- isTRUE(style$show_data) && tier < 1L
@@ -565,7 +570,8 @@ plot.janusplot_compare <- function(
   # Data, B's band, A's curve, B's curve -----------------------------------
   if (show_data && nrow(points) > 0L) {
     p <- p + .cell_points_layer(points, style, group_colours,
-                                n_used = face_b$n_used)
+                                n_used = face_b$n_used,
+                                point_scale = point_scale)
   }
   if (show_ci && has_b) {
     p <- p + ggplot2::geom_ribbon(

@@ -31,6 +31,7 @@ janusplot_style(
   show_shape_legend = "auto",
   show_glossary = TRUE,
   show_key = TRUE,
+  legend_position = c("right", "bottom"),
   pair_background = TRUE,
   text_size = "auto",
   base_family = "",
@@ -95,7 +96,11 @@ read along its own predictor axis, regresses towards the mean.
 around the curve, and around a derivative curve when the fit stored
 one.}
 
-\item{point_size}{Size of the raw points; \code{0.4} by default.}
+\item{point_size}{Size of the raw points; \code{0.4} by default.
+\code{\link[=janusplot_pair]{janusplot_pair()}} draws the points at this size. The matrix views
+draw them without an outline and shrink them with the variable count,
+as they shrink the text: at the default size a point is about 1.25
+points across at four variables and 0.85 at eight.}
 
 \item{point_alpha}{Opacity of the raw points in \verb{[0, 1]}; \code{0.25} by
 default.}
@@ -151,6 +156,14 @@ describing the abbreviations and encodings on the plot.}
 corner of the matrix a two-by-two key with the first two variables,
 showing that every cell is \code{row ~ s(column)}. It needs \code{labels = "border"}.}
 
+\item{legend_position}{Where the matrix views put the colour bars:
+\code{"right"} (the default) in a column beside the matrix, which suits a
+wide screen; \code{"bottom"} as horizontal bars under the matrix, beside
+the group legend, which suits a figure one page wide. Under
+\code{"bottom"} the key moves from the corner to the left of the bars, so
+the top border holds the variable names alone and the cells take the
+full width.}
+
 \item{pair_background}{Logical. \code{TRUE} (the default) tints the panels of
 \code{\link[=janusplot_pair]{janusplot_pair()}} by the pair's Pearson correlation, as
 \code{background_by = "pearson"} tints the matrix. A fit with \code{adjust}
@@ -185,7 +198,7 @@ outside the \code{focus_by} selection; \code{0.25} by default.}
 \item{...}{Ignored by the \code{print()} method.}
 }
 \value{
-A named list of class \code{janusplot_style} holding the 32 values
+A named list of class \code{janusplot_style} holding the 33 values
 above, with \code{text_size} stored as given. \code{print()} lists the values
 that differ from the defaults and returns \code{x} invisibly.
 }
@@ -242,6 +255,13 @@ janusplot_style(text_size = list(strip = 7, glossary = NULL, key = NULL))
 fit <- janusplot_fit(mtcars[, c("mpg", "hp", "wt")], engine = "gam")
 plot(fit, colour_by = "pearson", background_by = "none",
      style = janusplot_style(colour_channel = "fill"))
+
+# A figure for a printed page: legends under the matrix, level column
+# names, and no title or glossary, which the figure caption replaces.
+plot(fit, style = janusplot_style(
+  legend_position = "bottom", label_srt = 0, show_glossary = FALSE,
+  text_size = list(title = NULL)
+))
 }
 \seealso{
 \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}} and \code{\link[=janusplot]{janusplot()}}, which take the

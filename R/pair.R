@@ -15,7 +15,7 @@
 #' raw points, band, curve, the model formula as the title and a strip
 #' giving the pair's asymmetry index `A`, the EDF of that direction, the
 #' pair's Pearson correlation `r`, its significance glyph and the rows
-#' used. Nothing is refitted.
+#' used (`annotations` picks among them). Nothing is refitted.
 #'
 #' @details
 #' The left panel of a block always shows `y ~ s(x)`, whichever order the
@@ -38,6 +38,13 @@
 #' stacks of five, five and four blocks; stacks that would stay empty are
 #' dropped. One pair is a single row of two
 #' panels. Every panel shares the text sizes of `style$text_size`.
+#'
+#' `arrange = "stacked"` turns each block on its side: `y ~ s(x)` above
+#' `x ~ s(y)`. Several pairs then sit side by side, with every forward
+#' panel in one row and every reverse panel in the row below, which is the
+#' layout for comparing the same direction across pairs. Here `ncol` is
+#' the number of blocks per row and `nrow` the number of rows of blocks;
+#' give neither and up to five pairs form one row.
 #'
 #' `display = "both"` draws one panel per pair in the z-score plane of the
 #' pair's rows: `x` standardised on the horizontal axis and `y` on the
@@ -74,6 +81,15 @@
 #'   `fit$data` whose levels colour the raw points, with a legend below
 #'   the panels, or `NULL` (the default). Drawing only; the column never
 #'   enters the model.
+#' @param annotations Character vector choosing what the strip of each
+#'   panel shows under `display = "fit"`, a subset of the `annotations` of
+#'   [plot.janusplot_fit()]. `NULL` (the default) is `c("A", "edf", "r",
+#'   "signif", "n")`; `character()` writes no strip. The derivative and
+#'   overlay displays keep their own strips.
+#' @param arrange How the two panels of a pair sit: `"beside"` (the
+#'   default) puts `y ~ s(x)` left of `x ~ s(y)`, `"stacked"` puts it
+#'   above; see Details. The overlay of `display = "both"` has one panel
+#'   per pair and ignores it.
 #' @param nrow,ncol Number of pair blocks per stack and number of stacks,
 #'   or `NULL` (the default) to derive them as described in Details. When
 #'   both are given, `nrow * ncol` must cover every pair.
@@ -107,6 +123,11 @@
 #'
 #' # The first derivative of each direction, computed at fit time.
 #' janusplot_pair(fit, "Temp", "Ozone", display = "d1")
+#'
+#' # Forward panels in the top row, reverse panels below, EDF alone in
+#' # the strips.
+#' janusplot_pair(fit, c("Temp", "Wind"), c("Ozone", "Ozone"),
+#'                arrange = "stacked", annotations = "edf")
 #' }
 #' @export
 janusplot_pair <- function(
@@ -115,6 +136,8 @@ janusplot_pair <- function(
   y,
   display = c("fit", "d1", "d2", "both"),
   group = NULL,
+  annotations = NULL,
+  arrange = c("beside", "stacked"),
   nrow = NULL,
   ncol = NULL,
   style = janusplot_style()
@@ -122,23 +145,29 @@ janusplot_pair <- function(
   .check_fit_object(fit)
   pairs <- .resolve_pairs(fit, x, if (missing(y)) NULL else y)
   display <- rlang::arg_match(display)
+  arrange <- rlang::arg_match(arrange)
+  annotations <- .check_annotations(annotations) %||%
+    c("A", "edf", "r", "signif", "n")
   .check_style(style)
   grouping <- .resolve_group(fit, group, style)
   if (display %in% c("d1", "d2")) {
     .check_display_available(display, fit$settings$derivatives)
   }
-  stacks <- .pair_stack_layout(nrow(pairs), nrow, ncol)
+  stacked <- arrange == "stacked" && display != "both"
+  stacks <- .pair_stack_layout(nrow(pairs), nrow, ncol, by_row = stacked)
 
   # Shared sizes and legends -----------------------------------------------
   # Text scales with the panels across the page as the matrix text does
   # with its columns; titles wrap after "~" once there are more than two.
-  across <- stacks$ncol * (if (display == "both") 1L else 2L)
+  across <- stacks$ncol * (if (display == "both" || stacked) 1L else 2L)
   text_sizes <- .cell_text_sizes(max(3L, across), style$text_size)
   # Titles and strips also wrap when the longest model formula would run
   # into the neighbouring panel at two panels across.
   longest <- max(nchar(c(.pair_formula(pairs$y, pairs$x, fit$adjust),
                          .pair_formula(pairs$x, pairs$y, fit$adjust))))
-  wrap_titles <- across > 2L || longest > 32L
+  # A stacked block is drawn for a column a third of the page wide, as its
+  # text sizes are, so its titles wrap sooner.
+  wrap_titles <- across > 2L || longest > (if (stacked) 22L else 32L)
   family <- style$base_family
   group_legend <- if (is.null(grouping)) {
     NULL
@@ -163,14 +192,16 @@ janusplot_pair <- function(
   # One block per pair -----------------------------------------------------
   blocks <- lapply(seq_len(nrow(pairs)), function(i) {
     .pair_block(fit, pairs$x[i], pairs$y[i], display, grouping, style,
-                text_sizes, wrap_titles)
+                text_sizes, wrap_titles, annotations)
   })
-  body <- .stack_blocks(blocks, stacks)
+  body <- .stack_blocks(blocks, stacks, stacked)
 
   # Legends below ----------------------------------------------------------
   rows <- list(body, overlay_key, group_legend)
-  heights <- list(grid::unit(1, "null"), grid::unit(1.1, "cm"),
-                  grid::unit(0.9, "cm"))
+  # A legend sits below the empty panel of its plot, so these heights are
+  # the gap between the panels and each legend.
+  heights <- list(grid::unit(1, "null"), grid::unit(4, "pt"),
+                  grid::unit(4, "pt"))
   keep <- !vapply(rows, is.null, logical(1L))
   if (sum(keep) == 1L) return(body)
   # `nrow`, not `ncol = 1`: patchwork's `/` appends into a one-column
@@ -254,8 +285,9 @@ janusplot_pair <- function(
   data.frame(x = x, y = y, stringsAsFactors = FALSE)
 }
 
-# Blocks per stack (nrow) and number of stacks (ncol) for n pairs.
-.pair_stack_layout <- function(n, nrow = NULL, ncol = NULL,
+# Blocks per stack (nrow) and number of stacks (ncol) for n pairs. With
+# `by_row` the blocks fill rows instead: ncol blocks per row, nrow rows.
+.pair_stack_layout <- function(n, nrow = NULL, ncol = NULL, by_row = FALSE,
                                call = rlang::caller_env()) {
   for (nm in c("nrow", "ncol")) {
     value <- if (identical(nm, "nrow")) nrow else ncol
@@ -267,7 +299,8 @@ janusplot_pair <- function(
     }
   }
   if (is.null(nrow) && is.null(ncol)) {
-    ncol <- if (n <= 5L) 1L else ceiling(n / 5L)
+    lines <- if (n <= 5L) 1L else ceiling(n / 5L)
+    if (by_row) nrow <- lines else ncol <- lines
   }
   if (is.null(nrow)) nrow <- ceiling(n / ncol)
   if (is.null(ncol)) ncol <- ceiling(n / nrow)
@@ -278,7 +311,7 @@ janusplot_pair <- function(
       i = "Give one of them and the other follows."
     ), call = call)
   }
-  ncol <- ceiling(n / nrow)
+  if (by_row) nrow <- ceiling(n / ncol) else ncol <- ceiling(n / nrow)
   list(nrow = as.integer(nrow), ncol = as.integer(ncol))
 }
 
@@ -287,9 +320,33 @@ janusplot_pair <- function(
 # panel, axis and title across the stacks. Cells past the last block are
 # spacers. One block is returned as it is. The two panels of a block sit
 # close and the space goes between blocks, so each pair reads as a unit.
-.stack_blocks <- function(blocks, stacks) {
+# With `stacked` each block is a column of two panels and the blocks fill
+# rows, so every forward panel of a row of blocks shares one row of panels.
+.stack_blocks <- function(blocks, stacks, stacked = FALSE) {
   n <- length(blocks)
   per <- length(blocks[[1L]])
+  if (stacked && per == 2L) {
+    blocks <- lapply(blocks, function(block) {
+      list(block[[1L]] +
+             ggplot2::theme(plot.margin = ggplot2::margin(4, 6, 2, 6)),
+           block[[2L]] +
+             ggplot2::theme(plot.margin = ggplot2::margin(2, 6, 8, 6)))
+    })
+    cells <- list()
+    for (r in seq_len(stacks$nrow)) {
+      for (face in seq_len(per)) {
+        for (s in seq_len(stacks$ncol)) {
+          i <- (r - 1L) * stacks$ncol + s
+          cells <- c(cells, list(if (i <= n) {
+            blocks[[i]][[face]]
+          } else {
+            patchwork::plot_spacer()
+          }))
+        }
+      }
+    }
+    return(patchwork::wrap_plots(cells, ncol = stacks$ncol, byrow = TRUE))
+  }
   if (per == 2L) {
     blocks <- lapply(blocks, function(block) {
       list(block[[1L]] +
@@ -320,7 +377,8 @@ janusplot_pair <- function(
 # The block of one pair as a list of panels: the two directional panels,
 # left to right, or the overlay panel for display = "both".
 .pair_block <- function(fit, x, y, display, grouping, style, text_sizes,
-                        wrap_title = FALSE) {
+                        wrap_title = FALSE,
+                        annotations = c("A", "edf", "r", "signif", "n")) {
   pair <- fit$pairs[[.find_pair(fit, x, y)]]
   background <- if (isTRUE(style$pair_background) && is.null(fit$adjust)) {
     .background_hex(pair$cor_pearson, style$background_palette,
@@ -349,7 +407,7 @@ janusplot_pair <- function(
                                    .face_partial(face, style)),
       style         = style,
       text_sizes    = text_sizes,
-      annotations   = c("A", "edf", "r", "signif", "n"),
+      annotations   = annotations,
       display       = display,
       p_adjust      = fit$settings$p_adjust,
       colour        = NA_character_,

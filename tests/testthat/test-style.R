@@ -1,7 +1,7 @@
 # Tests for janusplot_style(): construction, the class and field order,
 # every validation error, and the print() method.
 
-test_that("janusplot_style() returns the 32 documented fields in order", {
+test_that("janusplot_style() returns the 33 documented fields in order", {
   s <- janusplot_style()
   expect_s3_class(s, c("janusplot_style", "list"), exact = TRUE)
   expect_named(s, c(
@@ -11,11 +11,13 @@ test_that("janusplot_style() returns the 32 documented fields in order", {
     "point_alpha", "curve_colour", "curve_width", "band_alpha",
     "border_width", "density_threshold", "group_palette", "group_max_levels",
     "labels", "label_srt", "diagonal", "glyph_style", "show_shape_legend",
-    "show_glossary", "show_key", "pair_background", "text_size",
+    "show_glossary", "show_key", "legend_position", "pair_background",
+    "text_size",
     "base_family", "compact", "compact_threshold", "compact_levels",
     "focus_dim_alpha"
   ))
-  expect_length(formals(janusplot_style), 32L)
+  expect_length(formals(janusplot_style), 33L)
+  expect_identical(s$legend_position, "right")
   expect_identical(s$background_palette, "BuOr")
   expect_identical(s$background_strength, 0.35)
   expect_identical(s$curve_width, 2)

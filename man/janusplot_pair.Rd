@@ -10,6 +10,8 @@ janusplot_pair(
   y,
   display = c("fit", "d1", "d2", "both"),
   group = NULL,
+  annotations = NULL,
+  arrange = c("beside", "stacked"),
   nrow = NULL,
   ncol = NULL,
   style = janusplot_style()
@@ -36,6 +38,16 @@ one z-score panel.}
 the panels, or \code{NULL} (the default). Drawing only; the column never
 enters the model.}
 
+\item{annotations}{Character vector choosing what the strip of each
+panel shows under \code{display = "fit"}, a subset of the \code{annotations} of
+\code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}}. \code{NULL} (the default) is \code{c("A", "edf", "r", "signif", "n")}; \code{character()} writes no strip. The derivative and
+overlay displays keep their own strips.}
+
+\item{arrange}{How the two panels of a pair sit: \code{"beside"} (the
+default) puts \code{y ~ s(x)} left of \code{x ~ s(y)}, \code{"stacked"} puts it
+above; see Details. The overlay of \code{display = "both"} has one panel
+per pair and ignores it.}
+
 \item{nrow, ncol}{Number of pair blocks per stack and number of stacks,
 or \code{NULL} (the default) to derive them as described in Details. When
 both are given, \code{nrow * ncol} must cover every pair.}
@@ -58,7 +70,7 @@ side: \code{y ~ s(x)} on the left and \code{x ~ s(y)} on the right, each with it
 raw points, band, curve, the model formula as the title and a strip
 giving the pair's asymmetry index \code{A}, the EDF of that direction, the
 pair's Pearson correlation \code{r}, its significance glyph and the rows
-used. Nothing is refitted.
+used (\code{annotations} picks among them). Nothing is refitted.
 }
 \details{
 The left panel of a block always shows \code{y ~ s(x)}, whichever order the
@@ -81,6 +93,13 @@ pairs \code{ceiling(n / 5)} stacks. Fourteen pairs with \code{nrow = 5L} give
 stacks of five, five and four blocks; stacks that would stay empty are
 dropped. One pair is a single row of two
 panels. Every panel shares the text sizes of \code{style$text_size}.
+
+\code{arrange = "stacked"} turns each block on its side: \code{y ~ s(x)} above
+\code{x ~ s(y)}. Several pairs then sit side by side, with every forward
+panel in one row and every reverse panel in the row below, which is the
+layout for comparing the same direction across pairs. Here \code{ncol} is
+the number of blocks per row and \code{nrow} the number of rows of blocks;
+give neither and up to five pairs form one row.
 
 \code{display = "both"} draws one panel per pair in the z-score plane of the
 pair's rows: \code{x} standardised on the horizontal axis and \code{y} on the
@@ -119,6 +138,11 @@ janusplot_pair(fit, pairs, ncol = 2L)
 
 # The first derivative of each direction, computed at fit time.
 janusplot_pair(fit, "Temp", "Ozone", display = "d1")
+
+# Forward panels in the top row, reverse panels below, EDF alone in
+# the strips.
+janusplot_pair(fit, c("Temp", "Wind"), c("Ozone", "Ozone"),
+               arrange = "stacked", annotations = "edf")
 }
 }
 \seealso{

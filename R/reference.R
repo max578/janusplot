@@ -326,6 +326,9 @@ plot.janusplot_reference <- function(x, ...) {
   if (is.null(df) || !nrow(df)) {
     cli::cli_abort("No reference replicates to draw.")
   }
+  # Panels follow the order the pairs were listed in, not the alphabet.
+  df$pair  <- factor(df$pair, levels = obs$pair)
+  obs$pair <- factor(obs$pair, levels = obs$pair)
   # One pair: the legend names the two lines. Several pairs: the legend
   # names the roles, as listed (x -> y) and reversed (y -> x).
   one_pair <- length(unique(df$pair)) == 1L

@@ -54,7 +54,8 @@ Nothing is refitted.
 \details{
 The layout follows \code{\link[=plot.janusplot_fit]{plot.janusplot_fit()}}: every cell \verb{[r, c]} shows
 \code{vars[r] ~ s(vars[c])}, over the variables of the second fit, with the
-key of that convention in the top-left corner. There is no colour scale
+key of that convention in the top-left corner, or under the matrix with
+\code{janusplot_style(legend_position = "bottom")}. There is no colour scale
 and no background. The caption keys the two curves by \code{x$labels} when
 \code{style$show_glossary} is \code{TRUE}.
 }

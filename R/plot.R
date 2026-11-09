@@ -40,6 +40,13 @@
 #' `janusplot_style(text_size = 6, show_shape_legend = FALSE,
 #' show_glossary = FALSE)`.
 #'
+#' The colour bars sit in a column to the right of the matrix, which suits
+#' a wide screen. For a printed page,
+#' `janusplot_style(legend_position = "bottom", label_srt = 0)` puts the
+#' bars and the key under the matrix, so the cells take the full width,
+#' and `show_glossary = FALSE` leaves the explanation to the figure
+#' caption.
+#'
 #' `colour_by = "edf"` is accepted for one release and mapped to
 #' `"nonlinearity"` with a deprecation message.
 #'
@@ -246,7 +253,8 @@ plot.janusplot_fit <- function(
       background       = background_hex[[idx]],
       border_linewidth = border_lw,
       background_by    = background_by,
-      adjusted         = !is.null(x$adjust)
+      adjusted         = !is.null(x$adjust),
+      point_scale      = .matrix_point_scale(k_n)
     )
   }
 
@@ -272,19 +280,29 @@ plot.janusplot_fit <- function(
   } else {
     NULL
   }
-  group_legend_plot <- if (!is.null(grouping)) {
+  legend_bottom <- identical(style$legend_position, "bottom")
+  group_legend_plot <- if (!is.null(grouping) && !legend_bottom) {
     .build_group_legend_plot(grouping, text_pt = text_sizes$pt$legend,
                              family = style$base_family)
   } else {
     NULL
   }
-  background_plot <- if (background_by == "none") {
+  background_plot <- if (background_by == "none" || legend_bottom) {
     NULL
   } else {
     .build_background_bar(background_by, style$background_palette,
                           style$background_strength,
                           text_pt = text_sizes$pt$legend,
                           family = style$base_family)
+  }
+  bottom_bars <- if (legend_bottom) {
+    .bottom_bar_specs(colour_by, colour_limits, palette,
+                      colour_channel = style$colour_channel,
+                      background_by = background_by,
+                      background_palette = style$background_palette,
+                      background_strength = style$background_strength)
+  } else {
+    list()
   }
   composite <- .assemble_matrix(
     cells_by_ij, diag_cells, vars,
@@ -295,7 +313,9 @@ plot.janusplot_fit <- function(
     labels = style$labels, label_srt = style$label_srt,
     text_pt = text_sizes$pt, show_key = style$show_key,
     family = style$base_family,
-    axes = axes, axis_transforms = axis_transforms
+    axes = axes, axis_transforms = axis_transforms,
+    legend_position = style$legend_position,
+    bottom_bars = bottom_bars, grouping = grouping
   )
   .finalize_plot(
     composite,

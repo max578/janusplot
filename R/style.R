@@ -93,6 +93,10 @@
 #'   around the curve, and around a derivative curve when the fit stored
 #'   one.
 #' @param point_size Size of the raw points; `0.4` by default.
+#'   [janusplot_pair()] draws the points at this size. The matrix views
+#'   draw them without an outline and shrink them with the variable count,
+#'   as they shrink the text: at the default size a point is about 1.25
+#'   points across at four variables and 0.85 at eight.
 #' @param point_alpha Opacity of the raw points in `[0, 1]`; `0.25` by
 #'   default.
 #' @param curve_colour Colour of the fitted curve and its band; the dark
@@ -133,6 +137,13 @@
 #'   corner of the matrix a two-by-two key with the first two variables,
 #'   showing that every cell is `row ~ s(column)`. It needs `labels =
 #'   "border"`.
+#' @param legend_position Where the matrix views put the colour bars:
+#'   `"right"` (the default) in a column beside the matrix, which suits a
+#'   wide screen; `"bottom"` as horizontal bars under the matrix, beside
+#'   the group legend, which suits a figure one page wide. Under
+#'   `"bottom"` the key moves from the corner to the left of the bars, so
+#'   the top border holds the variable names alone and the cells take the
+#'   full width.
 #' @param pair_background Logical. `TRUE` (the default) tints the panels of
 #'   [janusplot_pair()] by the pair's Pearson correlation, as
 #'   `background_by = "pearson"` tints the matrix. A fit with `adjust`
@@ -158,7 +169,7 @@
 #' @param x A `janusplot_style` object.
 #' @param ... Ignored by the `print()` method.
 #'
-#' @returns A named list of class `janusplot_style` holding the 32 values
+#' @returns A named list of class `janusplot_style` holding the 33 values
 #'   above, with `text_size` stored as given. `print()` lists the values
 #'   that differ from the defaults and returns `x` invisibly.
 #'
@@ -177,6 +188,13 @@
 #' fit <- janusplot_fit(mtcars[, c("mpg", "hp", "wt")], engine = "gam")
 #' plot(fit, colour_by = "pearson", background_by = "none",
 #'      style = janusplot_style(colour_channel = "fill"))
+#'
+#' # A figure for a printed page: legends under the matrix, level column
+#' # names, and no title or glossary, which the figure caption replaces.
+#' plot(fit, style = janusplot_style(
+#'   legend_position = "bottom", label_srt = 0, show_glossary = FALSE,
+#'   text_size = list(title = NULL)
+#' ))
 #' @export
 janusplot_style <- function(
   colour_channel = c("border", "tile", "fill"),
@@ -204,6 +222,7 @@ janusplot_style <- function(
   show_shape_legend = "auto",
   show_glossary = TRUE,
   show_key = TRUE,
+  legend_position = c("right", "bottom"),
   pair_background = TRUE,
   text_size = "auto",
   base_family = "",
@@ -219,6 +238,7 @@ janusplot_style <- function(
   glyph_style         <- rlang::arg_match(glyph_style)
   compact             <- rlang::arg_match(compact)
   adjusted_points     <- rlang::arg_match(adjusted_points)
+  legend_position     <- rlang::arg_match(legend_position)
   palette             <- .check_palette(palette)
   background_palette  <- rlang::arg_match(background_palette,
                                           .palettes_diverging)
@@ -278,6 +298,7 @@ janusplot_style <- function(
     show_shape_legend   = show_shape_legend,
     show_glossary       = show_glossary,
     show_key            = show_key,
+    legend_position     = legend_position,
     pair_background     = pair_background,
     text_size           = text_size,
     base_family         = base_family,
