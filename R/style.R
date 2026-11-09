@@ -18,8 +18,8 @@
 #' @details
 #' The default cell has a thick panel border carrying the `colour_by`
 #' value, a background tinted by the pair's signed correlation (white at
-#' zero, `background_strength` of the way to the palette's blue or red at
-#' minus or plus one), a thin strip above the data area with the
+#' zero, `background_strength` of the way to the palette's negative or
+#' positive end at minus or plus one), a thin strip above the data area with the
 #' annotations in small grey text, grey points behind a dark blue curve
 #' with a 20 percent band, and, for cells with more than
 #' `density_threshold` rows, a light grey binned density in place of the
@@ -62,10 +62,10 @@
 #'   `"Spectral"` (not colour-blind safe). A sequential palette under a
 #'   correlation `colour_by` is replaced by `"RdBu"`.
 #' @param background_palette Diverging palette of the correlation
-#'   background, one of `"RdBu"` (the default: blue negative, red
-#'   positive), `"BuOr"` (blue negative, orange positive; its two sides
-#'   stay the furthest apart under simulated red-green and blue-yellow
-#'   colour-vision deficiency), `"RdYlBu"`, `"PuOr"` and `"Spectral"`.
+#'   background, one of `"BuOr"` (the default: blue negative, orange
+#'   positive; its two sides stay the furthest apart under simulated
+#'   red-green and blue-yellow colour-vision deficiency), `"RdBu"` (blue
+#'   negative, red positive), `"RdYlBu"`, `"PuOr"` and `"Spectral"`.
 #' @param background_strength Number in `(0, 1]`, `0.35` by default: how
 #'   far from white towards the palette end the background of a cell with
 #'   correlation of magnitude one is drawn. A cell with correlation `r` is
@@ -179,7 +179,7 @@
 janusplot_style <- function(
   colour_channel = c("border", "tile", "fill"),
   palette = NULL,
-  background_palette = "RdBu",
+  background_palette = "BuOr",
   background_strength = 0.35,
   annotation_position = c("strip", "corners"),
   show_data = TRUE,

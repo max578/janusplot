@@ -1431,7 +1431,7 @@
 </g>
 <g clip-path='url(#cpMC4wMHw3MjAuMDB8MC4wMHw1NzYuMDA=)'>
 <text x='8.47' y='531.02' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='238.17px' lengthAdjust='spacingAndGlyphs'>grey dashed: marginal; solid blue with band: group-adjusted</text>
-<text x='8.47' y='542.90' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='129.61px' lengthAdjust='spacingAndGlyphs'>red border: shape label changed</text>
+<text x='8.47' y='542.90' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='233.65px' lengthAdjust='spacingAndGlyphs'>red border: trend changed (rising, falling or non-monotone)</text>
 <text x='8.47' y='554.78' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='305.20px' lengthAdjust='spacingAndGlyphs'>points: group-adjusted, partial residuals (adjustment replaced by its average)</text>
 <text x='8.47' y='566.66' style='font-size: 9.00px; fill: #404040; font-family: sans;' textLength='312.21px' lengthAdjust='spacingAndGlyphs'>EDF = effective degrees of freedom of the smooth, marginal -&gt; group-adjusted</text>
 <text x='8.47' y='16.42' style='font-size: 13.00px; font-weight: bold; fill: #1A1A1A; font-family: sans;' textLength='267.39px' lengthAdjust='spacingAndGlyphs'>Fitted curves: marginal against group-adjusted</text>

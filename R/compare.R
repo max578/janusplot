@@ -45,7 +45,11 @@
 #'     `n_used_a`, `n_used_b`, `edf_a`, `edf_b`, `delta_edf`, `A_a`,
 #'     `A_b`, `delta_A` (the pair's asymmetry index), `shape_a`,
 #'     `shape_b`, `shape_changed` (logical), `archetype_a`,
-#'     `archetype_b` and `archetype_changed` (logical).}
+#'     `archetype_b`, `archetype_changed` (logical), `trend_a`, `trend_b`
+#'     and `trend_changed` (logical). The trend is `"increasing"` or
+#'     `"decreasing"` for a monotone shape (by the sign of the
+#'     monotonicity index), otherwise `"non_monotone"` or
+#'     `"degenerate"`.}
 #'   \item{`fit_a`, `fit_b`}{The two fits as given.}
 #'   \item{`labels`}{The two labels.}
 #' }
@@ -165,10 +169,22 @@ janusplot_compare <- function(
     archetype_a       = tab_a$shape_archetype,
     archetype_b       = b$shape_archetype,
     archetype_changed = changed(tab_a$shape_archetype, b$shape_archetype),
+    trend_a           = .shape_trend(tab_a),
+    trend_b           = .shape_trend(b),
+    trend_changed     = changed(.shape_trend(tab_a), .shape_trend(b)),
     stringsAsFactors  = FALSE
   )
   rownames(out) <- NULL
   out
+}
+
+# The coarse trend of a cell: a monotone shape rises or falls by the sign
+# of its monotonicity index; any other shape keeps its monotonic tier.
+.shape_trend <- function(tab) {
+  m <- tab$monotonicity_index
+  ifelse(tab$shape_monotonic %in% "monotone",
+         ifelse(m >= 0, "increasing", "decreasing"),
+         tab$shape_monotonic)
 }
 
 # ---------------------------------------------------------------
@@ -203,11 +219,12 @@ print.janusplot_compare <- function(x, ...) {
   n_pairs <- length(unique(pair_key))
   n_pairs_changed <- length(unique(pair_key[shape_changed]))
   n_archetype <- sum(tab$archetype_changed, na.rm = TRUE)
+  n_trend <- sum(tab$trend_changed, na.rm = TRUE)
   cli::cat_line(sprintf(
     paste("From %s to %s, the shape changed in %d of %d directed cells",
-          "(%d of %d pairs) and the archetype in %d."),
+          "(%d of %d pairs), the archetype in %d and the trend in %d."),
     lab[1L], lab[2L], length(shape_changed), nrow(tab),
-    n_pairs_changed, n_pairs, n_archetype
+    n_pairs_changed, n_pairs, n_archetype, n_trend
   ))
   n_missing <- sum(is.na(tab$shape_changed))
   if (n_missing > 0L) {
@@ -278,8 +295,8 @@ print.janusplot_compare <- function(x, ...) {
 #' Draws the matrix of a [janusplot_compare()] object with both fitted
 #' curves in every off-diagonal cell: the first fit as a grey dashed
 #' curve, the second as the solid curve with its band over the second
-#' fit's raw points. A red border marks the cells whose shape label
-#' changed, and the strip above each cell gives the EDF of both fits.
+#' fit's raw points. A red border marks the cells whose trend changed
+#' (rising, falling or non-monotone), and the strip above each cell gives the EDF of both fits.
 #' Nothing is refitted.
 #'
 #' @details
@@ -381,7 +398,7 @@ plot.janusplot_compare <- function(
       face_b        = face_b,
       points        = .cell_points(fit_b, face_b$var_x, face_b$var_y,
                                    grouping, .face_partial(face_b, style)),
-      shape_changed = x$table$shape_changed[match(key, key_tab)],
+      trend_changed = x$table$trend_changed[match(key, key_tab)],
       style         = style,
       text_sizes    = text_sizes,
       tier          = tier,
@@ -483,7 +500,7 @@ plot.janusplot_compare <- function(
   if (isTRUE(style$show_ci)) solid <- paste(solid, "with band")
   paste(
     sprintf("grey dashed: %s; %s: %s", labels[1L], solid, labels[2L]),
-    "red border: shape label changed",
+    "red border: trend changed (rising, falling or non-monotone)",
     if (partial) {
       sprintf("points: %s, partial residuals (adjustment replaced by its average)",
               labels[2L])
@@ -499,7 +516,7 @@ plot.janusplot_compare <- function(
 # ---------------------------------------------------------------
 # Compare cell. One ggplot for one directed cell: B's points, B's band,
 # A's grey dashed curve, B's solid curve, the EDF strip and a red border
-# when the shape label changed. Compact tiers drop detail as in
+# when the trend changed. Compact tiers drop detail as in
 # .render_cell().
 # ---------------------------------------------------------------
 
@@ -507,7 +524,7 @@ plot.janusplot_compare <- function(
   face_a,
   face_b,
   points,
-  shape_changed,
+  trend_changed,
   style,
   text_sizes,
   tier = 0L,
@@ -518,7 +535,7 @@ plot.janusplot_compare <- function(
   show_data   <- isTRUE(style$show_data) && tier < 1L
   show_ci     <- isTRUE(style$show_ci) && tier < 2L
   show_spline <- tier < 3L
-  changed <- isTRUE(shape_changed)
+  changed <- isTRUE(trend_changed)
 
   # Panel, strip and border ------------------------------------------------
   strip <- if (tier < 3L) {

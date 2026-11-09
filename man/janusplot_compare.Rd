@@ -31,7 +31,11 @@ order of \code{summary(fit_a)}: \code{var_x} (predictor), \code{var_y}
 \code{n_used_a}, \code{n_used_b}, \code{edf_a}, \code{edf_b}, \code{delta_edf}, \code{A_a},
 \code{A_b}, \code{delta_A} (the pair's asymmetry index), \code{shape_a},
 \code{shape_b}, \code{shape_changed} (logical), \code{archetype_a},
-\code{archetype_b} and \code{archetype_changed} (logical).}
+\code{archetype_b}, \code{archetype_changed} (logical), \code{trend_a}, \code{trend_b}
+and \code{trend_changed} (logical). The trend is \code{"increasing"} or
+\code{"decreasing"} for a monotone shape (by the sign of the
+monotonicity index), otherwise \code{"non_monotone"} or
+\code{"degenerate"}.}
 \item{\code{fit_a}, \code{fit_b}}{The two fits as given.}
 \item{\code{labels}}{The two labels.}
 }

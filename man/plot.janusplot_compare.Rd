@@ -47,8 +47,8 @@ the key caption when \code{style$show_glossary} is \code{TRUE}.
 Draws the matrix of a \code{\link[=janusplot_compare]{janusplot_compare()}} object with both fitted
 curves in every off-diagonal cell: the first fit as a grey dashed
 curve, the second as the solid curve with its band over the second
-fit's raw points. A red border marks the cells whose shape label
-changed, and the strip above each cell gives the EDF of both fits.
+fit's raw points. A red border marks the cells whose trend changed
+(rising, falling or non-monotone), and the strip above each cell gives the EDF of both fits.
 Nothing is refitted.
 }
 \details{

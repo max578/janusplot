@@ -267,7 +267,7 @@ test_that("pair errors name every offending pair", {
 test_that("the pair panels take the signed background", {
   fit <- pair_fit()
   pair <- fit$pairs[[1L]]
-  expected <- janusplot:::.background_hex(pair$cor_pearson, "RdBu", 0.35)
+  expected <- janusplot:::.background_hex(pair$cor_pearson, "BuOr", 0.35)
   p <- janusplot_pair(fit, "x1", "x2")
   expect_identical(p[[1L]]$theme$panel.background$fill, expected)
   expect_identical(p[[2L]]$theme$panel.background$fill, expected)

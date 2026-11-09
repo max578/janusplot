@@ -27,7 +27,8 @@ compare_columns <- c(
   "var_x", "var_y", "position", "n_used_a", "n_used_b",
   "edf_a", "edf_b", "delta_edf", "A_a", "A_b", "delta_A",
   "shape_a", "shape_b", "shape_changed",
-  "archetype_a", "archetype_b", "archetype_changed"
+  "archetype_a", "archetype_b", "archetype_changed",
+  "trend_a", "trend_b", "trend_changed"
 )
 
 sort_cells <- function(tab) {
@@ -83,12 +84,27 @@ test_that("deltas are B minus A, row by row, against summary() of each fit", {
     expect_identical(row$shape_changed, a$shape_category != b$shape_category)
     expect_identical(row$archetype_changed,
                      a$shape_archetype != b$shape_archetype)
+    expect_identical(row$trend_changed, row$trend_a != row$trend_b)
   }
   # The Simpson reversal: y ~ s(x) is linear and increasing once the group
   # enters the model.
   yx <- cmp$table[cmp$table$var_x == "x" & cmp$table$var_y == "y", ]
   expect_identical(yx$shape_b, "linear_up")
   expect_true(yx$shape_changed)
+  expect_identical(yx$trend_b, "increasing")
+  expect_true(yx$trend_changed)
+})
+
+test_that("the trend splits monotone shapes by the sign of M", {
+  tab <- data.frame(
+    shape_monotonic    = c("monotone", "monotone", "non_monotone",
+                           "degenerate", "monotone"),
+    monotonicity_index = c(0.9, -0.7, 0.2, NA, NA)
+  )
+  expect_identical(
+    janusplot:::.shape_trend(tab),
+    c("increasing", "decreasing", "non_monotone", "degenerate", NA)
+  )
 })
 
 test_that("cells are matched by name whatever order either fit stored", {
@@ -197,7 +213,7 @@ test_that("plot() returns a ggplot with group, hclust order and errors on dots",
   expect_error(plot(cmp, style = list()), "janusplot_style")
 })
 
-test_that("a changed cell carries the red border and both curves", {
+test_that("a cell whose trend changed carries the red border and both curves", {
   cmp <- janusplot_compare(simpson$fit_a, simpson$fit_b)
   face <- function(fit, x, y) {
     p <- Filter(function(p) setequal(c(p$var_i, p$var_j), c(x, y)), fit$pairs)
@@ -209,7 +225,7 @@ test_that("a changed cell carries the red border and both curves", {
       face_a = face(simpson$fit_a, x, y),
       face_b = face(simpson$fit_b, x, y),
       points = janusplot:::.cell_points(simpson$fit_b, x, y),
-      shape_changed = row$shape_changed,
+      trend_changed = row$trend_changed,
       style = janusplot_style(),
       text_sizes = janusplot:::.cell_text_sizes(3L), ...
     )
@@ -227,7 +243,7 @@ test_that("a changed cell carries the red border and both curves", {
                    janusplot_style()$curve_colour)
   expect_match(changed$labels$subtitle, "^EDF [0-9.]+ -> [0-9.]+$")
 
-  unchanged <- cmp$table[!cmp$table$shape_changed, ][1L, ]
+  unchanged <- cmp$table[!cmp$table$trend_changed, ][1L, ]
   plain <- render(unchanged$var_x, unchanged$var_y)
   expect_identical(plain$theme$panel.border$colour, "grey55")
   expect_identical(plain$theme$panel.border$linewidth, 0.35)

@@ -85,7 +85,7 @@ the first two variables. In every cell:
   dark purple for a straight line, through green to yellow for a
   strongly bent curve;
 - the background is the pair's signed Pearson correlation, white at 0,
-  blue towards -1 and red towards +1;
+  blue towards -1 and orange towards +1;
 - the strip above the panel carries the asymmetry index `A` of the pair
   (0 when both directions are equally complex; defined below) and the
   significance glyph of the smooth's F-test (`***` p < .001,
@@ -325,7 +325,7 @@ for example `adjust = ~ species` or `adjust = ~ s(site, bs = "re")`.
 `janusplot_compare()` sets two fits of the same variables side by side,
 cell by cell, and reports how each fitted shape moves.
 
-```{r compare, eval = has_penguins, fig.cap = "Penguin traits fitted marginally (grey dashed curves) and adjusted for species (solid curves with bands), points coloured by species. A red border marks a cell whose shape label changed.", fig.alt = "Four-by-four matrix for the penguin traits with two curves in every cell, a dashed grey marginal curve and a solid species-adjusted curve, and red borders on most cells."}
+```{r compare, eval = has_penguins, fig.cap = "Penguin traits fitted marginally (grey dashed curves) and adjusted for species (solid curves with bands), points coloured by species. A red border marks a cell whose trend changed: rising, falling or non-monotone.", fig.alt = "Four-by-four matrix for the penguin traits with two curves in every cell, a dashed grey marginal curve and a solid species-adjusted curve, and red borders on the cells whose trend changed."}
 fit_pen_adj <- janusplot_fit(palmerpenguins::penguins, pen_vars,
                              adjust = ~ species)
 cmp <- janusplot_compare(fit_pen, fit_pen_adj,
@@ -336,13 +336,15 @@ plot(cmp, group = "species")
 
 ```{r compare-numbers, include = FALSE, eval = has_penguins}
 n_changed <- sum(cmp$table$shape_changed, na.rm = TRUE)
+n_trend   <- sum(cmp$table$trend_changed, na.rm = TRUE)
 pen_cor   <- stats::cor(palmerpenguins::penguins[, pen_vars],
                         use = "pairwise.complete.obs")["bill_depth_mm", ]
 ```
 
 The shape label changes in `r if (has_penguins) n_changed` of the
 `r if (has_penguins) nrow(cmp$table)` directed cells once species is in
-the model. Pooled across species, `bill_depth_mm` correlates negatively
+the model, and its trend (rising, falling or non-monotone) in
+`r if (has_penguins) n_trend` of them, the cells with a red border. Pooled across species, `bill_depth_mm` correlates negatively
 with the other three traits (r from
 `r if (has_penguins) round(min(pen_cor), 2)` to
 `r if (has_penguins) round(max(pen_cor[pen_vars != "bill_depth_mm"]), 2)`),

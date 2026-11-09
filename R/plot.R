@@ -26,7 +26,7 @@
 #' whole cell per `style$colour_channel`, with one colour bar per matrix.
 #' The `background_by` correlation tints the panel behind the points, band
 #' and curve: white at zero and `style$background_strength` of the way to
-#' the blue (negative) or red (positive) end of `style$background_palette`
+#' the negative or positive end of `style$background_palette`
 #' at minus or plus one, with its own colour bar over `[-1, 1]`. A strip
 #' above each cell carries the `annotations`.
 #'

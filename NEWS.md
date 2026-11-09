@@ -278,10 +278,12 @@ residual-independence test of direction (`janusplot_direction()`).
   observed maximum, with a floor of 1.
 * `plot()` and `janusplot()` gain `background_by` (`"pearson"`,
   `"spearman"`, `"kendall"` or `"none"`): each cell's background is tinted
-  by the pair's signed correlation, white at 0 and deeper blue or red
+  by the pair's signed correlation, white at 0 and deeper blue or orange
   towards -1 and 1, with a colour bar marked at 0.
   `janusplot_style(background_palette = , background_strength = )` set the
-  palette and the depth at |r| = 1. Left unset, the background is Pearson
+  palette and the depth at |r| = 1. The default palette `"BuOr"` keeps its
+  two sides apart under red-green and blue-yellow colour-vision
+  deficiency; `"RdBu"` and the other diverging palettes remain available. Left unset, the background is Pearson
   for a marginal fit and absent for a fit with `adjust`, whose curves are
   adjusted while the correlation is marginal; `background_by` set
   explicitly still draws it, and the glossary labels it marginal.
@@ -369,7 +371,10 @@ residual-independence test of direction (`janusplot_direction()`).
   `plot()` draws the matrix with both curves in every cell: the first fit
   as a grey dashed curve, the second as the solid curve with its band over
   its raw points, optionally coloured by `group`. The strip reads
-  `EDF a -> b` and a red border marks the cells whose shape label changed.
+  `EDF a -> b` and a red border marks the cells whose trend changed:
+  rising, falling (monotone, by the sign of the monotonicity index) or
+  non-monotone. The table carries `trend_a`, `trend_b` and
+  `trend_changed`.
   The comparison reports how sensitive each fitted shape is to the
   adjustment.
 

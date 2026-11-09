@@ -8,7 +8,7 @@
 janusplot_style(
   colour_channel = c("border", "tile", "fill"),
   palette = NULL,
-  background_palette = "RdBu",
+  background_palette = "BuOr",
   background_strength = 0.35,
   annotation_position = c("strip", "corners"),
   show_data = TRUE,
@@ -58,10 +58,10 @@ and \code{"viridis"} otherwise. Sequential choices: \code{"viridis"},
 correlation \code{colour_by} is replaced by \code{"RdBu"}.}
 
 \item{background_palette}{Diverging palette of the correlation
-background, one of \code{"RdBu"} (the default: blue negative, red
-positive), \code{"BuOr"} (blue negative, orange positive; its two sides
-stay the furthest apart under simulated red-green and blue-yellow
-colour-vision deficiency), \code{"RdYlBu"}, \code{"PuOr"} and \code{"Spectral"}.}
+background, one of \code{"BuOr"} (the default: blue negative, orange
+positive; its two sides stay the furthest apart under simulated
+red-green and blue-yellow colour-vision deficiency), \code{"RdBu"} (blue
+negative, red positive), \code{"RdYlBu"}, \code{"PuOr"} and \code{"Spectral"}.}
 
 \item{background_strength}{Number in \verb{(0, 1]}, \code{0.35} by default: how
 far from white towards the palette end the background of a cell with
@@ -199,8 +199,8 @@ drawn lives here.
 \details{
 The default cell has a thick panel border carrying the \code{colour_by}
 value, a background tinted by the pair's signed correlation (white at
-zero, \code{background_strength} of the way to the palette's blue or red at
-minus or plus one), a thin strip above the data area with the
+zero, \code{background_strength} of the way to the palette's negative or
+positive end at minus or plus one), a thin strip above the data area with the
 annotations in small grey text, grey points behind a dark blue curve
 with a 20 percent band, and, for cells with more than
 \code{density_threshold} rows, a light grey binned density in place of the

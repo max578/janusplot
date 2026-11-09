@@ -16,7 +16,7 @@ test_that("janusplot_style() returns the 32 documented fields in order", {
     "focus_dim_alpha"
   ))
   expect_length(formals(janusplot_style), 32L)
-  expect_identical(s$background_palette, "RdBu")
+  expect_identical(s$background_palette, "BuOr")
   expect_identical(s$background_strength, 0.35)
   expect_identical(s$curve_width, 2)
   expect_null(s$border_width)

@@ -373,7 +373,7 @@ test_that("derivative cells keep the zero line inside the panel", {
 render_default <- function(fit, colour) {
   render_face(fit, colour = colour,
               background = janusplot:::.background_hex(
-                fit$pairs[[1L]]$cor_pearson, "RdBu", 0.35
+                fit$pairs[[1L]]$cor_pearson, "BuOr", 0.35
               ))
 }
 
@@ -478,7 +478,7 @@ test_that("the background blends from white by the signed correlation", {
     v <- grDevices::colorRamp(c("white", end))(at)
     grDevices::rgb(v[, 1L], v[, 2L], v[, 3L], maxColorValue = 255)
   }
-  expect_identical(hex(1), blend("#B2182B", 0.35))
+  expect_identical(hex(1), blend("#B35806", 0.35))
   expect_identical(hex(-1), blend("#2166AC", 0.35))
   expect_identical(hex(-0.5, "PuOr", 1), blend("#542788", 0.5))
   expect_identical(hex(NA_real_), NA_character_)

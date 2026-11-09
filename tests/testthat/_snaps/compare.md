@@ -6,7 +6,7 @@
       janusplot comparison: marginal against group-adjusted
       3 variables (x, y, z), 3 pairs, 6 directed cells
       adjust: marginal = none, group-adjusted = ~g
-      From marginal to group-adjusted, the shape changed in 4 of 6 directed cells (3 of 3 pairs) and the archetype in 3.
+      From marginal to group-adjusted, the shape changed in 4 of 6 directed cells (3 of 3 pairs), the archetype in 3 and the trend in 4.
       Cells whose shape changed:
         x ~ s(y): shape bi_wave_ripple -> s_shape, EDF 8.64 -> 3.02, A 0.21 -> 0.50
         x ~ s(z): shape s_shape -> concave_up, EDF 1.00 -> 1.00, A 0.78 -> 0.78
@@ -21,7 +21,7 @@
       janusplot comparison: run 1 against run 2
       3 variables (x, y, z), 3 pairs, 6 directed cells
       adjust: run 1 = ~g, run 2 = ~g
-      From run 1 to run 2, the shape changed in 0 of 6 directed cells (0 of 3 pairs) and the archetype in 0.
+      From run 1 to run 2, the shape changed in 0 of 6 directed cells (0 of 3 pairs), the archetype in 0 and the trend in 0.
       No shape label changed.
 
 ---
@@ -33,7 +33,7 @@
       janusplot comparison: marginal against adjusted, k = 5
       3 variables (x, y, z), 3 pairs, 6 directed cells
       adjust: marginal = none, adjusted, k = 5 = ~g
-      From marginal to adjusted, k = 5, the shape changed in 6 of 6 directed cells (3 of 3 pairs) and the archetype in 5.
+      From marginal to adjusted, k = 5, the shape changed in 6 of 6 directed cells (3 of 3 pairs), the archetype in 5 and the trend in 4.
       Cells whose shape changed:
         x ~ s(y): shape bi_wave_ripple -> s_shape, EDF 8.64 -> 2.78, A 0.21 -> 0.47
         x ~ s(z): shape s_shape -> concave_up, EDF 1.00 -> 1.00, A 0.78 -> 0.60

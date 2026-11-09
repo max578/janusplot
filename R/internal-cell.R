@@ -403,7 +403,7 @@
   as.numeric(value %||% NA_real_)
 }
 
-.background_hex <- function(r, palette = "RdBu", strength = 0.35) {
+.background_hex <- function(r, palette = "BuOr", strength = 0.35) {
   eps <- .brewer_divergent_endpoints(palette)
   vapply(r, function(v) {
     if (is.na(v)) return(NA_character_)

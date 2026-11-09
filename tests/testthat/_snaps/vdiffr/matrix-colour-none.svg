@@ -170,7 +170,7 @@
   </clipPath>
 </defs>
 <g clip-path='url(#cpNDE0LjAyfDYxMi4yOXwxMDAuOTB8Mjk5LjE3)'>
-<rect x='414.02' y='100.90' width='198.27' height='198.27' style='stroke-width: 0.00; stroke: none; fill: #E9BDC2;' />
+<rect x='414.02' y='100.90' width='198.27' height='198.27' style='stroke-width: 0.00; stroke: none; fill: #E9CFB8;' />
 <circle cx='480.46' cy='231.37' r='0.68' style='stroke-width: 0.52; stroke: #404040; stroke-opacity: 0.25; fill: #404040; fill-opacity: 0.25;' />
 <circle cx='496.80' cy='201.38' r='0.68' style='stroke-width: 0.52; stroke: #404040; stroke-opacity: 0.25; fill: #404040; fill-opacity: 0.25;' />
 <circle cx='458.67' cy='239.11' r='0.68' style='stroke-width: 0.52; stroke: #404040; stroke-opacity: 0.25; fill: #404040; fill-opacity: 0.25;' />
@@ -338,7 +338,7 @@
   </clipPath>
 </defs>
 <g clip-path='url(#cpMTE3LjM1fDMxNS42MnwzMTUuNjB8NTEzLjg3)'>
-<rect x='117.35' y='315.60' width='198.27' height='198.27' style='stroke-width: 0.00; stroke: none; fill: #E9BDC2;' />
+<rect x='117.35' y='315.60' width='198.27' height='198.27' style='stroke-width: 0.00; stroke: none; fill: #E9CFB8;' />
 <circle cx='188.38' cy='442.33' r='0.68' style='stroke-width: 0.52; stroke: #404040; stroke-opacity: 0.25; fill: #404040; fill-opacity: 0.25;' />
 <circle cx='220.01' cy='426.67' r='0.68' style='stroke-width: 0.52; stroke: #404040; stroke-opacity: 0.25; fill: #404040; fill-opacity: 0.25;' />
 <circle cx='180.21' cy='463.21' r='0.68' style='stroke-width: 0.52; stroke: #404040; stroke-opacity: 0.25; fill: #404040; fill-opacity: 0.25;' />
@@ -563,7 +563,7 @@
 <g clip-path='url(#cpMC4wMHw3MjAuMDB8MC4wMHw1NzYuMDA=)'>
 <text x='689.50' y='97.58' text-anchor='middle' style='font-size: 9.00px; font-weight: bold; font-family: sans;' textLength='48.04px' lengthAdjust='spacingAndGlyphs'>Background</text>
 <text x='689.50' y='107.30' text-anchor='middle' style='font-size: 9.00px; font-weight: bold; font-family: sans;' textLength='45.02px' lengthAdjust='spacingAndGlyphs'>(Pearson r)</text>
-<image width='12.96' height='401.65' x='676.28' y='112.22' preserveAspectRatio='none' xlink:href='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAEsCAYAAAACUNnVAAAAuklEQVQ4jaWSQRIDIQgEG/7/lpzypPyDPVhrBIG1ksuW2ggzs/J5vU1BUABF5P4AKsK6XVaDykbHjVHS0gFaukzrqHhVKa3mZjTtl1EhseBptLBT8e3D3Eh9uiWVJN1IK5fbX3UuM7pZaGn2hsqnd/owaalP0sxQs1uBzbOvqpW64p4aoMxWZvNsuVZSW7ecUN/KqyIa7KnlxQTqVeFVZY7+ivM5MNrhp4FFuSeB/RZnJuMhzj3EmjpVFxVcp7FSLMIHAAAAAElFTkSuQmCC'/>
+<image width='12.96' height='401.65' x='676.28' y='112.22' preserveAspectRatio='none' xlink:href='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAEsCAYAAAACUNnVAAAAv0lEQVQ4jaWSwRUDIQhEP/TfRxpJKemDHPatKwjoS444An9G+bxfpoigAAqCii8nVQSVS2AItyq+vNTRK9co8slpb5zs9taQwYKwTJYKcrFPYqGH9HvL3lEuLOw6msDo1JrFR5z0Rkjv8vwpQmDry8Q4S/vB9P4nPhhmhprdzm2cPWnMqrvcqwYoY5TZOJvaStXmkhPVj/JURIO9avllguqp8FSZo7/i3AdGu/w0sIh7EthvcWYYmzjXEGvVUX0BI7ense7gkyIAAAAASUVORK5CYII='/>
 <rect x='676.28' y='112.22' width='12.96' height='401.65' style='stroke-width: 0.64; stroke: #7F7F7F;' />
 <polyline points='682.76,513.20 689.24,513.20 ' style='stroke-width: 0.85; stroke: #1A1A1A;' />
 <polyline points='682.76,313.04 689.24,313.04 ' style='stroke-width: 0.85; stroke: #1A1A1A;' />

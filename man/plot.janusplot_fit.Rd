@@ -127,7 +127,7 @@ The \code{colour_by} value is painted on the border, a corner tile or the
 whole cell per \code{style$colour_channel}, with one colour bar per matrix.
 The \code{background_by} correlation tints the panel behind the points, band
 and curve: white at zero and \code{style$background_strength} of the way to
-the blue (negative) or red (positive) end of \code{style$background_palette}
+the negative or positive end of \code{style$background_palette}
 at minus or plus one, with its own colour bar over \verb{[-1, 1]}. A strip
 above each cell carries the \code{annotations}.
 
