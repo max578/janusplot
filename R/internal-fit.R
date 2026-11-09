@@ -1441,7 +1441,7 @@
       "{length(low)} cell{?s} nearly interpolate{?s/} the data, with fewer",
       "than {floor} residual degrees of freedom: {cells}."
     ),
-    i = "Read their shapes with care, or set a smaller {.arg k}, such as {.code k = 3L}."
+    i = "Read their shapes with care, or set a smaller {.arg k}, for example {.code k = 3L}."
   ))
   invisible(NULL)
 }
