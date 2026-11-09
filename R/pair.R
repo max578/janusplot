@@ -169,7 +169,7 @@ janusplot_pair <- function(
 
   # Legends below ----------------------------------------------------------
   rows <- list(body, overlay_key, group_legend)
-  heights <- list(grid::unit(1, "null"), grid::unit(0.7, "cm"),
+  heights <- list(grid::unit(1, "null"), grid::unit(1.1, "cm"),
                   grid::unit(0.9, "cm"))
   keep <- !vapply(rows, is.null, logical(1L))
   if (sum(keep) == 1L) return(body)
@@ -357,7 +357,8 @@ janusplot_pair <- function(
       group_colours = grouping$colours,
       title         = .pair_formula(face$var_y, face$var_x, fit$adjust,
                                     wrap = wrap_title),
-      wrap_strip    = wrap_title,
+      # "marginal r" lengthens an adjusted strip past a half-page panel.
+      wrap_strip    = wrap_title || !is.null(fit$adjust),
       background    = background,
       adjusted      = !is.null(fit$adjust)
     )
@@ -508,7 +509,9 @@ janusplot_pair <- function(
     edf_part(face_r),
     sep = "\n"
   )
-  title <- sprintf("%s and %s, both directions in z-scores", x, y)
+  # Two lines, so the title stays inside its panel when overlay panels
+  # are placed side by side with `|`.
+  title <- sprintf("%s and %s,\nboth directions in z-scores", x, y)
   if (!is.null(fit$adjust)) {
     title <- paste0(title, ",\nadjusted for ",
                     paste(deparse(fit$adjust[[2L]], width.cutoff = 500L),
@@ -583,7 +586,8 @@ janusplot_pair <- function(
   p
 }
 
-# A one-line key naming each curve colour by its formula.
+# A key naming each curve colour by its formula, one entry per line so
+# it fits under a half-page panel.
 .overlay_key_plot <- function(labels, colours, text_pt = 8.5, family = "") {
   df <- data.frame(
     x = c(0, 1, 0, 1), y = 0,
@@ -596,7 +600,7 @@ janusplot_pair <- function(
       values = stats::setNames(colours, labels),
       name   = NULL,
       guide  = ggplot2::guide_legend(
-        nrow = 1L, override.aes = list(alpha = 1, linewidth = 1)
+        ncol = 1L, override.aes = list(alpha = 1, linewidth = 1)
       )
     ) +
     ggplot2::theme_void(base_family = family) +

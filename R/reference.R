@@ -348,10 +348,14 @@ plot.janusplot_reference <- function(x, ...) {
       values = c("#08306b", .overlay_reverse_colour()),
       name = "simulated mechanism"
     ) +
-    ggplot2::scale_x_continuous(limits = c(0, 1), expand = c(0, 0.01)) +
+    # Short end labels, so "1" and "0" do not meet at the panel seam.
+    ggplot2::scale_x_continuous(limits = c(0, 1), expand = c(0, 0.01),
+                                breaks = seq(0, 1, 0.25),
+                                labels = c("0", "0.25", "0.5", "0.75", "1")) +
     ggplot2::labs(x = "A under the simulated mechanism (vertical line: observed A)",
                   y = "replicates") +
     ggplot2::theme_minimal(base_size = 10) +
     ggplot2::theme(legend.position = "bottom",
+                   panel.spacing.x = grid::unit(1.5, "lines"),
                    panel.grid.minor = ggplot2::element_blank())
 }

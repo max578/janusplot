@@ -286,6 +286,8 @@ test_that("the pair panels take the signed background", {
   expect_true(is.na(p_adj[[2L]]$theme$panel.background$fill))
   # Its strip names the correlation as marginal; the unadjusted one does not.
   expect_match(p_adj[[1L]]$labels$subtitle, "marginal r ", fixed = TRUE)
+  # The longer adjusted strip wraps, so it stays inside a half-page panel.
+  expect_match(p_adj[[1L]]$labels$subtitle, "\n", fixed = TRUE)
   expect_no_match(janusplot_pair(fit, "x1", "x2")[[1L]]$labels$subtitle,
                   "marginal", fixed = TRUE)
 })
