@@ -32,7 +32,7 @@ janusplot_style(
   show_glossary = TRUE,
   show_key = TRUE,
   legend_position = c("right", "bottom"),
-  pair_background = TRUE,
+  pair_background = FALSE,
   text_size = "auto",
   base_family = "",
   compact = c("auto", "always", "never"),
@@ -164,10 +164,12 @@ the group legend, which suits a figure one page wide. Under
 the top border holds the variable names alone and the cells take the
 full width.}
 
-\item{pair_background}{Logical. \code{TRUE} (the default) tints the panels of
+\item{pair_background}{Logical. \code{TRUE} tints the panels of
 \code{\link[=janusplot_pair]{janusplot_pair()}} by the pair's Pearson correlation, as
-\code{background_by = "pearson"} tints the matrix. A fit with \code{adjust}
-draws no pair background.}
+\code{background_by = "pearson"} tints the matrix. \code{FALSE} (the default)
+leaves them plain, because the pair view draws no colour bar; add
+\code{"r"} to \code{annotations} to print the correlation in the strip. A fit
+with \code{adjust} draws no pair background.}
 
 \item{text_size}{\code{"auto"} (the default), a single base size in points,
 a named list of element sizes, or \code{NULL} for no text; see Details.}

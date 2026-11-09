@@ -264,24 +264,25 @@ test_that("pair errors name every offending pair", {
   expect_error(janusplot_pair(fit, data.frame(a = "x1")), "two columns")
 })
 
-test_that("the pair panels take the signed background", {
+test_that("the pair panels take the signed background when asked", {
   fit <- pair_fit()
   pair <- fit$pairs[[1L]]
   expected <- janusplot:::.background_hex(pair$cor_pearson, "BuOr", 0.35)
-  p <- janusplot_pair(fit, "x1", "x2")
+  tinted <- janusplot_style(pair_background = TRUE)
+  plain <- janusplot_pair(fit, "x1", "x2")
+  expect_true(is.na(plain[[1L]]$theme$panel.background$fill))
+  expect_true(is.na(plain[[2L]]$theme$panel.background$fill))
+  p <- janusplot_pair(fit, "x1", "x2", style = tinted)
   expect_identical(p[[1L]]$theme$panel.background$fill, expected)
   expect_identical(p[[2L]]$theme$panel.background$fill, expected)
-  plain <- janusplot_pair(fit, "x1", "x2",
-                          style = janusplot_style(pair_background = FALSE))
-  expect_true(is.na(plain[[1L]]$theme$panel.background$fill))
-  both <- janusplot_pair(fit, "x1", "x2", display = "both")
+  both <- janusplot_pair(fit, "x1", "x2", display = "both", style = tinted)
   expect_identical(both[[1L]]$theme$panel.background$fill, expected)
   # Adjusted curves take no background: the correlation is marginal.
   d <- make_nonlinear_data(n = 200L, seed = 2L)
   d$g <- factor(rep(c("a", "b", "c"), length.out = nrow(d)))
   adjusted <- janusplot_fit(d, vars = c("x1", "x2"), engine = "gam",
                             adjust = ~ s(g, bs = "re"))
-  p_adj <- janusplot_pair(adjusted, "x1", "x2")
+  p_adj <- janusplot_pair(adjusted, "x1", "x2", style = tinted)
   expect_true(is.na(p_adj[[1L]]$theme$panel.background$fill))
   expect_true(is.na(p_adj[[2L]]$theme$panel.background$fill))
   # Its strip names the correlation as marginal; the unadjusted one does not.

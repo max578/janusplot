@@ -144,10 +144,12 @@
 #'   `"bottom"` the key moves from the corner to the left of the bars, so
 #'   the top border holds the variable names alone and the cells take the
 #'   full width.
-#' @param pair_background Logical. `TRUE` (the default) tints the panels of
+#' @param pair_background Logical. `TRUE` tints the panels of
 #'   [janusplot_pair()] by the pair's Pearson correlation, as
-#'   `background_by = "pearson"` tints the matrix. A fit with `adjust`
-#'   draws no pair background.
+#'   `background_by = "pearson"` tints the matrix. `FALSE` (the default)
+#'   leaves them plain, because the pair view draws no colour bar; add
+#'   `"r"` to `annotations` to print the correlation in the strip. A fit
+#'   with `adjust` draws no pair background.
 #' @param text_size `"auto"` (the default), a single base size in points,
 #'   a named list of element sizes, or `NULL` for no text; see Details.
 #' @param base_family Font family of every text, `""` (the default) for
@@ -223,7 +225,7 @@ janusplot_style <- function(
   show_glossary = TRUE,
   show_key = TRUE,
   legend_position = c("right", "bottom"),
-  pair_background = TRUE,
+  pair_background = FALSE,
   text_size = "auto",
   base_family = "",
   compact = c("auto", "always", "never"),

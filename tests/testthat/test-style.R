@@ -23,7 +23,7 @@ test_that("janusplot_style() returns the 33 documented fields in order", {
   expect_identical(s$curve_width, 2)
   expect_null(s$border_width)
   expect_true(s$show_key)
-  expect_true(s$pair_background)
+  expect_false(s$pair_background)
   expect_identical(s$text_size, "auto")
   expect_identical(s$base_family, "")
   expect_identical(s$colour_channel, "border")

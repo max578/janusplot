@@ -79,9 +79,10 @@ the data, with the fit's \code{adjust} terms appended, for example
 \code{Ozone ~ s(Temp) + s(Month, bs = "re")}; the curve and band are then
 population-level, as in \code{\link[=janusplot_fit]{janusplot_fit()}}. The significance glyph is
 read from the adjusted p-value when the fit has \code{p_adjust} other than
-\code{"none"}. With \code{style$pair_background = TRUE} (the default) the panels
-are tinted by the pair's Pearson correlation as the matrix background
-is, with the same \code{background_palette} and \code{background_strength}. A fit
+\code{"none"}. With \code{style$pair_background = TRUE} the panels are tinted by
+the pair's Pearson correlation as the matrix background is, with the
+same \code{background_palette} and \code{background_strength}; the default leaves
+them plain, since no colour bar is drawn. A fit
 with \code{adjust} draws no background: its curves are adjusted, while the
 correlation is marginal.
 

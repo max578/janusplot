@@ -24,9 +24,10 @@
 #' `Ozone ~ s(Temp) + s(Month, bs = "re")`; the curve and band are then
 #' population-level, as in [janusplot_fit()]. The significance glyph is
 #' read from the adjusted p-value when the fit has `p_adjust` other than
-#' `"none"`. With `style$pair_background = TRUE` (the default) the panels
-#' are tinted by the pair's Pearson correlation as the matrix background
-#' is, with the same `background_palette` and `background_strength`. A fit
+#' `"none"`. With `style$pair_background = TRUE` the panels are tinted by
+#' the pair's Pearson correlation as the matrix background is, with the
+#' same `background_palette` and `background_strength`; the default leaves
+#' them plain, since no colour bar is drawn. A fit
 #' with `adjust` draws no background: its curves are adjusted, while the
 #' correlation is marginal.
 #'

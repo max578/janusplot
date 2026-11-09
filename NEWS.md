@@ -365,8 +365,9 @@ residual-independence test of direction (`janusplot_direction()`).
   a two-column data frame of pairs. Each pair is a block of two panels set
   close together, the blocks stack top to bottom (`nrow` blocks per stack)
   and the stacks sit side by side (`ncol` stacks), sharing text sizes and
-  one legend. The panels take the signed correlation background
-  (`janusplot_style(pair_background = )`) for a fit without `adjust`.
+  one legend. `janusplot_style(pair_background = TRUE)` tints the panels
+  by the signed correlation for a fit without `adjust`. The panels are
+  plain by default, because the pair view has no colour bar.
   `annotations` chooses what the strips show, as in `plot()`.
   `arrange = "stacked"` draws `y ~ s(x)` above `x ~ s(y)`, so several
   pairs sit side by side with the forward panels in one row and the
