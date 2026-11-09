@@ -495,19 +495,22 @@ janusplot_pair <- function(
     trimws(sprintf("%s ~ %s: EDF %.1f %s", face$var_y, face$var_x,
                    face$edf, glyph(face)))
   }
+  # One line per direction, so the strip stays inside its panel when
+  # panels are placed side by side with `|`.
   strip <- paste(
-    c(if (!is.na(pair$asymmetry_index)) {
+    paste(c(if (!is.na(pair$asymmetry_index)) {
       if (.pair_not_significant(pair)) {
         paste("A", .a_dash(style$glyph_style))
       } else {
         sprintf("A %.2f", pair$asymmetry_index)
       }
-    }, edf_part(face_f), edf_part(face_r)),
-    collapse = "   "
+    }, edf_part(face_f)), collapse = "   "),
+    edf_part(face_r),
+    sep = "\n"
   )
   title <- sprintf("%s and %s, both directions in z-scores", x, y)
   if (!is.null(fit$adjust)) {
-    title <- paste0(title, ", adjusted for ",
+    title <- paste0(title, ",\nadjusted for ",
                     paste(deparse(fit$adjust[[2L]], width.cutoff = 500L),
                           collapse = " "))
   }
