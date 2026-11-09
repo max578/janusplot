@@ -117,8 +117,10 @@
 #' @param label_srt Rotation in degrees of the top border labels; `45` by
 #'   default.
 #' @param diagonal Content of the diagonal cells: `"auto"` (the default)
-#'   and `"blank"` leave them empty, `"name"` writes the variable name,
-#'   `"density"` draws a kernel density with a rug of the raw values.
+#'   and `"density"` draw the kernel density of the variable with a rug of
+#'   its raw values, plus one density per level when the plot has a
+#'   `group`; `"blank"` leaves them empty and `"name"` writes the variable
+#'   name.
 #' @param glyph_style `"ascii"` (the default) or `"unicode"` for the shape
 #'   glyphs, the derivative order labels and the k-check warning sign.
 #' @param show_shape_legend `"auto"` (the default) attaches the

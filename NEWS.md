@@ -202,8 +202,9 @@ residual-independence test of direction (`janusplot_direction()`).
   ```
 
 * `annotations` defaults to `NULL`, which writes `c("A", "signif")` in a
-  strip above each cell below eight variables and the significance glyph
-  alone from eight, where the strip text is at its 5-point floor. 0.2.0
+  strip above each cell up to twelve variables (A once per pair) and the
+  significance glyph alone from thirteen, where the 5-point strips of
+  neighbouring cells would touch. 0.2.0
   wrote `c("edf", "A")` in the bottom-left corner.
   `janusplot_style(annotation_position = "corners")` puts the annotations
   back inside the panel.
@@ -228,6 +229,14 @@ residual-independence test of direction (`janusplot_direction()`).
 
 ## New features
 
+* The diagonal of the matrix, in `plot()` and in the `janusplot_compare()`
+  plot, now shows the kernel density of each variable with a rug of its
+  values by default (`janusplot_style(diagonal = "auto")`). With `group`,
+  each level adds its own density in the group colour, scaled by the
+  level's share of the rows so the components sum to the pooled density.
+  `diagonal = "blank"` restores the empty diagonal.
+* The asymmetry index A is written once per pair, above the cell in the
+  upper triangle; the mirror cell keeps its own significance glyph.
 * Under `adjust` with the identity link, every view draws each point as a
   partial residual: the observation with its own adjustment replaced by
   the average adjustment, so the points sit around the curve. The curve

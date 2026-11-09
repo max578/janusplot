@@ -22,7 +22,8 @@ knitr::opts_chunk$set(
     "each off-diagonal cell shows the fitted mgcv spline of the row",
     "variable on the column variable, with a 95% confidence band",
     "over the raw points, a border coloured by non-linearity and a",
-    "strip of annotations above the panel."
+    "strip of annotations above the panel; the diagonal cells show",
+    "the kernel density of each variable."
   ),
   fig.width  = 7,
   fig.height = 7,
@@ -86,15 +87,21 @@ the first two variables. In every cell:
   strongly bent curve;
 - the background is the pair's signed Pearson correlation, white at 0,
   blue towards -1 and orange towards +1;
-- the strip above the panel carries the asymmetry index `A` of the pair
-  (0 when both directions are equally complex; defined below) and the
-  significance glyph of the smooth's F-test (`***` p < .001,
-  `**` p < .01, `*` p < .05, `.` p < .1; read from the
-  multiplicity-adjusted p-value when the fit uses `p_adjust`).
+- the strip above the panel carries the significance glyph of the
+  smooth's F-test (`***` p < .001, `**` p < .01, `*` p < .05,
+  `.` p < .1; read from the multiplicity-adjusted p-value when the fit
+  uses `p_adjust`) and, in the upper triangle, the asymmetry index `A`
+  of the pair (0 when both directions are equally complex; defined
+  below), written once because it belongs to the pair.
+
+The diagonal shows each variable's kernel density with a rug of its
+values: a skewed, bimodal or clipped variable shows there before it
+bends a curve. With `group`, one density per level is drawn in the
+group colour, scaled so the levels sum to the grey pooled density.
 
 The default annotations, shape legend and corner key depend on the
-number of variables: from eight variables the strip carries the glyph
-alone.
+number of variables: from thirteen variables the strip carries the
+glyph alone, and A is read from `summary()`.
 
 The two cells of a pair differ. Here `qsec ~ s(hp)` is a straight line
 (EDF `r f2(cell(fit, "qsec", "hp")$edf)`), while `hp ~ s(qsec)`

@@ -28,7 +28,12 @@
 #' and curve: white at zero and `style$background_strength` of the way to
 #' the negative or positive end of `style$background_palette`
 #' at minus or plus one, with its own colour bar over `[-1, 1]`. A strip
-#' above each cell carries the `annotations`.
+#' above each cell carries the `annotations`; the asymmetry index belongs
+#' to the pair and is written once, above the cell in the upper triangle.
+#' The diagonal shows the kernel density of each variable with a rug of
+#' its values, and with `group` one density per level, scaled by the
+#' level's share of the rows so the coloured curves sum to the grey
+#' pooled density (`style$diagonal`).
 #'
 #' The default sizes are set for a figure one page wide (170 mm). At one
 #' journal column (85 mm), draw at most four variables with
@@ -67,8 +72,8 @@
 #'   `background_by = "none"`), printed `"r -0.03"` (`"marginal r -0.03"`
 #'   for a fit with `adjust`), and the cell's formula,
 #'   printed `Temp ~ Ozone`. `NULL` (the default) picks by matrix size:
-#'   `c("A", "signif")` below eight variables, `"signif"` from eight,
-#'   where the automatic strip text is at its 5-point floor;
+#'   `c("A", "signif")` up to twelve variables, `"signif"` from
+#'   thirteen, where 5-point strips of neighbouring cells would touch;
 #'   `character()` writes none.
 #' @param order Order of the variables in the matrix: `"original"` (the
 #'   default, the order of `x$vars`), `"hclust"` (hierarchical clustering
@@ -175,6 +180,7 @@ plot.janusplot_fit <- function(
     alphabetical = sort(x$vars)
   )
   k_n <- length(vars)
+  a_in_summary <- is.null(annotations) && k_n >= 13L
   annotations <- annotations %||% .default_annotations(k_n)
   tier <- .compact_tier(
     k_n, compact = style$compact,
@@ -209,6 +215,10 @@ plot.janusplot_fit <- function(
     )
   }
 
+  # A belongs to the pair: written above the upper-triangle cell only.
+  annotations_lower <- setdiff(annotations, "A")
+  in_lower <- .cell_in_lower(cell_index$key)
+
   cells_by_ij <- vector("list", nrow(cell_index))
   names(cells_by_ij) <- cell_index$key
   for (idx in seq_len(nrow(cell_index))) {
@@ -220,7 +230,11 @@ plot.janusplot_fit <- function(
                                       .face_partial(face, style)),
       style            = style,
       text_sizes       = text_sizes,
-      annotations      = annotations,
+      annotations      = if (in_lower[[idx]]) {
+        annotations_lower
+      } else {
+        annotations
+      },
       display          = display,
       p_adjust         = x$settings$p_adjust,
       colour           = colour_hex[[idx]],
@@ -240,14 +254,15 @@ plot.janusplot_fit <- function(
   display_var <- function(v) {
     .label_with_suffix(v, axis_transforms[[v]]$suffix, axes)
   }
-  diagonal <- if (style$diagonal == "auto") "blank" else style$diagonal
+  diagonal <- if (style$diagonal == "auto") "density" else style$diagonal
   diag_cells <- lapply(vars, function(v) {
     switch(diagonal,
       blank   = .build_blank_diagonal_cell(),
       name    = .build_diagonal_cell(display_var(v), text_sizes = text_sizes,
                                      family = style$base_family),
       density = .build_density_rug_cell(display_var(v), x$data[[v]],
-                                        text_sizes = text_sizes)
+                                        text_sizes = text_sizes,
+                                        grouping = grouping)
     )
   })
   shape_legend_plot <- if (.resolve_shape_legend(style$show_shape_legend,
@@ -291,7 +306,8 @@ plot.janusplot_fit <- function(
         derivative_ci = x$settings$derivative_ci,
         background_by = background_by,
         adjusted = !is.null(x$adjust),
-        partial = .partial_points_shown(x, style)
+        partial = .partial_points_shown(x, style),
+        a_in_summary = a_in_summary && display == "fit"
       )
     } else {
       NULL
@@ -350,11 +366,12 @@ plot.janusplot_fit <- function(
   c("A", "edf", "signif", "code", "shape", "k_warn", "n", "r", "formula")
 }
 
-# From eight variables the automatic strip text sits at its 5-point
-# floor, so the default strip keeps the significance glyph alone; A stays
-# in summary().
+# A is written once per pair, so its strip fits at the 5-point floor up
+# to twelve variables on a 170 mm page; from thirteen the strips of
+# neighbouring cells touch, the default keeps the significance glyph
+# alone and A stays in summary().
 .default_annotations <- function(k) {
-  if (k >= 8L) "signif" else c("A", "signif")
+  if (k >= 13L) "signif" else c("A", "signif")
 }
 
 # The background and the whole-cell colour wash paint the same area.
@@ -493,6 +510,12 @@ plot.janusplot_fit <- function(
   out$pair <- rep(seq_along(pairs), each = 2L)
   rownames(out) <- NULL
   out[, c("pair", "direction", "key")]
+}
+
+# TRUE for the keys "r_c" of cells below the diagonal (r > c).
+.cell_in_lower <- function(keys) {
+  rc <- do.call(rbind, lapply(strsplit(keys, "_", fixed = TRUE), as.integer))
+  rc[, 1L] > rc[, 2L]
 }
 
 # Row indices of fit$data complete on x, y and the adjust variables: the

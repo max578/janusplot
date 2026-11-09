@@ -395,15 +395,21 @@ janusplot <- function(
                                  derivative_ci = "pointwise",
                                  background_by = "none",
                                  adjusted = FALSE,
-                                 partial = FALSE) {
+                                 partial = FALSE,
+                                 a_in_summary = FALSE) {
   parts <- "Each cell: row ~ s(column), the row variable on the vertical axis"
   if ("formula" %in% annotations) {
     parts <- c(parts, "Strip formula = response ~ predictor of the cell")
   }
   if (display == "fit" && "A" %in% annotations) {
     parts <- c(parts,
-      paste("A = asymmetry index |EDF_yx - EDF_xy| / (EDF_yx + EDF_xy), in [0, 1];",
+      "A = asymmetry index |EDF_yx - EDF_xy| / (EDF_yx + EDF_xy), in [0, 1]",
+      paste("A is written above the upper cell of each pair;",
             "a dash when neither direction is significant"))
+  }
+  if (a_in_summary) {
+    parts <- c(parts, paste("A of every pair: summary() of the fit;",
+                            "too many cells to print it in the strips"))
   }
   if (display == "fit" && "edf" %in% annotations) {
     parts <- c(parts,

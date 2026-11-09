@@ -103,17 +103,20 @@ test_that("annotations accept the seven names and reject others", {
   expect_error(plot(fit, annotations = 1L), "character vector")
 })
 
-test_that("the default annotations drop A from eight variables", {
-  expect_identical(janusplot:::.default_annotations(7L), c("A", "signif"))
-  expect_identical(janusplot:::.default_annotations(8L), "signif")
+test_that("the default annotations drop A from thirteen variables", {
+  expect_identical(janusplot:::.default_annotations(12L), c("A", "signif"))
+  expect_identical(janusplot:::.default_annotations(13L), "signif")
   withr::local_seed(2026L)
-  d <- as.data.frame(matrix(stats::rnorm(60L * 8L), 60L, 8L))
-  names(d) <- paste0("x", 1:8)
+  d <- as.data.frame(matrix(stats::rnorm(60L * 13L), 60L, 13L))
+  names(d) <- paste0("x", 1:13)
   glossary <- function(p) p$patches$annotation$caption
   expect_match(glossary(plot(fit_two(d, vars = names(d)[1:3]))),
                "A = asymmetry index")
   fit8 <- fit_two(d, vars = names(d))
   expect_no_match(glossary(plot(fit8)), "A = asymmetry index")
+  expect_match(glossary(plot(fit8)), "A of every pair: summary\\(\\)")
+  expect_no_match(glossary(plot(fit8, annotations = "signif")),
+                  "A of every pair")
   expect_match(glossary(plot(fit8, annotations = c("A", "signif"))),
                "A = asymmetry index")
 })
@@ -615,4 +618,38 @@ test_that("janusplot() passes background_by and has 14 formals", {
                  background_by = "none",
                  style = janusplot_style(show_shape_legend = FALSE))
   expect_true(is.na(matrix_grid(p)[[6L]]$theme$panel.background$fill))
+})
+
+test_that("A is written once per pair, above the upper-triangle cell", {
+  expect_identical(janusplot:::.cell_in_lower(c("1_2", "2_1", "3_1", "1_3")),
+                   c(FALSE, TRUE, TRUE, FALSE))
+  fit <- fit_two(make_nonlinear_data(n = 100L), vars = c("x1", "x2", "x3"))
+  subtitles <- function(p) {
+    kids <- p$patches$plots
+    own <- p$labels$subtitle
+    c(if (is.character(own)) own, unlist(lapply(kids, subtitles)))
+  }
+  s <- subtitles(plot(fit, annotations = c("A", "signif"),
+                      style = janusplot_style(show_glossary = FALSE)))
+  expect_length(grep("^A ", s), length(fit$pairs))
+})
+
+test_that("the diagonal draws densities by default, one per group level", {
+  withr::local_seed(2026L)
+  g <- factor(rep(c("a", "b"), c(60L, 40L)))
+  x <- stats::rnorm(100L, mean = ifelse(g == "a", 0, 4))
+  df <- janusplot:::.group_density_df(x, g, range(x) + c(-1, 1))
+  expect_setequal(levels(df$group), c("a", "b"))
+  area <- vapply(split(df, df$group), function(d) {
+    sum(diff(d$x) * utils::head(d$y, -1L))
+  }, numeric(1L))
+  # Each level's density integrates to its share of the rows.
+  expect_equal(unname(area), c(0.6, 0.4), tolerance = 0.03)
+  expect_null(janusplot:::.group_density_df(x[1:4], g[1:4], range(x)))
+
+  grouping <- list(values = g, colours = c(a = "black", b = "orange"))
+  cell <- janusplot:::.build_density_rug_cell("x", x, grouping = grouping)
+  geoms <- vapply(cell$layers, function(l) class(l$geom)[1L], character(1L))
+  expect_identical(unname(geoms), c("GeomArea", "GeomLine", "GeomRug"))
+  expect_identical(janusplot_style()$diagonal, "auto")
 })

@@ -131,8 +131,10 @@ along the top and left margins, \code{"none"} nowhere.}
 default.}
 
 \item{diagonal}{Content of the diagonal cells: \code{"auto"} (the default)
-and \code{"blank"} leave them empty, \code{"name"} writes the variable name,
-\code{"density"} draws a kernel density with a rug of the raw values.}
+and \code{"density"} draw the kernel density of the variable with a rug of
+its raw values, plus one density per level when the plot has a
+\code{group}; \code{"blank"} leaves them empty and \code{"name"} writes the variable
+name.}
 
 \item{glyph_style}{\code{"ascii"} (the default) or \code{"unicode"} for the shape
 glyphs, the derivative order labels and the k-check warning sign.}

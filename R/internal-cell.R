@@ -1415,12 +1415,16 @@
 # values along the bottom edge. Mirrors the GGally::ggpairs default
 # diagonal so readers can see tail weight, bimodality, support
 # clipping, and any concentration of mass that would otherwise be
-# invisible from the off-diagonal smooths alone.
+# invisible from the off-diagonal smooths alone. With `grouping` (from
+# .resolve_group()) each level adds its own density, scaled by its share
+# of the rows, so the coloured components sum to the grey pooled area.
 # ---------------------------------------------------------------
 
 .build_density_rug_cell <- function(var_name, x_values,
-                                    text_sizes = .cell_text_sizes(3L)) {
-  x <- x_values[is.finite(x_values)]
+                                    text_sizes = .cell_text_sizes(3L),
+                                    grouping = NULL) {
+  finite <- is.finite(x_values)
+  x <- x_values[finite]
   if (length(x) < 5L) return(.build_blank_diagonal_cell())
   dens <- tryCatch(stats::density(x, na.rm = TRUE),
                    error = function(e) NULL)
@@ -1429,6 +1433,31 @@
   }
   dens_df <- data.frame(x = dens$x, y = dens$y)
   rug_df  <- data.frame(x = x)
+  group_df <- if (!is.null(grouping)) {
+    .group_density_df(x, grouping$values[finite], range(dens$x))
+  }
+  group_layer <- if (!is.null(group_df)) {
+    list(
+      ggplot2::geom_line(
+        data    = group_df,
+        mapping = ggplot2::aes(x = .data$x, y = .data$y,
+                               colour = .data$group),
+        linewidth = 0.5, inherit.aes = FALSE
+      ),
+      ggplot2::scale_colour_manual(values = grouping$colours,
+                                   guide = "none")
+    )
+  }
+  # Grouped, the pooled density is the grey area alone, so its outline
+  # cannot be mistaken for a group drawn in black.
+  pooled_line <- if (is.null(group_df)) {
+    ggplot2::geom_line(
+      data    = dens_df,
+      mapping = ggplot2::aes(x = .data$x, y = .data$y),
+      colour  = "grey20", linewidth = 0.45,
+      inherit.aes = FALSE
+    )
+  }
   ggplot2::ggplot() +
     ggplot2::geom_area(
       data    = dens_df,
@@ -1436,12 +1465,8 @@
       fill    = "grey55", colour = NA, alpha = 0.35,
       inherit.aes = FALSE
     ) +
-    ggplot2::geom_line(
-      data    = dens_df,
-      mapping = ggplot2::aes(x = .data$x, y = .data$y),
-      colour  = "grey20", linewidth = 0.45,
-      inherit.aes = FALSE
-    ) +
+    pooled_line +
+    group_layer +
     ggplot2::geom_rug(
       data    = rug_df,
       mapping = ggplot2::aes(x = .data$x),
@@ -1459,6 +1484,27 @@
         fill = NA, colour = "grey55", linewidth = 0.35
       )
     )
+}
+
+# One density per group level over the pooled grid range, each scaled by
+# the level's share of the finite values; levels with fewer than five
+# values and rows with a missing level are left out. NULL when no level
+# qualifies.
+.group_density_df <- function(x, group, x_range) {
+  keep <- !is.na(group)
+  n_all <- length(x)
+  rows <- lapply(levels(group), function(lv) {
+    x_lv <- x[keep & group == lv]
+    if (length(x_lv) < 5L) return(NULL)
+    d <- tryCatch(stats::density(x_lv, from = x_range[1L], to = x_range[2L]),
+                  error = function(e) NULL)
+    if (is.null(d)) return(NULL)
+    data.frame(x = d$x, y = d$y * length(x_lv) / n_all,
+               group = factor(lv, levels = levels(group)))
+  })
+  rows <- rows[!vapply(rows, is.null, logical(1L))]
+  if (!length(rows)) return(NULL)
+  do.call(rbind, rows)
 }
 
 # ---------------------------------------------------------------

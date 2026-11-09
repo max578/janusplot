@@ -408,14 +408,15 @@ plot.janusplot_compare <- function(
   }
 
   # Diagonal, legends and assembly -----------------------------------------
-  diagonal <- if (style$diagonal == "auto") "blank" else style$diagonal
+  diagonal <- if (style$diagonal == "auto") "density" else style$diagonal
   diag_cells <- lapply(vars, function(v) {
     switch(diagonal,
       blank   = .build_blank_diagonal_cell(),
       name    = .build_diagonal_cell(v, text_sizes = text_sizes,
                                      family = style$base_family),
       density = .build_density_rug_cell(v, fit_b$data[[v]],
-                                        text_sizes = text_sizes)
+                                        text_sizes = text_sizes,
+                                        grouping = grouping)
     )
   })
   shape_legend_plot <- if (.resolve_shape_legend(style$show_shape_legend,

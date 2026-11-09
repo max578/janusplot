@@ -52,8 +52,8 @@ rows used, the \code{background_by} correlation of the pair (Pearson when
 \code{background_by = "none"}), printed \code{"r -0.03"} (\code{"marginal r -0.03"}
 for a fit with \code{adjust}), and the cell's formula,
 printed \code{Temp ~ Ozone}. \code{NULL} (the default) picks by matrix size:
-\code{c("A", "signif")} below eight variables, \code{"signif"} from eight,
-where the automatic strip text is at its 5-point floor;
+\code{c("A", "signif")} up to twelve variables, \code{"signif"} from
+thirteen, where 5-point strips of neighbouring cells would touch;
 \code{character()} writes none.}
 
 \item{order}{Order of the variables in the matrix: \code{"original"} (the
@@ -129,7 +129,12 @@ The \code{background_by} correlation tints the panel behind the points, band
 and curve: white at zero and \code{style$background_strength} of the way to
 the negative or positive end of \code{style$background_palette}
 at minus or plus one, with its own colour bar over \verb{[-1, 1]}. A strip
-above each cell carries the \code{annotations}.
+above each cell carries the \code{annotations}; the asymmetry index belongs
+to the pair and is written once, above the cell in the upper triangle.
+The diagonal shows the kernel density of each variable with a rug of
+its values, and with \code{group} one density per level, scaled by the
+level's share of the rows so the coloured curves sum to the grey
+pooled density (\code{style$diagonal}).
 
 The default sizes are set for a figure one page wide (170 mm). At one
 journal column (85 mm), draw at most four variables with
