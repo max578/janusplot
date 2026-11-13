@@ -28,21 +28,25 @@ release carries its changes as well.
 Every use is guarded: `janusplot_direction()` checks
 `requireNamespace("kernR", quietly = TRUE)` and stops with an informative
 message if it is missing, its example runs only when `kernR` is
-installed, and its tests skip without it. Neither vignette uses it.
+installed, and its tests skip without it. The main vignette runs its one
+`kernR` chunk only when `kernR` is installed.
 
 ## Test environments
 
 - macOS 26 (Darwin 25) / Apple Silicon, R 4.6.1 (local).
-- win-builder (R-devel and R-release): to be run before submission.
-- R-hub v2 (`rhub::rhub_check()`): to be run before submission.
 
 ## R CMD check results
 
-Local `R CMD check --as-cran` on the built `janusplot_1.0.0.tar.gz`, with
-user profiles disabled: **0 ERRORs, 0 WARNINGs, 0 NOTEs.** With the remote
-incoming checks on, the incoming check is expected to report `kernR` as a
-suggested package outside the mainstream repositories, available through
-`Additional_repositories`.
+0 errors | 0 warnings | 1 note
+
+```
+Suggests or Enhances not in mainstream repositories:
+  kernR
+Availability using Additional_repositories specification:
+  kernR   yes   https://max578.r-universe.dev
+```
+
+This is the suggested package described in the section above.
 
 ## Downstream dependencies
 
