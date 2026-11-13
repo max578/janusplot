@@ -38,10 +38,12 @@ reference:
   - title: "Fit and plot"
     desc: >
       Fit every ordered pair once, then print, summarise and draw the
-      matrix from the fitted object; or fit and draw in one call.
+      matrix from the fitted object; or fit and draw in one call. The
+      fitted curves are also available as a data frame.
     contents:
       - janusplot_fit
       - plot.janusplot_fit
+      - janusplot_curves
       - janusplot
 
   - title: "Pairs and direction"
@@ -49,9 +51,12 @@ reference:
       The two directions of a pair drawn side by side or overlaid, and
       the residual-independence test that licenses a directional reading
       of a pair, abstaining where the additive noise model cannot decide.
+      A bootstrap reference says how large the asymmetry index of a pair
+      gets by chance.
     contents:
       - janusplot_pair
       - janusplot_direction
+      - janusplot_reference
 
   - title: "Comparing fits"
     desc: >
