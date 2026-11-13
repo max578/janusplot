@@ -33,7 +33,10 @@ installed, and its tests skip without it. The main vignette runs its one
 
 ## Test environments
 
-- macOS 26 (Darwin 25) / Apple Silicon, R 4.6.1 (local).
+- Local: macOS 26 (Darwin 25) / Apple Silicon, R 4.6.1.
+- win-builder: R-devel (2026-11-12 r90881 ucrt) and R 4.6.2.
+- GitHub Actions: macOS (Apple Silicon) and Windows, R release; Ubuntu,
+  R-devel, release and oldrel-1.
 
 ## R CMD check results
 
