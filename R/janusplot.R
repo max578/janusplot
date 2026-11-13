@@ -70,32 +70,8 @@
 #' # Three variables, six asymmetric pairwise GAM fits.
 #' janusplot(mtcars[, c("mpg", "hp", "wt")], engine = "gam")
 #'
-#' \donttest{
-#' # Heteroscedastic pair: Pearson r is about 0.9 but the inverse fit is
-#' # clearly non-linear, giving an asymmetry index above 0.5.
-#' set.seed(2026L)
-#' n  <- 200L
-#' x1 <- stats::runif(n, 0, 10)
-#' x2 <- x1 + stats::rnorm(n, sd = 0.2 * x1)
-#' janusplot(data.frame(x1 = x1, x2 = x2, x3 = stats::rnorm(n)))
-#'
-#' # The 0.2.0 look: Pearson r washed over the whole cell.
-#' janusplot(mtcars[, c("mpg", "hp", "wt")], colour_by = "pearson",
-#'           background_by = "none",
-#'           style = janusplot_style(colour_channel = "fill"))
-#'
-#' # One matrix shows one quantity; derivatives come from the same fit.
-#' set.seed(2026L)
-#' xs <- stats::runif(300L, -3, 3)
-#' df <- data.frame(
-#'   x  = xs,
-#'   y1 = sin(xs)  + stats::rnorm(300L, sd = 0.3),
-#'   y2 = xs^2     + stats::rnorm(300L, sd = 0.6)
-#' )
-#' janusplot(df, display = "fit")
-#' janusplot(df, display = "d1")
-#' janusplot(df, display = "d2", derivative_ci = "simultaneous")
-#' }
+#' # Other colourings, groups and the derivative displays
+#' # (display = "d1", "d2") are shown in vignette("janusplot").
 #' @export
 janusplot <- function(
   data,

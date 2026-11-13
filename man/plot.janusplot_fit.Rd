@@ -154,19 +154,8 @@ caption.
 fit <- janusplot_fit(mtcars[, c("mpg", "hp", "wt")], engine = "gam")
 plot(fit)
 
-\donttest{
-plot(fit, colour_by = "asymmetry", annotations = c("A", "edf", "signif"))
-plot(fit, background_by = "none", annotations = c("formula", "r"))
-
-# Points coloured by a factor column of the data; never in the model.
-pp <- transform(mtcars[, c("mpg", "hp", "wt", "am")],
-                am = factor(am, labels = c("auto", "manual")))
-plot(janusplot_fit(pp, vars = c("mpg", "hp", "wt"), engine = "gam"),
-     group = "am")
-
-# The first derivative of every smooth, computed at fit time.
-plot(fit, display = "d1")
-}
+# Redrawing with another colour_by, annotations, group or display
+# needs no refit; vignette("janusplot") shows each of them.
 }
 \seealso{
 \code{\link[=janusplot_fit]{janusplot_fit()}} for the object, \code{\link[=janusplot_style]{janusplot_style()}} for the

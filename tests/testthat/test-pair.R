@@ -19,6 +19,7 @@ panel_titles <- function(p) {
 # ---------------------------------------------------------------
 
 test_that("janusplot_pair() returns a ggplot of two panels", {
+  skip_on_cran()
   p <- janusplot_pair(pair_fit(), "x1", "x2")
   expect_s3_class(p, "ggplot")
   expect_s3_class(p, "patchwork")
@@ -26,6 +27,7 @@ test_that("janusplot_pair() returns a ggplot of two panels", {
 })
 
 test_that("the left panel is y ~ s(x) whichever order the pair is given in", {
+  skip_on_cran()
   fit <- pair_fit()
   expect_identical(panel_titles(janusplot_pair(fit, "x1", "x2")),
                    c("x2 ~ s(x1)", "x1 ~ s(x2)"))
@@ -39,6 +41,7 @@ test_that("the left panel is y ~ s(x) whichever order the pair is given in", {
 })
 
 test_that("the panels carry axis titles and the full strip", {
+  skip_on_cran()
   fit <- pair_fit()
   p <- janusplot_pair(fit, "x1", "x2")
   labs_left <- ggplot2::get_labs(p[[1L]])
@@ -49,6 +52,7 @@ test_that("the panels carry axis titles and the full strip", {
 })
 
 test_that("the title carries the adjust terms of the fit", {
+  skip_on_cran()
   d <- make_nonlinear_data(n = 120L, seed = 2L)
   d$g <- factor(rep(c("a", "b", "c"), length.out = nrow(d)))
   fit <- janusplot_fit(d, vars = c("x1", "x2"), engine = "gam",
@@ -64,6 +68,7 @@ test_that("the title carries the adjust terms of the fit", {
 # ---------------------------------------------------------------
 
 test_that("malformed calls are refused with a named cause", {
+  skip_on_cran()
   fit <- pair_fit()
   expect_error(janusplot_pair(mtcars, "mpg", "hp"), "janusplot_fit")
   expect_error(janusplot_pair(fit, "x9", "x2"), "not fitted")
@@ -76,12 +81,14 @@ test_that("malformed calls are refused with a named cause", {
 })
 
 test_that("a derivative view needs that order in the fit", {
+  skip_on_cran()
   fit <- pair_fit(derivatives = integer())
   expect_error(janusplot_pair(fit, "x1", "x2", display = "d1"),
                "derivative order")
 })
 
 test_that("display = \"d1\" and \"d2\" draw the derivative panels", {
+  skip_on_cran()
   fit <- pair_fit()
   for (display in c("d1", "d2")) {
     p <- janusplot_pair(fit, "x1", "x2", display = display)
@@ -96,6 +103,7 @@ test_that("display = \"d1\" and \"d2\" draw the derivative panels", {
 # ---------------------------------------------------------------
 
 test_that("group colours the points and adds the legend", {
+  skip_on_cran()
   d <- make_nonlinear_data(n = 120L, seed = 2L)
   d$arm <- factor(rep(c("control", "treated"), length.out = nrow(d)))
   fit <- janusplot_fit(d, vars = c("x1", "x2"), engine = "gam")
@@ -116,6 +124,7 @@ test_that("group colours the points and adds the legend", {
 # ---------------------------------------------------------------
 
 test_that("display = \"both\" draws both curves in the z-score plane", {
+  skip_on_cran()
   fit <- pair_fit()
   p <- janusplot_pair(fit, "x1", "x2", display = "both")
   expect_s3_class(p, "ggplot")
@@ -135,6 +144,7 @@ test_that("display = \"both\" draws both curves in the z-score plane", {
 })
 
 test_that("display = \"both\" takes the group legend under the key", {
+  skip_on_cran()
   d <- make_nonlinear_data(n = 120L, seed = 2L)
   d$arm <- factor(rep(c("control", "treated"), length.out = nrow(d)))
   fit <- janusplot_fit(d, vars = c("x1", "x2"), engine = "gam")
@@ -148,6 +158,7 @@ test_that("display = \"both\" takes the group legend under the key", {
 # ---------------------------------------------------------------
 
 test_that("the default pair matches its snapshot", {
+  skip_on_cran()
   skip_if_not_installed("vdiffr")
   fit <- pair_fit()
   vdiffr::expect_doppelganger("pair-quadratic-default",
@@ -155,6 +166,7 @@ test_that("the default pair matches its snapshot", {
 })
 
 test_that("the overlay pair matches its snapshot", {
+  skip_on_cran()
   skip_if_not_installed("vdiffr")
   fit <- pair_fit()
   vdiffr::expect_doppelganger(
@@ -177,6 +189,7 @@ cell_title <- function(cell) {
 }
 
 test_that("pairs are given as two vectors or as a two-column data frame", {
+  skip_on_cran()
   fit <- pair_fit()
   by_vec <- janusplot_pair(fit, c("x1", "x1"), c("x2", "x3"))
   by_df  <- janusplot_pair(fit, data.frame(x = c("x1", "x1"),
@@ -196,6 +209,7 @@ test_that("pairs are given as two vectors or as a two-column data frame", {
 })
 
 test_that("blocks fill stacks of nrow, side by side, in one aligned grid", {
+  skip_on_cran()
   d <- make_nonlinear_data(n = 80L, seed = 2L)
   d$x5 <- d$x1 + d$x4
   d$x6 <- d$x2 - d$x3
@@ -247,6 +261,7 @@ test_that("blocks fill stacks of nrow, side by side, in one aligned grid", {
 })
 
 test_that("pair errors name every offending pair", {
+  skip_on_cran()
   fit <- pair_fit()
   err <- expect_error(janusplot_pair(fit, c("x1", "x9", "x7"),
                                      c("x2", "x2", "x1")))
@@ -265,6 +280,7 @@ test_that("pair errors name every offending pair", {
 })
 
 test_that("the pair panels take the signed background when asked", {
+  skip_on_cran()
   fit <- pair_fit()
   pair <- fit$pairs[[1L]]
   expected <- janusplot:::.background_hex(pair$cor_pearson, "BuOr", 0.35)
@@ -294,6 +310,7 @@ test_that("the pair panels take the signed background when asked", {
 })
 
 test_that("many overlay panels share one generic key", {
+  skip_on_cran()
   fit <- pair_fit()
   p <- janusplot_pair(fit, c("x1", "x1"), c("x2", "x3"), display = "both")
   key <- p[[2L]]

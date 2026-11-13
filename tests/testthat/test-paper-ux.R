@@ -8,6 +8,7 @@ make_noise_pair <- function(n = 200L, seed = 5L) {
 }
 
 test_that("A is a dash in the strip when neither direction is significant", {
+  skip_on_cran()
   fit <- janusplot_fit(make_noise_pair(), engine = "gam",
                        derivatives = integer())
   pr <- fit$pairs[[1L]]
@@ -26,6 +27,7 @@ test_that("A is a dash in the strip when neither direction is significant", {
 })
 
 test_that(".pair_not_significant needs both directions at p >= 0.05", {
+  skip_on_cran()
   f <- janusplot:::.pair_not_significant
   expect_true(f(list(association_p_adj_yx = 0.3, association_p_adj_xy = 0.06)))
   expect_false(f(list(association_p_adj_yx = 0.3, association_p_adj_xy = 0.01)))
@@ -34,6 +36,7 @@ test_that(".pair_not_significant needs both directions at p >= 0.05", {
 })
 
 test_that("identity_line adds the y = x line to the overlay", {
+  skip_on_cran()
   d <- make_linear_data(n = 120L)
   fit <- janusplot_fit(d[, c("x1", "x2")], engine = "gam",
                        derivatives = integer())
@@ -50,6 +53,7 @@ test_that("identity_line adds the y = x line to the overlay", {
 })
 
 test_that("long model formulas wrap in the pair titles", {
+  skip_on_cran()
   d <- make_linear_data(n = 120L)
   names(d) <- c("a_rather_long_name", "another_long_name", "x3", "x4")
   fit <- janusplot_fit(d[, 1:2], engine = "gam", derivatives = integer())
@@ -58,6 +62,7 @@ test_that("long model formulas wrap in the pair titles", {
 })
 
 test_that("cells that nearly interpolate are named in one warning", {
+  skip_on_cran()
   expect_warning(
     janusplot_fit(anscombe[, c("x2", "y2")], engine = "gam",
                   derivatives = integer()),
@@ -70,6 +75,7 @@ test_that("cells that nearly interpolate are named in one warning", {
 })
 
 test_that("janusplot_curves() returns both directions in long form", {
+  skip_on_cran()
   fit <- janusplot_fit(make_nonlinear_data(n = 120L)[, c("x1", "x2", "x3")],
                        engine = "gam", n_grid = 50L, derivatives = 1L)
   cu <- janusplot_curves(fit)
@@ -93,6 +99,7 @@ test_that("janusplot_curves() returns both directions in long form", {
 })
 
 test_that("pairs and matrices compose with `/` and `|`", {
+  skip_on_cran()
   d <- withr::with_seed(1L, data.frame(a = stats::rnorm(90L),
                                        b = stats::rnorm(90L),
                                        g = factor(rep(c("u", "v", "w"), 30L))))
@@ -109,6 +116,7 @@ test_that("pairs and matrices compose with `/` and `|`", {
 })
 
 test_that("legend_position = 'bottom' sizes the legend row to its content", {
+  skip_on_cran()
   vars <- c("x1", "x2", "x3")
   bars <- janusplot:::.bottom_bar_specs("nonlinearity", c(0, 4), "viridis",
                                         background_by = "pearson")
@@ -135,6 +143,7 @@ test_that("legend_position = 'bottom' sizes the legend row to its content", {
 })
 
 test_that("a matrix with its legends at the bottom renders", {
+  skip_on_cran()
   d <- make_nonlinear_data(n = 120L)
   d$g <- factor(rep(c("u", "v", "w"), 40L))
   fit <- janusplot_fit(d, vars = c("x1", "x2", "x3"), engine = "gam",
@@ -156,6 +165,7 @@ test_that("a matrix with its legends at the bottom renders", {
 })
 
 test_that("matrix points shrink with the variable count; pair points do not", {
+  skip_on_cran()
   expect_equal(janusplot:::.matrix_point_scale(4L), 1.09, tolerance = 0.01)
   expect_lt(janusplot:::.matrix_point_scale(8L),
             janusplot:::.matrix_point_scale(4L))
@@ -173,6 +183,7 @@ test_that("matrix points shrink with the variable count; pair points do not", {
 })
 
 test_that("janusplot_pair() takes annotations and stacks the two faces", {
+  skip_on_cran()
   d <- make_nonlinear_data(n = 120L)
   fit <- janusplot_fit(d, vars = c("x1", "x2", "x3"), engine = "gam",
                        derivatives = integer())
@@ -199,6 +210,7 @@ test_that("janusplot_pair() takes annotations and stacks the two faces", {
 })
 
 test_that("the reference plot orders its panels as the pairs were listed", {
+  skip_on_cran()
   d <- make_nonlinear_data(n = 80L)
   names(d)[2:3] <- c("zz", "aa")
   fit <- janusplot_fit(d, vars = c("x1", "zz", "aa"), engine = "gam",

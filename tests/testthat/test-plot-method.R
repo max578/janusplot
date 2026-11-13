@@ -47,6 +47,7 @@ test_that("plot() returns a patchwork, which is a ggplot", {
 })
 
 test_that("every colour_by value builds under every channel", {
+  skip_on_cran()
   fit <- fit_two(make_nonlinear_data(n = 120L), vars = c("x1", "x2", "x3"))
   for (cb in janusplot:::.colour_choices()) {
     for (ch in c("border", "tile", "fill")) {
@@ -112,6 +113,15 @@ test_that("the default annotations drop A from thirteen variables", {
   glossary <- function(p) p$patches$annotation$caption
   expect_match(glossary(plot(fit_two(d, vars = names(d)[1:3]))),
                "A = asymmetry index")
+})
+
+test_that("the glossary of a thirteen-variable matrix drops A", {
+  # 156 fits and four 169-cell renders: about a minute, so off CRAN.
+  skip_on_cran()
+  withr::local_seed(2026L)
+  d <- as.data.frame(matrix(stats::rnorm(60L * 13L), 60L, 13L))
+  names(d) <- paste0("x", 1:13)
+  glossary <- function(p) p$patches$annotation$caption
   fit8 <- fit_two(d, vars = names(d))
   expect_no_match(glossary(plot(fit8)), "A = asymmetry index")
   expect_match(glossary(plot(fit8)), "A of every pair: summary\\(\\)")
@@ -158,6 +168,7 @@ test_that("unknown arguments in ... are an error naming them", {
 })
 
 test_that("order = 'hclust' and 'alphabetical' reorder the drawing only", {
+  skip_on_cran()
   d <- make_linear_data(n = 100L)
   names(d) <- c("zulu", "bravo", "alpha", "mike")
   fit <- janusplot_fit(d, engine = "gam")
@@ -177,6 +188,7 @@ test_that("order = 'hclust' and 'alphabetical' reorder the drawing only", {
 })
 
 test_that("focus, axes and diagonal options render", {
+  skip_on_cran()
   fit <- fit_two(make_nonlinear_data(n = 120L), vars = c("x1", "x2", "x3"))
   st <- janusplot_style(show_shape_legend = FALSE, diagonal = "density")
   expect_s3_class(plot(fit, focus_by = "edf", focus_threshold = "q50", style = st),
@@ -475,6 +487,7 @@ test_that("the corner key shows the first two variables", {
 })
 
 test_that("the background blends from white by the signed correlation", {
+  skip_on_cran()
   hex <- janusplot:::.background_hex
   expect_identical(hex(0), "#FFFFFF")
   blend <- function(end, at) {
@@ -517,6 +530,7 @@ test_that("the background blends from white by the signed correlation", {
 })
 
 test_that("a fit with adjust draws no background unless one is asked for", {
+  skip_on_cran()
   d <- make_nonlinear_data(n = 120L, seed = 2L)
   d$g <- factor(rep(c("a", "b", "c"), length.out = nrow(d)))
   fit <- fit_two(d, vars = c("x1", "x2", "x3"), adjust = ~ s(g, bs = "re"))
@@ -576,6 +590,7 @@ test_that("the strip prints r and the formula on request", {
 })
 
 test_that("text_size reaches every text of the matrix", {
+  skip_on_cran()
   fit <- fit_two(make_nonlinear_data(n = 120L), vars = c("x1", "x2", "x3"))
   p <- plot(fit, style = janusplot_style(
     show_shape_legend = FALSE,

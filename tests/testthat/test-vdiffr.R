@@ -15,17 +15,20 @@
 skip_if_not_installed("vdiffr")
 
 test_that("diagonal cell matches snapshot", {
+  skip_on_cran()
   p <- janusplot:::.build_diagonal_cell("my_var")
   vdiffr::expect_doppelganger("diagonal-cell-label", p)
 })
 
 test_that("linear 3-var matrix (default look) matches snapshot", {
+  skip_on_cran()
   d <- make_linear_data(n = 150L, seed = 1L)
   fit <- janusplot_fit(d, vars = c("x1", "x2", "x3"), engine = "gam")
   vdiffr::expect_doppelganger("matrix-3var-linear-default", plot(fit))
 })
 
 test_that("non-linear 3-var matrix with unicode shape glyphs matches snapshot", {
+  skip_on_cran()
   d <- make_nonlinear_data(n = 200L, seed = 2L)
   fit <- janusplot_fit(d, vars = c("x1", "x2", "x3"), engine = "gam")
   p <- plot(fit, annotations = c("edf", "A", "shape"),
@@ -34,6 +37,7 @@ test_that("non-linear 3-var matrix with unicode shape glyphs matches snapshot", 
 })
 
 test_that("fill channel with Pearson r (the 0.2.0 look) matches snapshot", {
+  skip_on_cran()
   d <- make_nonlinear_data(n = 200L, seed = 2L)
   fit <- janusplot_fit(d, vars = c("x1", "x2", "x3"), engine = "gam")
   p <- plot(fit, colour_by = "pearson", background_by = "none",
@@ -42,6 +46,7 @@ test_that("fill channel with Pearson r (the 0.2.0 look) matches snapshot", {
 })
 
 test_that("colour_by = 'none' matrix matches snapshot", {
+  skip_on_cran()
   d <- make_linear_data(n = 150L, seed = 1L)
   fit <- janusplot_fit(d, vars = c("x1", "x2"), engine = "gam")
   vdiffr::expect_doppelganger("matrix-colour-none",
@@ -49,6 +54,7 @@ test_that("colour_by = 'none' matrix matches snapshot", {
 })
 
 test_that("ASCII glyph fallback matches snapshot", {
+  skip_on_cran()
   d <- make_nonlinear_data(n = 150L, seed = 2L)
   fit <- janusplot_fit(d, vars = c("x1", "x2", "x3"), engine = "gam")
   p <- plot(fit, annotations = c("edf", "A", "shape"),
