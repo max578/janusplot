@@ -153,10 +153,11 @@ caption.
 \examples{
 fit <- janusplot_fit(mtcars[, c("mpg", "hp", "wt")], engine = "gam")
 plot(fit)
+
+\donttest{
 plot(fit, colour_by = "asymmetry", annotations = c("A", "edf", "signif"))
 plot(fit, background_by = "none", annotations = c("formula", "r"))
 
-\donttest{
 # Points coloured by a factor column of the data; never in the model.
 pp <- transform(mtcars[, c("mpg", "hp", "wt", "am")],
                 am = factor(am, labels = c("auto", "manual")))
