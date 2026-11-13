@@ -11,229 +11,269 @@ things are discarded in that collapse:
     general from whether x is a smooth function of y, because leverage
     and noise are directional.
 
-[`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
-renders both recoveries visually for every pair in a matrix layout,
-using proper [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html) fits
-(not loess) so EDF, F-tests, and random effects are available.
+janusplot fits both directions of every pair with
+[`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html) and draws both
+fits in a matrix. Each smooth carries its effective degrees of freedom
+(EDF) and F-test, and `adjust` can add covariates and random effects.
 
 ## Quick start
+
+[`janusplot_fit()`](https://max578.github.io/janusplot/reference/janusplot_fit.md)
+fits every ordered pair once. Printing the fit gives an overview, and
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html) draws the
+matrix.
 
 ``` r
 
 library(janusplot)
 
-# Four numeric columns from mtcars (32 rows: small but illustrative)
-janusplot(mtcars[, c("mpg", "hp", "wt", "qsec")])
+fit <- janusplot_fit(mtcars[, c("mpg", "hp", "wt", "qsec")])
+fit
+#> janusplot fit: 4 variables (mpg, hp, wt, qsec)
+#> 6 pairs, 12 directed cells
+#> engine = bam, method = fREML, adjust = none
+#> no flags
+#> Largest asymmetries:
+#>   hp <-> qsec  A = 0.73  qsec ~ hp: EDF 1.0, p < 0.001, linear_down | hp ~ qsec: EDF 6.3, p < 0.001, warped_wave
+#>   hp <-> wt  A = 0.45  wt ~ hp: EDF 3.1, p < 0.001, inverted_u | hp ~ wt: EDF 1.2, p < 0.001, concave_up
+#>   mpg <-> wt  A = 0.02  wt ~ mpg: EDF 2.3, p < 0.001, convex_down | mpg ~ wt: EDF 2.4, p < 0.001, convex_down
+#>   mpg <-> hp  A = 0.01  hp ~ mpg: EDF 3.0, p < 0.001, s_shape | mpg ~ hp: EDF 3.0, p < 0.001, convex_down
+#>   mpg <-> qsec  A = 0.00  qsec ~ mpg: EDF 1.0, p = 0.017, linear_up | mpg ~ qsec: EDF 1.0, p = 0.017, linear_up
+#>   (1 pair with neither direction significant, not ranked)
+#> Use summary() for the per-cell table and plot() for the matrix.
+plot(fit)
 ```
 
 ![Four-by-four asymmetric smoothed-association matrix for mpg, hp, wt
-and qsec, cells shaded by Pearson correlation on a diverging red-blue
-scale.](janusplot_files/figure-html/quickstart-1.png)
+and qsec, with coloured cell borders and blue to orange cell
+backgrounds.](janusplot_files/figure-html/quickstart-1.png)
 
-Asymmetric association matrix for four mtcars traits: cell fill is
-Pearson correlation, and the bottom-left corner reports the asymmetry
-index A alongside EDF for the fitted direction.
+Asymmetric association matrix for four mtcars traits. Each cell shows
+the row variable as a smooth function of the column variable; the border
+colour is the cell’s non-linearity and the background its Pearson
+correlation.
 
-Each off-diagonal cell shows:
+Every view below draws from this one fit without refitting.
 
-- raw scatter (light grey),
-- the fitted spline (blue line) and 95% CI ribbon,
-- a stacked `A = ...` / `EDF = ...` label in the bottom-left corner
-  (asymmetry index over effective degrees of freedom for that
-  direction’s fit; suppress or reorder via `annotations =`),
-- a signif-glyph in the top-right (`***` / `**` / `*` / `·`).
+Each off-diagonal cell `[r, c]` shows `vars[r] ~ s(vars[c])`: the row
+variable on the vertical axis, the column variable on the horizontal
+axis, as in [`pairs()`](https://rdrr.io/r/graphics/pairs.html). The key
+in the top-left corner states this with the first two variables. In
+every cell:
 
-The cell fill is keyed to Pearson correlation by default (a diverging
-scale symmetric around zero); pass `colour_by = "edf"` to shade by
-non-linearity instead. In the matrix above, `wt`-`mpg` (r = -0.87) and
-`hp`-`qsec` (r = -0.71) show the deepest fill of the six pairs;
-`wt`-`qsec` (r = -0.17) is the palest, near-zero-correlation cell.
+- the raw points are grey, under the fitted spline and its 95%
+  confidence band;
+- the border colour is the non-linearity of that smooth, EDF minus 1:
+  dark purple for a straight line, through green to yellow for a
+  strongly bent curve;
+- the background is the pair’s signed Pearson correlation, white at 0,
+  blue towards -1 and orange towards +1;
+- the strip above the panel carries the significance glyph of the
+  smooth’s F-test (`***` p \< .001, `**` p \< .01, `*` p \< .05, `.` p
+  \< .1; read from the multiplicity-adjusted p-value when the fit uses
+  `p_adjust`) and, in the upper triangle, the asymmetry index `A` of the
+  pair (0 when both directions are equally complex; defined below),
+  written once because it belongs to the pair.
 
-## Non-linear detection
+The diagonal shows each variable’s kernel density with a rug of its
+values: a skewed, bimodal or clipped variable shows there before it
+bends a curve. With `group`, one density per level is drawn in the group
+colour, scaled so the levels sum to the grey pooled density.
 
-A synthetic quadratic + sinusoidal example. The matrix makes it obvious
-which variables are genuinely non-linearly related to which.
+The default annotations, shape legend and corner key depend on the
+number of variables: from thirteen variables the strip carries the glyph
+alone, and A is read from
+[`summary()`](https://rdrr.io/r/base/summary.html).
+
+The two cells of a pair differ. Here `qsec ~ s(hp)` is a straight line
+(EDF 1.00), while `hp ~ s(qsec)` bends (EDF 6.34), so the pair has the
+largest asymmetry index of the matrix, A = 0.73.
+
+## The matrix
+
+### What each cell encodes
+
+`colour_by` chooses the quantity on the border: `"nonlinearity"` (the
+default), `"asymmetry"`, a correlation (`"pearson"`, `"spearman"`,
+`"kendall"`), `"deviance_gap"` (deviance explained by the smooth minus
+that of the straight line) or `"none"`. `background_by` chooses the
+correlation behind the points, or `"none"`. `annotations` chooses what
+the strip says (shape codes and categories are explained in *Shape
+metrics explained* below), from `"A"`, `"edf"`, `"signif"`, `"code"`
+(the two-letter shape code), `"shape"`, `"k_warn"`, `"n"`, `"r"` and
+`"formula"`.
+
+A synthetic example with a quadratic and a sinusoidal pair:
 
 ``` r
 
-n <- 300
+n  <- 300
 x1 <- runif(n, -3, 3)
-x2 <- x1^2 + rnorm(n, sd = 0.6)   # quadratic on x1
-x3 <- sin(x1) + rnorm(n, sd = 0.4) # sinusoidal on x1
-x4 <- rnorm(n)                     # independent
-d  <- data.frame(x1 = x1, x2 = x2, x3 = x3, x4 = x4)
-
-# colour_by = "edf" here, deliberately: x1-x2 is a symmetric quadratic,
-# so its Pearson correlation is close to 0 despite EDF being large --
-# the default correlation fill would hide exactly the non-linearity
-# this section is illustrating.
-janusplot(d, colour_by = "edf")
+d  <- data.frame(
+  x1 = x1,
+  x2 = x1^2 + rnorm(n, sd = 0.6),    # quadratic in x1
+  x3 = sin(x1) + rnorm(n, sd = 0.4), # sinusoidal in x1
+  x4 = rnorm(n)                      # independent
+)
+fit_nl <- janusplot_fit(d)
+plot(fit_nl, annotations = c("code", "signif"))
 ```
 
 ![Four-by-four smoothed-association matrix for x1, x2 (quadratic in x1),
-x3 (sinusoidal in x1) and x4 (independent noise), cells shaded by
-effective degrees of
-freedom.](janusplot_files/figure-html/nonlinear-1.png)
+x3 (sinusoidal in x1) and x4 (independent noise), followed by a legend
+of shape categories.](janusplot_files/figure-html/nonlinear-1.png)
 
 Association matrix for a quadratic pair, a sinusoidal pair and an
-independent pair, shaded by EDF rather than correlation so the
-non-linearity is visible in the fill.
+independent variable. The border colour picks out the non-linear cells;
+the strip carries the shape code, decoded by the legend below.
 
-EDF for `x2 ~ s(x1)` and `x3 ~ s(x1)` clearly exceeds 1, and the cell
-fills reflect that under `colour_by = "edf"`; cells involving `x4` stay
-close to EDF = 1 (linear / flat). Note that `x1`-`x2` would look almost
-blank under the *default* `colour_by = "pearson"` (their linear
-correlation is close to zero even though the relationship is strongly,
-deterministically quadratic) – a concrete case for choosing the EDF fill
-whenever non-linearity, not linear association, is the question.
+`x2 ~ s(x1)` has EDF 7.9 and `x3 ~ s(x1)` has EDF 7.0, and their borders
+are at the yellow end of the scale. The Pearson correlation of `x1` and
+`x2` is -0.11, so their background is almost white: the relationship is
+strongly quadratic and nearly uncorrelated. With `"code"` among the
+annotations, the legend of the 27 shape categories is attached below the
+matrix (`janusplot_style(show_shape_legend = TRUE)` or `FALSE` sets it
+whatever the annotations).
 
-## Asymmetry – a heteroscedastic example
+### Asymmetry: a heteroscedastic example
 
 When the noise scale depends on a predictor, the two directional smooths
-diverge: y \sim s(x) recovers the mean relationship; x \sim s(y) is
-distorted by the variance asymmetry.
+diverge: y \sim s(x) recovers the linear mean, while x \sim s(y)
+estimates E\[x \mid y\], which bends where the spread of y is largest.
 
 ``` r
 
-n <- 400
-x <- runif(n, 0, 5)
-y <- 0.5 * x + rnorm(n, sd = 0.3 + 0.4 * x)   # variance grows with x
-d <- data.frame(x = x, y = y, z = rnorm(n))
-
-janusplot(d)
+n   <- 400
+x   <- runif(n, 0, 5)
+het <- data.frame(
+  x = x,
+  y = 0.5 * x + rnorm(n, sd = 0.3 + 0.4 * x),  # variance grows with x
+  z = rnorm(n)
+)
+fit_het <- janusplot_fit(het)
+plot(fit_het, colour_by = "asymmetry", annotations = c("A", "edf"))
 ```
 
 ![Three-by-three smoothed-association matrix for x, y (heteroscedastic
-in x) and z (independent noise), with the x-y off-diagonal pair carrying
-a visibly different fitted curve in each
-triangle.](janusplot_files/figure-html/asym-1.png)
+in x) and z (independent noise); the two x-y cells carry visibly
+different fitted curves.](janusplot_files/figure-html/asym-1.png)
 
 Association matrix for a heteroscedastic x-y pair (noise variance grows
-with x) plus an independent z, showing the two directional smooths and
-their asymmetry index A.
+with x) plus an independent z, coloured by the asymmetry index A of each
+pair.
 
-The `A = ...` label per cell reports the asymmetry index A\_{ij} =
-\|EDF\_{y\|x} - EDF\_{x\|y}\| / (EDF\_{y\|x} + EDF\_{x\|y}) \in \[0,
-1\], shown by default in the bottom-left corner alongside `EDF = ...`.
-The `x`-`y` pair carries the largest `A` in the matrix (0.72 in this
-run): y \sim s(x) recovers the linear mean with EDF close to 1, while x
-\sim s(y) is pulled around by the heteroscedastic tail and picks up a
-substantially higher EDF. `y`-`z` sits at `A ~ 0`, as expected for two
-genuinely unrelated variables. `x`-`z` is not equally clean (`A` around
-0.5 here) even though `z` is pure noise – one direction of a
-REML-selected smooth can still latch onto a spurious wiggle at finite
-`n`, which is itself a useful reminder that `A` is a sample-based
-diagnostic, not an oracle for “no relationship”.
+The asymmetry index of a pair compares the EDF of its two smooths, A =
+\|EDF\_{y \sim s(x)} - EDF\_{x \sim s(y)}\| / (EDF\_{y \sim s(x)} +
+EDF\_{x \sim s(y)}) \in \[0, 1\], and is the same in both cells. Here y
+\sim s(x) has EDF 1.00 and x \sim s(y) has EDF 6.07. The `x`-`y` pair
+has A = 0.72; the pairs with the independent `z` sit near A = 0. A is
+estimated from the sample: at finite `n`, one direction of a
+REML-selected smooth can pick up a spurious wiggle between two unrelated
+variables and give their pair a clearly positive A.
 
-## Partial smooths (controlling for covariates)
+A also depends on the distribution of the predictor, not only on the
+relationship. When `y` is a straight line in `x` plus noise, the mean of
+`y` given `x` is linear, but the mean of `x` given `y` is linear only
+when `x` is Gaussian. A uniform or otherwise bounded `x` bends the
+reverse mean near the ends of the range. With 200 rows and a uniform
+`x`, a straight-line pair typically has an A between 0.5 and 0.7, where
+a Gaussian `x` gives an A near 0.05. Here `x` is uniform, so part of the
+`x`-`y` index would appear with constant noise as well. Read A beside
+both EDFs and the predictor’s distribution, not as a measure of
+non-linearity on its own.
 
-Pass `adjust =` as a one-sided formula RHS to include fixed covariates
-and/or random effects in every pairwise GAM.
+Shape labels describe the fitted smooth. They are not evidence of an
+association: a smooth through pure noise with EDF near 1 still gets a
+monotone label. The p-value carries the evidence, so
+[`print()`](https://rdrr.io/r/base/print.html) shows it beside each
+label, and the strip adds “n.s.” to a shape code or glyph in a cell
+whose p-value is 0.05 or more.
 
-``` r
+### Colouring points by group
 
-library(palmerpenguins)
-#> 
-#> Attaching package: 'palmerpenguins'
-#> The following objects are masked from 'package:datasets':
-#> 
-#>     penguins, penguins_raw
-pp <- na.omit(penguins)
-
-# Without covariate
-janusplot(pp[, c("bill_length_mm", "bill_depth_mm",
-                 "flipper_length_mm", "body_mass_g")])
-```
-
-![Four-by-four association matrix for four penguin bill and body traits,
-unadjusted.](janusplot_files/figure-html/adjust-1.png)
-
-Palmer penguins trait matrix with no covariate: bill_depth_mm looks
-weakly, inconsistently related to the other three traits.
+`group` colours the raw points by a factor, character or logical column
+of the data. It is drawing only: the column never enters the model.
 
 ``` r
 
-
-# With species as a fixed effect -- resolves Simpson's-paradox geometry
-janusplot(pp, vars = c("bill_length_mm", "bill_depth_mm",
-                       "flipper_length_mm", "body_mass_g"),
-         adjust = ~ species)
+pen_vars <- c("bill_length_mm", "bill_depth_mm", "flipper_length_mm",
+              "body_mass_g")
+fit_pen <- janusplot_fit(palmerpenguins::penguins, pen_vars)
+plot(fit_pen, group = "species")
 ```
 
-![The same matrix after adjusting for species as a fixed effect, showing
-stronger within-species associations for
-bill_depth_mm.](janusplot_files/figure-html/adjust-2.png)
+![Four-by-four association matrix for bill length, bill depth, flipper
+length and body mass, with points in three colours by
+species.](janusplot_files/figure-html/group-1.png)
 
-The same four traits after adjusting every smooth for species:
-bill_depth_mm’s relationships strengthen once the three-species mixture
-is resolved.
+Palmer penguins trait matrix with the raw points coloured by species.
+The smooths are fitted across all three species.
 
-Adjusting for `species` changes the geometry rather than just the
-numbers: `bill_depth_mm` correlates *negatively* with the other three
-traits pooled across species (larger-bodied Gentoo penguins happen to
-have shallower bills), but *positively* within each species once the
-three-species mixture is resolved – the textbook Simpson’s-paradox
-signature, visible here as a sign flip in the corresponding cells
-between the two matrices.
+The pooled curves of `bill_depth_mm` cut across the three species
+clusters, so each pooled shape mixes within-species and between-species
+trends. The section on adjustment below fits species in the model.
 
-## Changing the palette
+### Ordering the variables
 
-`palette =` chooses among the sequential palettes below, but only takes
-effect when the fill is *not* a correlation: a correlation is always
-symmetric around zero, so
-`colour_by %in% c("pearson", "spearman", "kendall")` is always drawn on
-a diverging palette (`RdBu` unless you name a different diverging one),
-and any sequential `palette =` you pass is silently ignored in that
-case. The three calls below use `colour_by = "edf"` so the chosen
-palette actually reaches the plot.
+For a larger matrix, `order = "hclust"` reorders the axes by
+hierarchical clustering of the absolute Pearson correlations:
 
 ``` r
 
-d <- data.frame(
-  x1 = runif(200, -3, 3),
-  x2 = rnorm(200),
-  x3 = rnorm(200)
-)
-d$x2 <- d$x1^2 + rnorm(200, sd = 0.8)  # non-linear
-
-janusplot(d, colour_by = "edf", palette = "viridis")  # default, colourblind-safe
+data(Boston, package = "MASS")
+fit_boston <- janusplot_fit(Boston[, c("medv", "lstat", "rm", "age",
+                                       "indus", "nox", "dis")])
+#> ℹ 3 of 42 cells flagged for possible k underfit.
+#> ℹ 2.1 expected by chance at alpha = 0.05 across 42 tests.
+#> ℹ Inspect `result$pairs[[i]]$k_check_*` or set `auto_refit_k = TRUE`.
+plot(fit_boston, order = "hclust")
 ```
 
-![Three-by-three EDF-filled association matrix using the viridis
-sequential palette.](janusplot_files/figure-html/palette-viridis-1.png)
+![Seven-by-seven Boston housing association matrix with rows and columns
+reordered by hierarchical clustering on absolute
+correlation.](janusplot_files/figure-html/hclust-1.png)
 
-EDF-filled matrix under the default viridis palette: the strongly
-non-linear x1-x2 cell is dark, the two noise cells are pale.
+Boston housing matrix with axes reordered by hierarchical clustering on
+\|correlation\|: medv, lstat and rm group together, and age, indus, nox
+and dis form a second block.
+
+The reordering places `lstat` (r = -0.74) and `rm` (r = 0.70), the two
+variables most correlated with `medv`, next to it, apart from the
+`age`-`indus`-`nox`-`dis` block, whose members all have `|r| >= 0.6`
+with each other.
+
+### Appearance: `janusplot_style()`
+
+Every appearance setting lives in one
+[`janusplot_style()`](https://max578.github.io/janusplot/reference/janusplot_style.md)
+object passed as `style`: the palette, where the colour is painted
+(`colour_channel = "border"`, `"tile"` or `"fill"`), the points, the
+band, the text sizes, the legends and the key. `"border"` colours the
+cell outline, `"tile"` a small square in the bottom-right corner and
+`"fill"` the whole panel. Printing a style lists the settings that
+differ from the defaults.
 
 ``` r
 
-janusplot(d, colour_by = "edf", palette = "RdYlBu")   # diverging, colourblind-safe
+st <- janusplot_style(colour_channel = "tile", palette = "magma")
+st
+#> janusplot style: 2 non-default values
+#>   colour_channel = "tile"
+#>   palette = "magma"
+plot(fit, colour_by = "asymmetry", background_by = "none", style = st)
 ```
 
-![Three-by-three EDF-filled association matrix using the diverging
-RdYlBu palette.](janusplot_files/figure-html/palette-brewer-1.png)
+![Four-by-four association matrix for mtcars with a small coloured tile
+in the bottom-right corner of each cell and white
+backgrounds.](janusplot_files/figure-html/style-1.png)
 
-The same matrix under the diverging RdYlBu palette: still
-colourblind-safe, but a diverging scale is a poor fit for a one-sided
-quantity like EDF (values run 1 upward, never negative).
+The mtcars fit redrawn with the asymmetry index on a corner tile, the
+magma palette, and no background.
 
-``` r
-
-janusplot(d, colour_by = "edf", palette = "turbo")    # high-contrast, NOT colourblind-safe
-```
-
-![Three-by-three EDF-filled association matrix using the high-contrast,
-non-colourblind-safe turbo
-palette.](janusplot_files/figure-html/palette-turbo-1.png)
-
-The same matrix under the turbo palette: highest contrast of the three,
-but not colourblind-safe.
-
-The three renders differ only in palette: viridis and RdYlBu are both
-colourblind-safe with different sequential-versus-diverging framing of
-the same EDF values, and turbo trades that safety for the sharpest
-visual contrast between the non-linear `x1`-`x2` cell and the two noise
-cells.
+The palette applies to the `colour_by` scale. A correlation is symmetric
+around zero, so a correlation `colour_by` is drawn on a diverging
+palette (`RdBu` unless another diverging one is named); a sequential
+palette given with a correlation is replaced by `RdBu`.
 
 **Colourblind-safe choices:**
 
@@ -243,13 +283,242 @@ cells.
 
 **High-contrast but not colourblind-safe:** `turbo`, `Spectral`.
 
+### Width on the page
+
+The default sizes are set for a figure one page wide (170 mm). For one
+journal column (85 mm), draw at most four variables with a fixed text
+size and without the shape legend and the glossary (the caption that
+explains the symbols):
+
+``` r
+
+narrow <- janusplot_style(text_size = 6, show_shape_legend = FALSE,
+                          show_glossary = FALSE)
+plot(fit, style = narrow)
+```
+
+![Small four-by-four association matrix for mtcars sized for a single
+journal column.](janusplot_files/figure-html/narrow-1.png)
+
+The mtcars matrix at one journal column, 85 mm wide, with 6-point text.
+
+### One call: `janusplot()`
+
+[`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
+fits and draws in one call. It takes the view arguments of
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html) and passes
+model arguments (`k`, `engine`, `na_action` and the others of
+[`janusplot_fit()`](https://max578.github.io/janusplot/reference/janusplot_fit.md))
+through `...`:
+
+``` r
+
+janusplot(mtcars[, c("mpg", "hp", "wt", "qsec")], order = "hclust")
+# is the same figure as
+plot(janusplot_fit(mtcars[, c("mpg", "hp", "wt", "qsec")]),
+     order = "hclust")
+```
+
+Keep the fit when the same data will be drawn more than once.
+
+## The pair
+
+The matrix is for finding pairs;
+[`janusplot_pair()`](https://max578.github.io/janusplot/reference/janusplot_pair.md)
+shows one pair at full size. The motorcycle-crash data of
+[`MASS::mcycle`](https://rdrr.io/pkg/MASS/man/mcycle.html) record head
+acceleration (`accel`) against time after impact (`times`).
+
+``` r
+
+fit_mc <- janusplot_fit(MASS::mcycle)
+janusplot_pair(fit_mc, x = "times", y = "accel")
+```
+
+![Two scatterplot panels side by side for the mcycle data, each with a
+fitted spline and confidence band; the left curve dips and recovers over
+time, the right curve is a much smoother fit of time on
+acceleration.](janusplot_files/figure-html/pair-1.png)
+
+The two directions of the mcycle pair: acceleration as a smooth function
+of time on the left, time as a smooth function of acceleration on the
+right.
+
+The left panel is `accel ~ s(times)`, the right `times ~ s(accel)`. Each
+carries the model formula as its title and a strip with the pair’s
+statistics: `A`, the EDF of that direction, the Pearson correlation, the
+significance glyph and the number of rows used. The acceleration trace
+is a wave in time (EDF 8.6); time is a far simpler function of
+acceleration (EDF 1.9).
+
+`display = "both"` overlays the two curves in one panel. Both variables
+are standardised on the rows the pair used, and the reverse fit is drawn
+with its axes swapped, so both curves share one plane:
+
+``` r
+
+janusplot_pair(fit_mc, x = "times", y = "accel", display = "both")
+```
+
+![One panel with standardised time on the horizontal axis and
+standardised acceleration on the vertical axis, with two fitted curves
+in different colours.](janusplot_files/figure-html/pair-both-1.png)
+
+Both directions of the mcycle pair in one standardised panel.
+
+Several pairs are drawn as blocks of two panels: the blocks stack top to
+bottom, the stacks sit side by side (`nrow` blocks per stack, `ncol`
+stacks), and the two panels of a pair stay close together. Four pairs of
+the mtcars fit in two stacks:
+
+``` r
+
+janusplot_pair(fit,
+               x = c("hp", "wt", "qsec", "qsec"),
+               y = c("mpg", "mpg", "hp", "wt"),
+               ncol = 2L)
+```
+
+![Grid of four pair blocks, two per column, each block holding the two
+directional fits of one mtcars
+pair.](janusplot_files/figure-html/pair-grid-1.png)
+
+Four pairs of the mtcars fit, two blocks per stack in two stacks.
+
+## Marginal against adjusted: `janusplot_compare()`
+
+`adjust` adds covariates and random effects to every pairwise model, for
+example `adjust = ~ species` or `adjust = ~ s(site, bs = "re")`.
+[`janusplot_compare()`](https://max578.github.io/janusplot/reference/janusplot_compare.md)
+sets two fits of the same variables side by side, cell by cell, and
+reports how each fitted shape moves.
+
+``` r
+
+fit_pen_adj <- janusplot_fit(palmerpenguins::penguins, pen_vars,
+                             adjust = ~ species)
+cmp <- janusplot_compare(fit_pen, fit_pen_adj,
+                         labels = c("marginal", "species-adjusted"))
+cmp
+#> janusplot comparison: marginal against species-adjusted
+#> 4 variables (bill_length_mm, bill_depth_mm, flipper_length_mm, body_mass_g), 6 pairs, 12 directed cells
+#> adjust: marginal = none, species-adjusted = ~species
+#> From marginal to species-adjusted, the shape changed in 10 of 12 directed cells (5 of 6 pairs), the archetype in 9 and the trend in 6.
+#> Cells whose shape changed:
+#>   bill_length_mm ~ s(bill_depth_mm): shape bimodal -> concave_up, EDF 5.63 -> 2.78, A 0.10 -> 0.41
+#>   bill_length_mm ~ s(body_mass_g): shape linear_up -> convex_up, EDF 1.00 -> 1.08, A 0.55 -> 0.04
+#>   bill_depth_mm ~ s(bill_length_mm): shape bimodal -> s_shape, EDF 6.83 -> 1.17, A 0.10 -> 0.41
+#>   bill_depth_mm ~ s(flipper_length_mm): shape warped_wave -> convex_up, EDF 7.43 -> 2.65, A 0.02 -> 0.08
+#>   bill_depth_mm ~ s(body_mass_g): shape warped_wave -> concave_up, EDF 6.30 -> 1.51, A 0.08 -> 0.35
+#>   flipper_length_mm ~ s(bill_depth_mm): shape warped_wave -> s_shape, EDF 7.12 -> 3.10, A 0.02 -> 0.08
+#>   flipper_length_mm ~ s(body_mass_g): shape s_shape -> linear_up, EDF 4.55 -> 1.00, A 0.09 -> 0.48
+#>   body_mass_g ~ s(bill_length_mm): shape rippled_monotone -> linear_up, EDF 3.45 -> 1.00, A 0.55 -> 0.04
+#>   body_mass_g ~ s(bill_depth_mm): shape warped_wave -> s_shape, EDF 7.35 -> 3.15, A 0.08 -> 0.35
+#>   body_mass_g ~ s(flipper_length_mm): shape s_shape -> convex_up, EDF 3.81 -> 2.86, A 0.09 -> 0.48
+plot(cmp, group = "species")
+```
+
+![Four-by-four matrix for the penguin traits with two curves in every
+cell, a dashed grey marginal curve and a solid species-adjusted curve,
+and red borders on the cells whose trend
+changed.](janusplot_files/figure-html/compare-1.png)
+
+Penguin traits fitted marginally (grey dashed curves) and adjusted for
+species (solid curves with bands), points coloured by species. A red
+border marks a cell whose trend changed: rising, falling or
+non-monotone.
+
+The shape label changes in 10 of the 12 directed cells once species is
+in the model, and its trend (rising, falling or non-monotone) in 6 of
+them, the cells with a red border. Pooled across species,
+`bill_depth_mm` correlates negatively with the other three traits (r
+from -0.58 to -0.24), and Gentoo penguins are both the largest and the
+shallowest-billed. Adjusted for species, every curve involving
+`bill_depth_mm` rises. The comparison shows how sensitive each fitted
+shape is to the adjustment; why a shape moves is a question for the
+study design. A fit with `adjust` draws no correlation background in
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html),
+[`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
+or
+[`janusplot_pair()`](https://max578.github.io/janusplot/reference/janusplot_pair.md):
+its curves are adjusted, while the correlation is marginal.
+
+## Direction: `janusplot_direction()`
+
+An asymmetry index says that the two directions of a pair are not
+interchangeable; it does not say which variable drives the other.
+[`janusplot_direction()`](https://max578.github.io/janusplot/reference/janusplot_direction.md)
+tests whether one direction, and only one, fits an additive-noise model.
+Under the additive-noise model y = f(x) + e with e independent of x, the
+model holds in at most one direction for all but a small set of joint
+distributions. The function fits both directions and tests each set of
+residuals for independence from its predictor with a kernel (HSIC)
+permutation test.
+
+``` r
+
+janusplot_direction(fit_mc, x = "times", y = "accel", seed = 2026L)
+#> janusplot direction test: times -> accel against accel -> times
+#> verdict: undecided (no direction), reason neither_independent
+#>   Residuals stay dependent on the putative cause in both directions (p
+#>   = 0.00599 and 0.002). No additive-noise model fits this pair, so the
+#>   premise the directional test rests on does not hold here -- a hidden
+#>   common cause, feedback, or non-additive noise would all produce this.
+#> HSIC residual independence (alpha = 0.05):
+#>   times -> accel  p = 0.00599
+#>   accel -> times  p = 0.002
+#> n_used = 133 of n = 133 complete cases
+```
+
+A `"forward"` or `"reverse"` verdict says that the residuals are
+independent in that direction only, which is the condition the
+additive-noise model needs; it is not a proof of causation, since the
+model assumes no hidden common cause, no feedback and additive noise.
+Every other pattern returns `"undecided"`: residuals independent in both
+directions, in neither, or a linear relationship with Gaussian
+variables, where the model cannot tell the directions apart. For the
+motorcycle pair the verdict is `"undecided"`: the residual spread
+changes with time, so the residuals depend on the predictor in both
+directions. The test is run on the marginal pair; a conditional test
+under `adjust` is planned for 1.1.
+
+## The table: `summary()`
+
+[`summary()`](https://rdrr.io/r/base/summary.html) returns one row per
+directed cell (one model, `y ~ s(x)` or `x ~ s(y)`), with every number
+the plots draw: EDF, raw F-test p-values and the multiplicity-adjusted
+ones (`janusplot_fit(p_adjust = "BH")` or `"holm"`; equal to the raw
+values by default), deviance explained, the asymmetry index and its
+signed version (`directional_complexity`, positive in the cell whose
+smooth is the more complex), the three correlations, the shape indices,
+counts and labels, the k-check columns and any error.
+
+``` r
+
+tab <- summary(fit_het)
+tab[, c("var_y", "var_x", "edf", "association_p", "asymmetry_index",
+        "shape_category")]
+#>   var_y var_x      edf association_p asymmetry_index shape_category
+#> 1     x     y 6.067967     0.0000000    7.170307e-01   broad_trough
+#> 2     x     z 1.000017     0.2891825    7.388031e-06    linear_down
+#> 3     y     x 1.000010     0.0000000    7.170307e-01      linear_up
+#> 4     y     z 1.000003     0.9788085    6.481501e-07           flat
+#> 5     z     x 1.000003     0.2891757    7.388031e-06    linear_down
+#> 6     z     y 1.000002     0.9787890    6.481501e-07           flat
+```
+
+Each row is the model `var_y ~ s(var_x)`. The pair-level fields, the
+prediction grids and the derivative curves are in `fit$pairs`; the
+models themselves are kept with `janusplot_fit(keep_fits = TRUE)`.
+
 ## Handling missing data
 
 ``` r
 
-# airquality has genuine NAs in Ozone and Solar.R
-janusplot(airquality[, c("Ozone", "Solar.R", "Wind", "Temp")],
-          na_action = "pairwise")
+# airquality has missing values in Ozone and Solar.R
+fit_aq <- janusplot_fit(airquality[, c("Ozone", "Solar.R", "Wind", "Temp")],
+                        na_action = "pairwise")
+plot(fit_aq, annotations = c("n", "signif"))
 ```
 
 ![Four-by-four association matrix for airquality's Ozone, Solar.R, Wind
@@ -257,84 +526,28 @@ and Temp, fitted with pairwise-complete
 rows.](janusplot_files/figure-html/missing-1.png)
 
 airquality matrix under pairwise NA handling: each cell is fitted from
-whichever rows are complete for that pair, so cells not touching Ozone
-or Solar.R use all 153 rows.
+the rows complete for that pair, so the cells not touching Ozone or
+Solar.R use all 153 rows.
 
-`na_action = "pairwise"` uses all rows for which *that* pair is
-complete; `"complete"` restricts to rows complete across every variable
-(matching listwise deletion). Under `"pairwise"` here, the `Wind`-`Temp`
-cell is fitted on all 153 rows, while any cell touching `Ozone` or
-`Solar.R` drops only the rows missing on that one variable – more data
-per cell, at the cost of every cell technically using a slightly
-different sample.
-
-## Scaling up – `order = "hclust"`
-
-For k large, reorder the axes by hierarchical clustering on
-\|correlation\|:
-
-``` r
-
-data(Boston, package = "MASS")
-janusplot(Boston[, c("medv", "lstat", "rm", "age",
-                     "indus", "nox", "dis")],
-          order = "hclust")
-#> ℹ 3 of 42 cells flagged for possible k underfit.
-#> ℹ 2.1 expected by chance at alpha = 0.05 across 42 tests.
-#> ℹ Inspect `result$pairs[[i]]$k_check_*` or set `auto_refit_k = TRUE`.
-```
-
-![Seven-by-seven Boston housing association matrix with rows and columns
-reordered by hierarchical clustering on absolute
-correlation.](janusplot_files/figure-html/hclust-1.png)
-
-Boston housing matrix with axes reordered by hierarchical clustering on
-\|correlation\|: medv, lstat and rm group together as the strongest
-housing-value block, while age, indus, nox and dis form a tight
-urbanisation/pollution block.
-
-The reordering places the two strongest predictors of house value,
-`lstat` (r = -0.74) and `rm` (r = 0.70), next to `medv`, and separates
-them from the `age`-`indus`-`nox`-`dis` block, whose members are all
-`|r| >= 0.6` with each other – a proxy for the neighbourhood’s degree of
-industrialisation.
-
-## Programmatic access – `janusplot_data()`
-
-Returns raw GAM fits and per-cell metrics without constructing a ggplot
-– useful for custom rendering or downstream analysis.
-
-``` r
-
-# Re-create the heteroscedastic example
-n <- 400
-het <- data.frame(
-  x = runif(n, 0, 5),
-  y = NA_real_
-)
-het$y <- 0.5 * het$x + rnorm(n, sd = 0.3 + 0.4 * het$x)
-
-out <- janusplot_data(het, vars = c("x", "y"))
-out$pairs[[1L]]$edf_yx
-#> [1] 1.000017
-out$pairs[[1L]]$edf_xy
-#> [1] 6.157622
-out$pairs[[1L]]$asymmetry_index
-#> [1] 0.7205735
-```
+`na_action = "pairwise"` (the default) uses all rows for which *that*
+pair is complete; `"complete"` restricts to rows complete across every
+variable (listwise deletion). Here the `Wind`-`Temp` cells are fitted on
+all 153 rows, while a cell involving `Ozone` or `Solar.R` drops only the
+rows missing on one of its two variables: more data per cell, at the
+cost of cells fitted on slightly different samples. The `"n"` annotation
+prints the rows each cell used.
 
 ## Shape metrics explained
 
 Every fitted smooth is summarised by two continuous indices and two
-discrete counts. These drive the 24-category classifier and appear as
-columns in `janusplot(..., with_data = TRUE)$data` and as fields on each
-entry of `janusplot_data()$pairs`.
+discrete counts. These drive the 27-category classifier and appear as
+columns of `summary(fit)` and as fields of each entry of `fit$pairs`.
 
-Let `f(x)` be the fitted smooth on a dense grid of 100 equally-spaced
-points across the predictor range (200 when
-`display %in% c("d1", "d2")`; see *Limitations*), with `f'` and `f''`
-the numerical first and second derivatives. Let `w(x)` be the empirical
-density of the predictor on the same grid, normalised to `sum(w) = 1`.
+Let `f(x)` be the fitted smooth on a grid of `n_grid` equally spaced
+points across the predictor range (200 by default; 100 for a fit made
+with `derivatives = integer()`), with `f'` and `f''` the numerical first
+and second derivatives. Let `w(x)` be the empirical density of the
+predictor on the same grid, normalised to `sum(w) = 1`.
 
 - **`monotonicity_index`** (paper symbol `M`):
 
@@ -365,29 +578,38 @@ should.
 
 Together the pair `(n_turning_points, n_inflections)` drives the primary
 `shape_category` dispatch; `(monotonicity_index, convexity_index)`
-disambiguate within the monotone `(0, 0)` and single-extremum `(1, 0)`
-cells. The full taxonomy with 2-letter codes, archetypes, and thumbnail
-curves is available from
+disambiguate within the monotone `(0, 0)` cell. A curve with one turning
+point is split by the type of that extremum, read from the sign of `f'`
+on either side of it: a maximum gives `inverted_u`, `skewed_peak`,
+`broad_peak` or `rippled_peak` for 0, 1, 2 or 3+ inflections, and a
+minimum gives the reflected `u_shape`, `skewed_trough`, `broad_trough`
+or `rippled_trough`. Replacing `y` with `-y` therefore maps each
+single-extremum category onto its mirror, so the taxonomy is closed
+under reflection. The full taxonomy with 2-letter codes, archetypes, and
+thumbnail curves is available from
 [`janusplot_shape_hierarchy()`](https://max578.github.io/janusplot/reference/janusplot_shape_hierarchy.md)
-and is rendered as the standing legend below every
-[`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
-call.
+and is drawn as a legend below the matrix whenever the cells carry the
+shape code.
 
 Tune the thresholds applied to these indices via
 [`janusplot_shape_cutoffs()`](https://max578.github.io/janusplot/reference/janusplot_shape_cutoffs.md).
-See the
+The `shape_borderline` column gives the distance from each label to the
+nearest cutoff that would change it; small values mark labels a slightly
+different smooth would move. See the
 [shape-recognition-sensitivity](https://max578.github.io/janusplot/articles/shape-recognition-sensitivity.md)
 vignette for how faithfully the classifier recovers ground-truth shapes
 across sample-size and noise regimes.
 
 ## Derivative views: theoretical justification and applied use
 
-Each matrix renders one quantity. `display = "fit"` (default) shows the
+Each matrix shows one quantity. `display = "fit"` (default) shows the
 fitted smooth; `display = "d1"` shows \hat f'(x); `display = "d2"` shows
-\hat f''(x). A top-of-matrix title names the mode, so side-by-side calls
-compare unambiguously. Orders beyond two are not exposed – see *Noise
-amplification* below. Derivative CI rendering is **off by default**; opt
-in with `derivative_ci = "pointwise"` or `"simultaneous"`.
+\hat f''(x). A title above the matrix names the mode.
+[`janusplot_fit()`](https://max578.github.io/janusplot/reference/janusplot_fit.md)
+computes both derivatives at fit time (`derivatives = 1:2`) with a
+pointwise 95% band (`derivative_ci = "pointwise"`), so the three views
+below are drawn from one fit. Orders beyond two are not offered – see
+*Noise amplification* below.
 
 ``` r
 
@@ -399,7 +621,8 @@ df <- data.frame(
   y1 = xs + sin(3 * xs) + rnorm(n, sd = 0.15),
   y2 = 0.5 * xs^2       + rnorm(n, sd = 0.8)
 )
-janusplot(df, display = "fit", show_shape_legend = FALSE)
+fit_df <- janusplot_fit(df)
+plot(fit_df, display = "fit")
 ```
 
 ![Three-by-three fitted-smooth matrix for x, y1 (x plus a sine ripple)
@@ -411,7 +634,7 @@ sin(3x) and a convex y2 = 0.5x^2.
 
 ``` r
 
-janusplot(df, display = "d1", show_shape_legend = FALSE)
+plot(fit_df, display = "d1")
 ```
 
 ![First-derivative panels for x against y1 and y2, showing an
@@ -425,7 +648,7 @@ line f’(x) = x.
 
 ``` r
 
-janusplot(df, display = "d2", show_shape_legend = FALSE)
+plot(fit_df, display = "d2")
 ```
 
 ![Second-derivative panels for x against y1 and y2, showing an
@@ -436,15 +659,14 @@ Second-derivative view: y1’s curvature oscillates through zero
 repeatedly (the sine term), while y2’s curvature is flat and positive (a
 constant second derivative, as expected for a quadratic).
 
-Turn on simultaneous bands – a single call gets the Monte Carlo critical
-multiplier per Simpson (2018):
+Simultaneous bands use the Monte Carlo critical multiplier of Simpson
+(2018); they are chosen at fit time:
 
 ``` r
 
-janusplot(df, display = "d1",
-          derivative_ci = "simultaneous",
-          derivative_ci_nsim = 2000L,
-          show_shape_legend = FALSE)
+fit_sim <- janusplot_fit(df, derivative_ci = "simultaneous",
+                         derivative_ci_nsim = 2000L)
+plot(fit_sim, display = "d1")
 ```
 
 ![First-derivative panels with simultaneous confidence ribbons for x
@@ -478,15 +700,15 @@ their own interpretations:
   *local* signal behind that scalar summary.
 
 The asymmetric matrix layout sharpens this.
-[`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
-fits both \hat f\_{y\mid x}(x) and \hat f\_{x\mid y}(y), so derivative
-panels on the two triangles answer genuinely different questions: the
-upper triangle is “how steeply does y respond to a nudge in x at this
-operating point” (forward gain); the lower triangle is “how steeply must
-x change to induce a unit change in y” (inverse sensitivity). For an
-asymmetric process these do not transpose into each other, and the
-directional asymmetry is a diagnostic the symmetric correlation matrix
-cannot expose (Janzing & Schölkopf, 2010).
+[`janusplot_fit()`](https://max578.github.io/janusplot/reference/janusplot_fit.md)
+fits both \hat f\_{y\mid x}(x) and \hat f\_{x\mid y}(y), so the
+derivative panels of the two cells of a pair answer different questions:
+the cell in row y, column x is “how steeply does y respond to a nudge in
+x at this operating point” (forward gain); the cell in row x, column y
+is “how steeply must x change to induce a unit change in y” (inverse
+sensitivity). For an asymmetric process these do not transpose into each
+other, and the directional asymmetry is a diagnostic the symmetric
+correlation matrix cannot expose (Janzing & Schölkopf, 2010).
 
 ### Estimation – the LP matrix
 
@@ -522,16 +744,12 @@ V_p) for b = 1, \ldots, B and take the (1-\alpha) quantile of \max_i
 \|D^{(k)}\_i (\tilde{\boldsymbol\beta}\_b - \hat{\boldsymbol\beta})\| /
 \mathtt{se}\_i across the plotting grid as a critical multiplier
 c\_\alpha on the pointwise SE, so the simultaneous band is \hat
-f^{(k)}(x) \pm c\_\alpha\\\mathtt{se}(x). Opt in via
-`derivative_ci = "simultaneous"` on either
-[`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
-or
-[`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md);
-the default is `derivative_ci = "none"` so that no CI is drawn by
-default – derivative ribbons invite over-reading of local features and
-should be a deliberate choice, not a default. The implementation uses B
-= 1000 (see `derivative_ci_nsim`); Simpson (2018) uses 10\\000, which is
-affordable if you need tighter quantile estimation.
+f^{(k)}(x) \pm c\_\alpha\\\mathtt{se}(x). Choose it with
+`janusplot_fit(derivative_ci = "simultaneous")`; the default is the
+pointwise band, and `derivative_ci = "none"` stores no band. The
+implementation uses B = 1000 (see `derivative_ci_nsim`); Simpson (2018)
+uses 10\\000, which is affordable when a tighter quantile estimate is
+needed.
 
 ### Noise amplification and why we cap at k = 2
 
@@ -544,11 +762,10 @@ basis rank k (Wood, 2017, §5.3; Eilers & Marx, 1996) – this is the
 actual mechanism behind the k \ge 3 refusal below, not a general claim
 that third derivatives are unusable. Consequently \hat f^{(3)} is the
 derivative most exposed to noise amplification at ordinary sample sizes
-and moderate k, and so janusplot refuses k \ge 3 by design. If you have
-a domain-specific reason to need a higher-order derivative, specify a
+and moderate k, and so janusplot refuses k \ge 3 by design. For a
+domain-specific need of a higher-order derivative, specify a
 matching-order P-spline penalty explicitly (Eilers, Marx & Durbán, 2015)
-and extract it yourself from
-[`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md).
+and differentiate the models kept by `janusplot_fit(keep_fits = TRUE)`.
 
 ### Applied use: gain estimation and dose–response
 
@@ -624,8 +841,9 @@ derivative effects for continuous treatments. arXiv preprint
 
 ## Limitations
 
-- Pairwise view, not conditional – always complement with a proper
-  multivariate model.
+- Pairwise view: `adjust` puts the same covariates in every cell, but
+  each cell is still one smooth of one variable on another. Complement
+  it with a multivariate model.
 - EDF depends on basis dimension `k`; defaults are sensible but
   domain-specific tuning is encouraged.
 - The asymmetry index should not be interpreted causally without strong
@@ -633,24 +851,17 @@ derivative effects for continuous treatments. arXiv preprint
 - `monotonicity_index` and `convexity_index` are scale-invariant in `y`
   but sensitive to the predictor-density weighting – they describe the
   smooth on the observed support of `x`, not outside it.
-- `display` is scalar – a single
-  [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
-  call renders a single quantity (fit, d1, or d2). To compare fit
-  against derivative, issue two or three calls; each carries its own
-  matrix-level title and, when `with_data = TRUE`, its own
-  `display`-tagged summary table.
-- Derivative panels show **no confidence ribbon by default**
-  (`derivative_ci = "none"`). Opt in explicitly: `"pointwise"` for
-  marginally-valid pointwise 95% bands, `"simultaneous"` for
-  Simpson (2018) Monte Carlo bands valid for feature localisation.
-- Requesting `display %in% c("d1", "d2")` raises the default
-  prediction-grid resolution from 100 to 200 points, which slightly
-  shifts the numeric shape-metric values (`M`, `C`, turning and
-  inflection counts) reported alongside the fit. Shapes and asymmetry –
-  the primary reading of the matrix – are robust to this drift; `M`, `C`
-  and the counts are secondary diagnostics. The precomputed
-  `shape_sensitivity_demo` dataset was generated under `n_grid = 100`
-  and is preserved as-is for reproducibility.
+- A matrix shows one quantity (fit, d1 or d2). To compare the fit with
+  its derivatives, call
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html) on the same
+  fit once per `display`; nothing is refitted.
+- Derivative panels carry pointwise 95% bands by default, valid at each
+  point separately. For feature localisation over the whole range, fit
+  with `derivative_ci = "simultaneous"` (Simpson, 2018).
+- The shape metrics (`M`, `C`, turning and inflection counts) are
+  computed on the `n_grid` grid, 200 points by default. A fit made with
+  `derivatives = integer()` uses 100 points, which can shift these
+  values slightly and move a label that sits near a cutoff.
 
 ## Citation
 
@@ -660,7 +871,7 @@ citation("janusplot")
 #> To cite janusplot in publications use:
 #> 
 #>   Moldovan M (2026). _janusplot: Asymmetric Smoothed-Association
-#>   Matrices via GAM Fits_. R package version 0.2.0,
+#>   Matrices via GAM Fits_. R package version 1.0.0,
 #>   <https://github.com/max578/janusplot>.
 #> 
 #> A BibTeX entry for LaTeX users is
@@ -669,7 +880,7 @@ citation("janusplot")
 #>     title = {janusplot: Asymmetric Smoothed-Association Matrices via GAM Fits},
 #>     author = {Max Moldovan},
 #>     year = {2026},
-#>     note = {R package version 0.2.0},
+#>     note = {R package version 1.0.0},
 #>     url = {https://github.com/max578/janusplot},
 #>   }
 ```

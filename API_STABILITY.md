@@ -7,52 +7,91 @@ for individual symbols.
 
 ## Stability stages
 
-- **experimental** — may change without notice in any release; used for
-  all pre-v1.0.0 API.
+- **experimental** — may change in any release; every change is recorded
+  in `NEWS.md`.
 - **stable** — public API; breaking changes only at major-version bumps,
   with at least one minor version of overlap via
   [`lifecycle::deprecate_warn()`](https://lifecycle.r-lib.org/reference/deprecate_soft.html).
 - **superseded** — a better alternative exists; the symbol is kept
   working but is not extended.
-- **deprecated** — scheduled for removal; emits
-  [`lifecycle::deprecate_warn()`](https://lifecycle.r-lib.org/reference/deprecate_soft.html)
-  and will be removed after at least one minor version.
+- **deprecated** — scheduled for removal; emits a `lifecycle`
+  deprecation and is removed after at least one minor version.
 
-## Public surface — current state (v0.0.0.9000)
+## Public surface at 1.0.0
 
 | Symbol | Type | Stage | Since | Notes |
 |----|----|----|----|----|
-| [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md) | function | experimental | 0.0.0.9000 | Core entry point. Parameters `labels`, `label_srt`, `label_cex` added 2026-04-22. `fill_by` and `show_asymmetry` are deprecated aliases. |
-| [`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md) | function | experimental | 0.0.0.9000 | Companion returning raw fits + per-pair metrics. |
-| [`janusplot_shape_metrics()`](https://max578.github.io/janusplot/reference/janusplot_shape_metrics.md) | function | experimental | 0.0.0.9000 | Weighted monotonicity / convexity indices + turning / inflection counts. |
-| [`janusplot_shape_cutoffs()`](https://max578.github.io/janusplot/reference/janusplot_shape_cutoffs.md) | function | experimental | 0.0.0.9000 | Default classification thresholds; override via a named list. |
-| [`janusplot_shape_hierarchy()`](https://max578.github.io/janusplot/reference/janusplot_shape_hierarchy.md) | function | experimental | 0.0.0.9000 | 24-category taxonomy hierarchy table. |
-| [`janusplot_shape_sensitivity()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity.md) | function | experimental | 0.0.0.9000 | Factorial shape × n × σ × reps sweep. |
-| [`janusplot_shape_sensitivity_shapes()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_shapes.md) | function | experimental | 0.0.0.9000 | Built-in generator catalogue (14 shapes). |
-| [`janusplot_shape_sensitivity_summary()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_summary.md) | function | experimental | 0.0.0.9000 | Per-cell accuracy aggregation. |
-| [`janusplot_shape_sensitivity_plot()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_plot.md) | function | experimental | 0.0.0.9000 | Four diagnostic plot types. |
-| `shape_sensitivity_demo` | dataset | experimental | 0.0.0.9000 | Precomputed 2160-fit sweep. Regenerated deterministically via `data-raw/shape_sensitivity_demo.R`. |
+| [`janusplot_fit()`](https://max578.github.io/janusplot/reference/janusplot_fit.md) | function | stable | 1.0.0 | Fits every ordered pair once; returns a `janusplot_fit` object. |
+| [`print.janusplot_fit()`](https://max578.github.io/janusplot/reference/janusplot_fit.md) | S3 method | stable | 1.0.0 | Variables, pairs, settings, flags and the largest asymmetries. |
+| [`summary.janusplot_fit()`](https://max578.github.io/janusplot/reference/janusplot_fit.md) | S3 method | stable | 1.0.0 | Data frame with one row per directed cell. |
+| [`plot.janusplot_fit()`](https://max578.github.io/janusplot/reference/plot.janusplot_fit.md) | S3 method | stable | 1.0.0 | The matrix. |
+| [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md) | function | stable | 0.1.0 | One call, `plot(janusplot_fit(...))`. The 0.2.0 appearance arguments are accepted through `...` with a warning until 1.1.0. |
+| [`janusplot_pair()`](https://max578.github.io/janusplot/reference/janusplot_pair.md) | function | stable | 1.0.0 | The two directions of one or more pairs. |
+| [`janusplot_compare()`](https://max578.github.io/janusplot/reference/janusplot_compare.md) | function | stable | 1.0.0 | Two fits of the same variables matched cell by cell. |
+| [`print.janusplot_compare()`](https://max578.github.io/janusplot/reference/janusplot_compare.md), [`plot.janusplot_compare()`](https://max578.github.io/janusplot/reference/plot.janusplot_compare.md) | S3 methods | stable | 1.0.0 | Counts of changed cells; the matrix with both curves. |
+| [`janusplot_direction()`](https://max578.github.io/janusplot/reference/janusplot_direction.md) | function | experimental | 1.0.0 | HSIC residual-independence verdict on one pair of a fit. |
+| [`print.janusplot_direction()`](https://max578.github.io/janusplot/reference/janusplot_direction.md) | S3 method | experimental | 1.0.0 | Verdict, reason, p-values and rows used. |
+| [`janusplot_curves()`](https://max578.github.io/janusplot/reference/janusplot_curves.md) | function | experimental | 1.0.0 | The fitted curves or their derivatives as one long data frame. |
+| [`janusplot_reference()`](https://max578.github.io/janusplot/reference/janusplot_reference.md) | function | experimental | 1.0.0 | Bootstrap reference for the asymmetry index of chosen pairs. |
+| [`print.janusplot_reference()`](https://max578.github.io/janusplot/reference/janusplot_reference.md), [`plot.janusplot_reference()`](https://max578.github.io/janusplot/reference/janusplot_reference.md) | S3 methods | experimental | 1.0.0 | One reading per pair; the reference distributions. |
+| [`janusplot_style()`](https://max578.github.io/janusplot/reference/janusplot_style.md) | function | stable | 1.0.0 | Every appearance setting, validated. |
+| [`print.janusplot_style()`](https://max578.github.io/janusplot/reference/janusplot_style.md) | S3 method | stable | 1.0.0 | The settings that differ from the defaults. |
+| [`janusplot_shape_metrics()`](https://max578.github.io/janusplot/reference/janusplot_shape_metrics.md) | function | experimental | 0.1.0 | Shape indices, counts and label for any mgcv smooth. |
+| [`janusplot_shape_cutoffs()`](https://max578.github.io/janusplot/reference/janusplot_shape_cutoffs.md) | function | experimental | 0.1.0 | Classification thresholds. |
+| [`janusplot_shape_hierarchy()`](https://max578.github.io/janusplot/reference/janusplot_shape_hierarchy.md) | function | experimental | 0.1.0 | The 27-category taxonomy table. |
+| [`janusplot_shape_sensitivity()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity.md) | function | experimental | 0.1.0 | Factorial shape × n × σ × replicate sweep; gains `shapes =` and a classed return in 1.0.0. |
+| [`summary.janusplot_sensitivity()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity.md), [`plot.janusplot_sensitivity()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity.md) | S3 methods | experimental | 1.0.0 | Accuracy aggregation and the four diagnostic plots. |
+| `shape_sensitivity_demo` | dataset | experimental | 0.1.0 | Precomputed 2160-fit sweep, regenerated by `data-raw/shape_sensitivity_demo.R`. |
 
-## Deprecations in flight
+## What the stable promise covers
 
-| Symbol / argument | Since | Schedule |
+For the symbols marked stable, the promise covers their names, their
+argument names and what each argument means, and the documented columns
+of [`summary()`](https://rdrr.io/r/base/summary.html), including the 27
+shape label names. Three things sit outside it and may change in a minor
+release, with a `NEWS.md` entry:
+
+- **Default appearance**: colours, palettes, layout thresholds and the
+  compact tiers. Results do not depend on them.
+- **The internal structure of the fit object**: the fields of `$pairs`,
+  `$settings` and the other list components. Read results through
+  [`summary()`](https://rdrr.io/r/base/summary.html) and the methods,
+  whose output is covered.
+- **Message wording**: the text of errors, warnings and informs.
+
+[`janusplot_direction()`](https://max578.github.io/janusplot/reference/janusplot_direction.md)
+stays experimental because a conditional test under `adjust` is planned.
+The shape helpers and
+[`janusplot_shape_sensitivity()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity.md)
+stay experimental as study tools.
+
+## Deprecated in 1.0.0
+
+| Symbol / argument | Replacement | Removal |
 |----|----|----|
-| `janusplot(fill_by = ...)` | 0.0.0.9000 | Removal after v1.0.0 — at least one minor version of warnings. Use `colour_by =`. |
-| `janusplot(show_asymmetry = ...)` | 0.0.0.9000 | Removal after v1.0.0. Use `annotations = c("A", ...)`. |
+| [`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md) | [`janusplot_fit()`](https://max578.github.io/janusplot/reference/janusplot_fit.md) | 1.1.0 |
+| [`janusplot_direction_test()`](https://max578.github.io/janusplot/reference/janusplot_direction_test.md) | [`janusplot_direction()`](https://max578.github.io/janusplot/reference/janusplot_direction.md) | 1.1.0 |
+| [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md) appearance arguments (`show_data`, `palette`, `labels`, `label_cex` and the rest listed in [`?janusplot`](https://max578.github.io/janusplot/reference/janusplot.md)) | [`janusplot_style()`](https://max578.github.io/janusplot/reference/janusplot_style.md) | 1.1.0 |
+| `janusplot(with_data = TRUE)` | `summary(janusplot_fit(...))` | 1.1.0 |
+| `janusplot(save_as = )` and `save_width`, `save_height`, `save_dpi` | [`ggplot2::ggsave()`](https://ggplot2.tidyverse.org/reference/ggsave.html) | 1.1.0 |
+| `janusplot(fill_by = )`, `show_asymmetry`, `signif_glyph` | `colour_by`, `annotations` | 1.1.0 |
+| `colour_by = "edf"` | `colour_by = "nonlinearity"` | 1.1.0 |
+| [`janusplot_shape_cutoffs()`](https://max578.github.io/janusplot/reference/janusplot_shape_cutoffs.md) entries `mono_nonmono`, `mono_s`, `curv_strong` | none; the classifier never read them | 1.1.0 or later |
+
+## Removed in 1.0.0
+
+| Symbol | Replacement |
+|----|----|
+| `janusplot_shape_sensitivity_shapes()` | the default of `janusplot_shape_sensitivity(shapes = )` |
+| `janusplot_shape_sensitivity_summary()` | [`summary()`](https://rdrr.io/r/base/summary.html) on the result of [`janusplot_shape_sensitivity()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity.md) |
+| `janusplot_shape_sensitivity_plot()` | [`plot()`](https://rdrr.io/r/graphics/plot.default.html) on the result of [`janusplot_shape_sensitivity()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity.md) |
 
 ## Breaking-change policy
 
-- Column renames in output tables are breaking. The 2026-04-21 rename
-  `M` / `C` → `monotonicity_index` / `convexity_index` is documented in
-  `NEWS.md`. No further rename is planned before v1.0.0.
+- Column renames in output tables are breaking and are listed in
+  `NEWS.md`; 1.0.0 renamed `pvalue` to `association_p`.
 - Changes to default argument values are breaking for callers who rely
-  on defaults. The 2026-04-22 switch of `labels` from `"diagonal"` to
-  `"border"` is documented in `NEWS.md`.
-
-## Versioning
-
-- Development versions carry `0.0.0.9000` until the first CRAN release.
-- Upon CRAN acceptance, the version becomes `0.1.0`.
-- v1.0.0 is gated on (a) R Journal paper acceptance, (b) one minor
-  release beyond 0.1.0, and (c) all current `experimental` API promoted
-  to `stable`.
+  on defaults and are listed in `NEWS.md`; 1.0.0 changed the default
+  cell encoding and the cell orientation.
+- A deprecated symbol or argument warns for at least one minor release
+  before it is removed.

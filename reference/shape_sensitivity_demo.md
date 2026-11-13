@@ -5,7 +5,12 @@ Raw output from a small-footprint invocation of
 Shipped so users can explore the sensitivity API and regenerate every
 figure in the `shape-recognition-sensitivity` vignette without having to
 re-run the sweep themselves. Regenerated via
-`data-raw/shape_sensitivity_demo.R`.
+`data-raw/shape_sensitivity_demo.R`, which runs the design below through
+[`janusplot_shape_sensitivity()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity.md),
+so the object carries the `janusplot_sensitivity` class and
+[`summary()`](https://rdrr.io/r/base/summary.html) and
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html) apply to it
+directly.
 
 Design:
 
@@ -31,15 +36,16 @@ shape_sensitivity_demo
 
 ## Format
 
-A data frame with 2160 rows and 14 columns – see the "Value" section of
+A data frame of class `c("janusplot_sensitivity", "data.frame")` with
+2160 rows and 14 columns – see the "Value" section of
 [`janusplot_shape_sensitivity()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity.md)
 for the column schema.
 
 ## See also
 
-[`janusplot_shape_sensitivity()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity.md),
-[`janusplot_shape_sensitivity_plot()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_plot.md),
-[`janusplot_shape_sensitivity_summary()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity_summary.md).
+[`janusplot_shape_sensitivity()`](https://max578.github.io/janusplot/reference/janusplot_shape_sensitivity.md)
+and its [`summary()`](https://rdrr.io/r/base/summary.html) and
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html) methods.
 
 ## Examples
 
@@ -51,15 +57,14 @@ head(shape_sensitivity_demo)
 #> 2 concave_up 100  0.05 2028 concave_up    TRUE monotone_curved monotone_curved
 #> 3    u_shape 100  0.05 2029    u_shape    TRUE        unimodal        unimodal
 #> 4 inverted_u 100  0.05 2030 inverted_u    TRUE        unimodal        unimodal
-#> 5       wave 100  0.05 2031 broad_peak   FALSE            wave        unimodal
+#> 5       wave 100  0.05 2031       wave    TRUE            wave            wave
 #> 6    bimodal 100  0.05 2032    bimodal    TRUE      multimodal      multimodal
 #>   archetype_correct monotonicity_index convexity_index n_turn n_inflect error
-#> 1              TRUE         1.00000000       0.0000000      0         0  <NA>
-#> 2              TRUE         1.00000000      -0.8465475      0         0  <NA>
-#> 3              TRUE         0.11665809       1.0000000      1         0  <NA>
-#> 4              TRUE         0.15257336      -1.0000000      1         0  <NA>
-#> 5             FALSE        -0.01095819      -0.3279191      1         2  <NA>
-#> 6              TRUE        -0.07937189      -0.2582627      3         2  <NA>
-janusplot_shape_sensitivity_plot(shape_sensitivity_demo,
-                                 "recovery_curves")
+#> 1              TRUE         1.00000000      0.00000000      0         0  <NA>
+#> 2              TRUE         1.00000000     -0.84654748      0         0  <NA>
+#> 3              TRUE         0.11665809      1.00000000      1         0  <NA>
+#> 4              TRUE         0.15257336     -1.00000000      1         0  <NA>
+#> 5              TRUE        -0.10660270     -0.01746004      2         1  <NA>
+#> 6              TRUE        -0.07937189     -0.25826272      3         2  <NA>
+plot(shape_sensitivity_demo, "recovery_curves")
 ```

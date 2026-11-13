@@ -34,14 +34,6 @@ A named list with numeric thresholds:
 
   `|M|` threshold for a curved-but-monotone smooth (default `0.5`).
 
-- `mono_nonmono`:
-
-  `|M|` below this is considered non-monotone (default `0.3`).
-
-- `mono_s`:
-
-  `|M|` threshold for labelling an S-shape (default `0.5`).
-
 - `curv_low`:
 
   `|C|` below this is considered near-linear curvature (default `0.2`).
@@ -50,13 +42,15 @@ A named list with numeric thresholds:
 
   `|C|` threshold for a clearly curved monotone (default `0.5`).
 
-- `curv_strong`:
-
-  `|C|` threshold for a U-shape / inverted-U shape (default `0.5`).
-
 - `flat`:
 
   `range(fit) / sd(y)` below this is called `flat` (default `0.05`).
+
+The cutoffs `mono_nonmono`, `mono_s` and `curv_strong` are deprecated.
+The classifier never read them: non-monotone and S-shaped curves are
+identified from the turning-point and inflection counts, and peak
+against trough from the type of the extremum. Passing them raises a
+deprecation warning and they are dropped from the returned list.
 
 ## See also
 
@@ -74,19 +68,10 @@ janusplot_shape_cutoffs()
 #> $mono_mod
 #> [1] 0.5
 #> 
-#> $mono_nonmono
-#> [1] 0.3
-#> 
-#> $mono_s
-#> [1] 0.5
-#> 
 #> $curv_low
 #> [1] 0.2
 #> 
 #> $curv_mod
-#> [1] 0.5
-#> 
-#> $curv_strong
 #> [1] 0.5
 #> 
 #> $flat
@@ -99,20 +84,11 @@ janusplot_shape_cutoffs(curv_mod = 0.6, flat = 0.02)
 #> $mono_mod
 #> [1] 0.5
 #> 
-#> $mono_nonmono
-#> [1] 0.3
-#> 
-#> $mono_s
-#> [1] 0.5
-#> 
 #> $curv_low
 #> [1] 0.2
 #> 
 #> $curv_mod
 #> [1] 0.6
-#> 
-#> $curv_strong
-#> [1] 0.5
 #> 
 #> $flat
 #> [1] 0.02

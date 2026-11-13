@@ -1,289 +1,181 @@
-# Raw GAM fits and per-cell metrics for a smoothed-association matrix
+# Deprecated: raw GAM fits and per-cell metrics
 
-**\[experimental\]**
+**\[deprecated\]**
 
-Companion to
-[`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
-returning the raw list of GAM fits plus per-cell metrics (EDF, F-test
-p-value, deviance explained, asymmetry index, pairwise correlations,
-shape descriptors) without constructing the ggplot. Useful for custom
-rendering or downstream analysis.
+`janusplot_data()` was renamed
+[`janusplot_fit()`](https://max578.github.io/janusplot/reference/janusplot_fit.md)
+in janusplot 1.0.0 and forwards every argument to it. The result is the
+`janusplot_fit` object described there: `pvalue_yx` and `pvalue_xy` are
+now `association_p_yx` and `association_p_xy`, and first and second
+derivatives are computed by default.
 
 ## Usage
 
 ``` r
-janusplot_data(
-  data,
-  vars = NULL,
-  adjust = NULL,
-  method = NULL,
-  k = -1L,
-  bs = "tp",
-  na_action = c("pairwise", "complete"),
-  parallel = FALSE,
-  keep_fits = FALSE,
-  derivatives = integer(),
-  derivative_ci = c("pointwise", "none", "simultaneous"),
-  derivative_ci_nsim = 1000L,
-  n_grid = NULL,
-  shape_cutoffs = janusplot_shape_cutoffs(),
-  k_check_thresholds = NULL,
-  auto_refit_k = FALSE,
-  k_max_iter = 2L,
-  engine = c("bam", "gam"),
-  discrete = FALSE,
-  nthreads = 1L,
-  ...
-)
+janusplot_data(...)
 ```
 
 ## Arguments
 
-- data:
-
-  A data frame with numeric columns to include.
-
-- vars:
-
-  Character vector of column names to use. `NULL` (default) uses all
-  numeric columns in `data`. Non-numeric columns trigger an error
-  listing offenders.
-
-- adjust:
-
-  A one-sided formula RHS giving additional covariates and/or random
-  effects to include in every pairwise GAM. For example,
-  `adjust = ~ s(age) + s(site, bs = "re")` fits
-  `gam(y ~ s(x) + s(age) + s(site, bs = "re"))` for each pair. Default
-  `NULL` fits unadjusted pairwise smooths.
-
-- method:
-
-  Smoothing-parameter estimation method passed to the chosen fitting
-  backend. Default `NULL` resolves per-engine: `"fREML"` for
-  `engine = "bam"` (mgcv's recommended at scale), `"REML"` for
-  `engine = "gam"` (the v0.1.0 behaviour). Pass any valid mgcv method
-  string to override.
-
-- k:
-
-  Integer, or named list mapping variable names to integers. Basis
-  dimension for `s()`. Default `-1L` (mgcv's automatic choice).
-
-- bs:
-
-  Basis type for `s()`. Default `"tp"` (thin plate).
-
-- na_action:
-
-  One of `"pairwise"` (default; per-cell complete observations) or
-  `"complete"` (listwise; all cells use the same rows).
-
-- parallel:
-
-  Logical. If `TRUE`, use
-  [`future.apply::future_mapply()`](https://future.apply.futureverse.org/reference/future_mapply.html)
-  to fit pairs in parallel. Requires the `future.apply` package and a
-  user-configured
-  [`future::plan()`](https://future.futureverse.org/reference/plan.html).
-  Default `FALSE`.
-
-- keep_fits:
-
-  Logical. If `TRUE`, retain full
-  [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html) model objects
-  in the return (large memory footprint for `k` above ~15). Default
-  `FALSE` – retains summary metrics and prediction grids only.
-
-- derivatives:
-
-  Integer vector of derivative orders to compute on every pair (subset
-  of `1:2`). Default [`integer()`](https://rdrr.io/r/base/integer.html)
-  – no derivatives. Unlike
-  [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md),
-  the data companion can return multiple orders from a single call for
-  programmatic analysis; pass `c(1L, 2L)` to surface both.
-
-- derivative_ci:
-
-  One of `"none"` (default), `"pointwise"`, or `"simultaneous"`.
-  Controls whether – and how – a 95% confidence ribbon is drawn
-  underneath the derivative curve when `display %in% c("d1", "d2")`.
-  Ignored when `display = "fit"`.
-
-  - `"none"` – no ribbon. The curve and the zero reference line are all
-    you see. Default, because pointwise ribbons overshoot nominal
-    coverage as a joint region and can invite over-reading of local
-    features.
-
-  - `"pointwise"` – 95% pointwise ribbon from \\\sqrt{\mathrm{diag}(D
-    V_p D^\top)}\\ (Wood 2017 section 7.2.4). Valid marginally; not a
-    simultaneous statement.
-
-  - `"simultaneous"` – 95% simultaneous band via the Monte Carlo
-    construction of Ruppert, Wand & Carroll (2003) popularised for GAMs
-    by Simpson (2018, *Frontiers Ecol. Evol.* 6:149): draw \\B\\ samples
-    \\\tilde{\boldsymbol\beta} \sim \mathcal{N}(\hat{\boldsymbol\beta},
-    V_p)\\, compute \\\max_x \|D_i(\tilde{\boldsymbol\beta} -
-    \hat{\boldsymbol\beta})\| / \mathrm{se}\_i\\, and use the
-    \\(1-\alpha)\\ quantile as a critical multiplier on the pointwise
-    SE. Valid for feature localisation ("where is \\\hat f'(x)\\
-    significantly non-zero").
-
-- derivative_ci_nsim:
-
-  Integer. Number of Monte Carlo samples used when
-  `derivative_ci = "simultaneous"`. Default `1000L` – a compromise
-  between coverage accuracy (Simpson 2018 uses 10000) and CPU budget
-  across every pair in a medium-sized matrix. Ignored for any other
-  `derivative_ci`.
-
-- n_grid:
-
-  Integer or `NULL`. Number of equally-spaced points used to evaluate
-  each fitted smooth (and its derivatives). Default `NULL` resolves to
-  `100` when `display = "fit"` and `200` otherwise, because
-  finite-difference second derivatives visibly degrade below \\\sim
-  150\\ points on moderate-`k` smooths. Supplying `n_grid` directly
-  overrides both defaults. Larger grids shift the numerical shape-metric
-  values (\\M\\, \\C\\, turning / inflection counts) slightly because
-  they are computed on this same grid. Shapes and asymmetry are the
-  primary reading; `M`, `C` and the counts are secondary diagnostics and
-  the grid-induced drift is tolerable.
-
-- shape_cutoffs:
-
-  Named list of classification thresholds used to map the continuous
-  shape indices (`monotonicity_index`, `convexity_index`) into discrete
-  `shape_category` labels. Defaults from
-  [`janusplot_shape_cutoffs()`](https://max578.github.io/janusplot/reference/janusplot_shape_cutoffs.md).
-
-- k_check_thresholds:
-
-  Named list giving the three flag-criterion thresholds used by
-  [`mgcv::k.check()`](https://rdrr.io/pkg/mgcv/man/k.check.html)-style
-  basis-dimension diagnostics. Required entries: `edf_ratio` (Wood's
-  \\\widehat{\mathrm{edf}}/k'\\ ratio above which the smooth is too
-  close to its basis cap), `k_index` (residual-difference variance ratio
-  below which the basis appears underspecified), and `p` (the simulation
-  p-value below which the basis-deficiency signal is significant).
-  Defaults – `edf_ratio = 0.9`, `k_index = 1.0`, `p = 0.05` – track
-  [`mgcv::gam.check()`](https://rdrr.io/pkg/mgcv/man/gam.check.html) and
-  Wood (2017) section 5.9.
-
-- auto_refit_k:
-
-  Logical. If `TRUE`, every cell whose Wood trifecta flags an underfit
-  is refit with a doubling-k loop until either the flag clears, the
-  per-cell unique-x cap is reached, or `k_max_iter` iterations have
-  passed. Default `FALSE` – the diagnostic (`k_check_status`, `k_flag`,
-  `k_prime`, `k_index`, `k_p`) is always computed and surfaced
-  regardless of this flag, but the refit is opt-in because it can
-  multiply wall time on pathological data.
-
-- k_max_iter:
-
-  Integer. Maximum number of doublings allowed per cell when
-  `auto_refit_k = TRUE`. Default `2L` (so a cell that starts at the
-  `mgcv` default `k = 10` will visit at most `k = 20` and then `k = 40`,
-  capped by the per-cell unique-x limit). Ignored when
-  `auto_refit_k = FALSE`.
-
-- engine:
-
-  One of `"bam"` (default, **new in v0.1.1**) or `"gam"`. Selects mgcv's
-  fitting backend:
-
-  - `"bam"` – [`mgcv::bam()`](https://rdrr.io/pkg/mgcv/man/bam.html).
-    Block-Lanczos solve + fREML estimation + lower memory. ~3-10x
-    speedup at janusplot's scale (k = 15-25 vars, 600+ pairwise fits per
-    call). The **default**, and the one non-byte-identical change in
-    v0.1.1: fREML differs from REML by ~1-3% in EDF on identical data,
-    so the asymmetry index may shift by similar amounts vs v0.1.0
-    output. Recoverable verbatim via `engine = "gam"`.
-
-  - `"gam"` – [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html).
-    The v0.1.0 backend. Use for backward-compat reproduction, very small
-    n (\< 200) where bam's setup overhead exceeds its solve gain, or
-    methodologically sensitive contexts that require REML rather than
-    fREML.
-
-- discrete:
-
-  Logical. `bam`-only opt-in to mgcv's covariate-discretisation
-  optimisation. Further ~2-5x speedup at the cost of small (sub-pixel at
-  typical janusplot resolution) prediction-shift. Default `FALSE`.
-  Ignored when `engine = "gam"`.
-
-- nthreads:
-
-  Integer. `bam`-only intra-fit threading. Default `1L` to avoid
-  oversubscription when combined with `parallel = TRUE` (`future.apply`
-  fans out pair fits across cores; nthreads \> 1 within each pair would
-  double-book CPUs). Raise above 1 only when `parallel = FALSE`. Ignored
-  when `engine = "gam"`.
-
 - ...:
 
-  Additional arguments passed to
-  [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html).
+  Arguments passed on to
+  [`janusplot_fit`](https://max578.github.io/janusplot/reference/janusplot_fit.md)
+
+  `data`
+
+  :   A data frame. Column names need not be syntactic; fits run under
+      internal aliases and every result reports the original names.
+
+  `vars`
+
+  :   Character vector of numeric column names to fit, in matrix order.
+      `NULL` (the default) takes every numeric column of `data`.
+      Identical or exactly collinear columns are not fitted against each
+      other; their cells are listed in `flags$failed`.
+
+  `adjust`
+
+  :   One-sided formula of covariates and random effects added to every
+      pairwise model, for example `~ s(age) + s(site, bs = "re")`.
+      `NULL` (the default) fits unadjusted smooths. Character and
+      logical `adjust` columns are converted to factor before fitting.
+      Random-effect smooths are excluded from prediction, so the curve
+      and its band are population-level. With the identity link (the
+      Gaussian default) the curve is the smooth averaged over the
+      adjustment covariates of the data, and the plots draw each point
+      as a partial residual: the observation with its own adjustment
+      replaced by that average, so points and curve share one level
+      (`style$adjusted_points`). With another link, numeric covariates
+      are held at their mean and fixed factors at their most frequent
+      level, and points stay raw.
+
+  `k`
+
+  :   Basis dimension for `s()`: a single integer, or a named list of
+      integers keyed by variable name. `-1L` (the default) leaves the
+      choice to mgcv. Each cell's basis is capped at the number of
+      distinct predictor values in its rows, and an `auto_refit_k` refit
+      stops one below that number; capped cells are listed in
+      `flags$k_capped` and recorded as `k_requested`, `k_used` and
+      `k_capped`.
+
+  `bs`
+
+  :   Basis type for `s()`; `"tp"` (thin plate) by default.
+
+  `engine`
+
+  :   `"bam"` (the default) fits with
+      [`mgcv::bam()`](https://rdrr.io/pkg/mgcv/man/bam.html), `"gam"`
+      with [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html). The
+      two differ in their default `method` and by about one to three
+      percent in EDF on the same data.
+
+  `method`
+
+  :   Smoothing-parameter estimation method passed to mgcv. `NULL` (the
+      default) resolves to `"fREML"` for `engine = "bam"` and `"REML"`
+      for `engine = "gam"`.
+
+  `na_action`
+
+  :   `"pairwise"` (the default) fits each cell on the rows complete for
+      its own variables and the `adjust` columns; `"complete"` first
+      drops every row with a missing value in any fitted or adjusting
+      column. Infinite values count as missing and are reported in a
+      warning. A pair sharing fewer than 5 complete rows is not fitted
+      and is listed in `flags$sparse`; an error is raised only when no
+      pair reaches 5 rows.
+
+  `n_grid`
+
+  :   Number of equally spaced points at which each smooth and its
+      derivatives are evaluated, at least 10. `NULL` (the default)
+      resolves to `200L` when `derivatives` is non-empty and `100L`
+      otherwise.
+
+  `derivatives`
+
+  :   Integer vector of derivative orders to compute for every cell, a
+      subset of `1:2`. The default `1:2` computes both;
+      [`integer()`](https://rdrr.io/r/base/integer.html) computes none.
+
+  `derivative_ci`
+
+  :   The band stored with each derivative curve: `"pointwise"` (the
+      default), `"none"` or `"simultaneous"`. Simultaneous bands use the
+      Monte Carlo critical multiplier of Ruppert, Wand and
+      Carroll (2003) as applied to GAMs by Simpson (2018).
+
+  `derivative_ci_nsim`
+
+  :   Number of Monte Carlo draws for `derivative_ci = "simultaneous"`;
+      `1000L` by default and at least 100.
+
+  `p_adjust`
+
+  :   Multiplicity adjustment of the smooth F-test p-values across the
+      `k(k - 1)` directed cells: `"none"` (the default), `"BH"` or
+      `"holm"`, applied once with
+      [`stats::p.adjust()`](https://rdrr.io/r/stats/p.adjust.html). Raw
+      and adjusted values are both kept.
+
+  `shape_cutoffs`
+
+  :   Named list of classification thresholds, from
+      [`janusplot_shape_cutoffs()`](https://max578.github.io/janusplot/reference/janusplot_shape_cutoffs.md),
+      mapping the shape indices to a `shape_category` label.
+
+  `k_check_thresholds`
+
+  :   Named list with entries `edf_ratio`, `k_index` and `p` for the
+      basis-dimension diagnostic that follows
+      [`mgcv::k.check()`](https://rdrr.io/pkg/mgcv/man/k.check.html).
+      `NULL` (the default) uses `edf_ratio = 0.9`, `k_index = 1` and
+      `p = 0.05`.
+
+  `auto_refit_k`
+
+  :   Logical. When `TRUE`, a cell flagged by the k-check is refitted
+      with a doubled basis until the flag clears, the distinct-value cap
+      is reached or `k_max_iter` doublings have run. The diagnostic is
+      computed either way; the default is `FALSE`.
+
+  `k_max_iter`
+
+  :   Maximum number of doublings per cell when `auto_refit_k = TRUE`;
+      `2L` by default.
+
+  `discrete`
+
+  :   Logical. Passes mgcv's covariate discretisation to
+      [`mgcv::bam()`](https://rdrr.io/pkg/mgcv/man/bam.html); `FALSE` by
+      default and ignored for `engine = "gam"`.
+
+  `nthreads`
+
+  :   Integer. Threads used inside each
+      [`mgcv::bam()`](https://rdrr.io/pkg/mgcv/man/bam.html) fit; `1L`
+      by default, which avoids oversubscription under `parallel = TRUE`.
+      Ignored for `engine = "gam"`.
+
+  `parallel`
+
+  :   Logical. When `TRUE`, pairs are fitted with
+      [`future.apply::future_mapply()`](https://future.apply.futureverse.org/reference/future_mapply.html)
+      under the user's
+      [`future::plan()`](https://future.futureverse.org/reference/plan.html);
+      `FALSE` by default.
+
+  `keep_fits`
+
+  :   Logical. When `TRUE`, the mgcv model objects are kept in `$fits`
+      and as `fit_yx` / `fit_xy` of every pair; `FALSE` (the default)
+      keeps metrics and prediction grids only.
 
 ## Value
 
-A list with components:
-
-- `vars`:
-
-  Character vector of variables used, in plotted order.
-
-- `pairs`:
-
-  List of per-pair results. Each element has `i`, `j`, `var_i`, `var_j`,
-  `fit_yx`, `fit_xy` (NULL if `keep_fits = FALSE`), `pred_yx`, `pred_xy`
-  (data frames with `x`, `fit`, `se`, `lo`, `hi`), `edf_yx`, `edf_xy`,
-  `pvalue_yx`, `pvalue_xy`, `dev_exp_yx`, `dev_exp_xy`, `n_used`,
-  `asymmetry_index`, plus Pearson / Spearman / Kendall correlations
-  (`cor_pearson`, `cor_spearman`, `cor_kendall`), the maximum tie ratio
-  across `x` and `y` (`tie_ratio`), and per-direction shape descriptors
-  (`monotonicity_index_yx`, `convexity_index_yx`,
-  `monotonicity_index_xy`, `convexity_index_xy`, `n_turning_yx`,
-  `n_inflect_yx`, `n_turning_xy`, `n_inflect_xy`, `shape_yx`,
-  `shape_xy`). When `derivatives` is non-empty, each pair additionally
-  carries `deriv_yx` and `deriv_xy`, each a named list keyed by order
-  (`"1"`, `"2"`) whose entries are data frames with columns `x`, `fit`,
-  `se`, `lo`, `hi`, `ci_type` matching the schema of `pred_yx` /
-  `pred_xy`. The `ci_type` column records whether the `lo` / `hi`
-  columns are `"pointwise"` (default), `"simultaneous"`
-  (Ruppert–Wand–Carroll / Simpson 2018 critical-multiplier bands), or
-  `"none"`. When `derivative_ci = "simultaneous"`, each derivative frame
-  also carries a `"crit_multiplier"` attribute giving the MC-derived
-  critical multiplier used. See
-  [`janusplot_shape_metrics()`](https://max578.github.io/janusplot/reference/janusplot_shape_metrics.md)
-  for the definition of the monotonicity and convexity indices.
-
-- `call`:
-
-  Match call.
-
-## See also
-
-[`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
-for the ggplot front-end,
-[`janusplot_shape_metrics()`](https://max578.github.io/janusplot/reference/janusplot_shape_metrics.md)
-for the shape-metric primitives.
-
-Other smooth-associations:
-[`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
-
-## Examples
-
-``` r
-# Per-pair fits + metrics on a small mtcars slice
-out <- janusplot_data(mtcars[, c("mpg", "hp", "wt")])
-out$pairs[[1L]]$asymmetry_index
-#> [1] 0.006028205
-out$pairs[[1L]]$cor_spearman
-#> [1] -0.8946646
-out$pairs[[1L]]$shape_yx
-#> [1] "s_shape"
-```
+A `janusplot_fit` object; see
+[`janusplot_fit()`](https://max578.github.io/janusplot/reference/janusplot_fit.md).
+Its `call` component records the `janusplot_data()` call as made.

@@ -6,18 +6,22 @@ shape and direction survive where a Pearson correlation matrix collapses
 both away.
 
 Asymmetric, GAM-based smoothed-association matrices for continuous
-variables. Each off-diagonal cell shows a directional
-`mgcv::gam(y ~ s(x))` fit, so the upper and lower triangles tell
-different stories whenever the relationship is genuinely asymmetric —
-precisely where a scalar Pearson correlation loses information.
+variables. Each off-diagonal cell `[r, c]` shows the directional
+[`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html) fit of the row
+variable on the column variable, so the two cells of a pair tell
+different stories whenever the relationship is asymmetric, which is
+where a scalar Pearson correlation loses information.
 
 Two novelties, paired with the asymmetry story:
 
 1.  **Asymmetry index**
     `A = |EDF_yx − EDF_xy| / (EDF_yx + EDF_xy) ∈ [0, 1]` — a
-    single-number summary of the directional disparity per pair.
-2.  **24-category shape taxonomy** — each fitted smooth is classified
-    into one of 24 named shapes (`linear_up`, `skewed_peak`, `bimodal`,
+    single-number summary of the directional disparity per pair. It
+    varies a good deal from sample to sample, so
+    [`janusplot_reference()`](https://max578.github.io/janusplot/reference/janusplot_reference.md)
+    gives the size it reaches by chance for a pair.
+2.  **27-category shape taxonomy** — each fitted smooth is classified
+    into one of 27 named shapes (`linear_up`, `skewed_peak`, `bimodal`,
     `bi_wave`, `rippled_monotone`, …) via a `(T, I)` dispatch on
     turning-point and inflection counts, with monotonicity/convexity
     indices for disambiguation. The taxonomy rolls up through three
@@ -49,52 +53,90 @@ directions differ and what shape each curve takes.
 # released version from CRAN
 install.packages("janusplot")
 
-# development version from GitHub
-pak::pak("max578/janusplot")
+# development version, with the vignettes built, from r-universe
+install.packages("janusplot",
+                 repos = c("https://max578.r-universe.dev",
+                           "https://cloud.r-project.org"))
 ```
 
-Installing from GitHub does not build the vignettes. To read them
-locally from a GitHub install, use
-`remotes::install_github("max578/janusplot", build_vignettes = TRUE, dependencies = TRUE)`.
-The CRAN release ships them built.
+[`janusplot_direction()`](https://max578.github.io/janusplot/reference/janusplot_direction.md)
+needs the suggested package kernR, which is not on CRAN:
+`install.packages("kernR", repos = "https://max578.r-universe.dev")`.
 
 ## Quick start
+
+Fit once, then draw. The examples use the Palmer penguins data from the
+suggested package palmerpenguins (`install.packages("palmerpenguins")`).
+Any data frame with numeric columns works the same way, for example
+`janusplot_fit(mtcars[, c("mpg", "hp", "wt", "qsec")])`.
 
 ``` r
 
 library(janusplot)
 
-# Palmer penguins — four continuous traits
-d <- na.omit(palmerpenguins::penguins[,
-       c("bill_length_mm", "bill_depth_mm",
-         "flipper_length_mm", "body_mass_g")])
-janusplot(d)
+vars <- c("bill_length_mm", "bill_depth_mm", "flipper_length_mm",
+          "body_mass_g")
+fit <- janusplot_fit(palmerpenguins::penguins, vars)
+fit
+#> janusplot fit: 4 variables (bill_length_mm, bill_depth_mm, flipper_length_mm, body_mass_g)
+#> 6 pairs, 12 directed cells
+#> engine = bam, method = fREML, adjust = none
+#> no flags
+#> Largest asymmetries:
+#>   bill_length_mm <-> body_mass_g  A = 0.55  body_mass_g ~ bill_length_mm: EDF 3.4, p < 0.001, rippled_monotone | bill_length_mm ~ body_mass_g: EDF 1.0, p < 0.001, linear_up
+#>   bill_length_mm <-> bill_depth_mm  A = 0.10  bill_depth_mm ~ bill_length_mm: EDF 6.8, p < 0.001, bimodal | bill_length_mm ~ bill_depth_mm: EDF 5.6, p < 0.001, bimodal
+#>   flipper_length_mm <-> body_mass_g  A = 0.09  body_mass_g ~ flipper_length_mm: EDF 3.8, p < 0.001, s_shape | flipper_length_mm ~ body_mass_g: EDF 4.6, p < 0.001, s_shape
+#>   bill_depth_mm <-> body_mass_g  A = 0.08  body_mass_g ~ bill_depth_mm: EDF 7.4, p < 0.001, warped_wave | bill_depth_mm ~ body_mass_g: EDF 6.3, p < 0.001, warped_wave
+#>   bill_depth_mm <-> flipper_length_mm  A = 0.02  flipper_length_mm ~ bill_depth_mm: EDF 7.1, p < 0.001, warped_wave | bill_depth_mm ~ flipper_length_mm: EDF 7.4, p < 0.001, warped_wave
+#> Use summary() for the per-cell table and plot() for the matrix.
+plot(fit)
 ```
 
-Default encoding:
+![Four-by-four asymmetric association matrix for the Palmer penguins
+bill, flipper and body-mass traits, with coloured cell borders and blue
+to orange cell backgrounds.](reference/figures/README-quickstart-1.png)
 
-- **Cell colour** — Pearson correlation on a diverging `RdBu` palette
-  symmetric around zero (override via `colour_by = "spearman"` /
-  `"kendall"` / `"edf"` / `"deviance_gap"` / `"none"`).
-- **Bottom-left** — `A = ...` (asymmetry index) stacked over
-  `EDF = ...`.
-- **Top-right** — significance glyph for the smooth’s F-test
-  (`· * ** ***`).
-- **Below the matrix** — a standing reference legend illustrating all 24
-  shape categories as canonical thumbnail splines, labelled
-  `<name> (<code>)`.
+Each cell `[r, c]` shows `row ~ s(column)`, with the key in the top-left
+corner. By default:
 
-Opt into a per-cell shape marker via `annotations`:
+- **Border colour**: the non-linearity of the smooth, EDF minus 1
+  (`colour_by =` also takes `"asymmetry"`, `"pearson"`, `"spearman"`,
+  `"kendall"`, `"deviance_gap"` or `"none"`).
+- **Background**: the pair’s signed Pearson correlation, white at 0
+  (`background_by =` takes `"spearman"`, `"kendall"` or `"none"`). A fit
+  with `adjust` draws no background, since its curves are adjusted and
+  the correlation is marginal.
+- **Strip above each cell**: the significance glyph of the smooth’s
+  F-test and, in the upper triangle, the asymmetry index `A` of the
+  pair, written once because it belongs to the pair. From thirteen
+  variables the strip carries the glyph alone, and `A` is read from
+  [`summary()`](https://rdrr.io/r/base/summary.html).
+- **Appearance**: every setting lives in
+  [`janusplot_style()`](https://max578.github.io/janusplot/reference/janusplot_style.md),
+  passed as `style =`.
+
+Ask for the two-letter shape code and the legend of the 27 shape
+categories comes with it:
 
 ``` r
 
-# Two-letter shape code, top-left (ASCII — safe on any font / PDF):
-janusplot(d, annotations = c("edf", "A", "code"))
-
-# Unicode shape glyph, bottom-right:
-janusplot(d, annotations = c("edf", "A", "shape"),
-          glyph_style = "unicode")
+plot(fit, annotations = c("A", "code"))
 ```
+
+The two directions of one pair, side by side:
+
+``` r
+
+janusplot_pair(fit, x = "flipper_length_mm", y = "body_mass_g")
+```
+
+![Two panels side by side: body mass as a smooth function of flipper
+length, and flipper length as a smooth function of body mass, each with
+raw points and a confidence band.](reference/figures/README-pair-1.png)
+
+[`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md)
+fits and draws the matrix in one call:
+`janusplot(palmerpenguins::penguins, vars)`.
 
 ## Shape taxonomy — what gets classified
 
@@ -102,7 +144,7 @@ janusplot(d, annotations = c("edf", "A", "shape"),
 |----|----|----|
 | `monotone_linear` | `linear_up` `linear_down` | `y = x` |
 | `monotone_curved` | `convex_up` `concave_up` `convex_down` `concave_down` `s_shape` `rippled_monotone` | `tanh`, `sqrt`, `exp(−x)` |
-| `unimodal` | `u_shape` `inverted_u` `skewed_peak` `broad_peak` `rippled_peak` | `(x−.5)²`, `x·exp(−3x)`, plateau |
+| `unimodal` | `inverted_u` `skewed_peak` `broad_peak` `rippled_peak` and their reflections `u_shape` `skewed_trough` `broad_trough` `rippled_trough` | `(x−.5)²`, `sin(πx²)`, plateau |
 | `wave` | `wave` `warped_wave` `rippled_wave` `complex_wave` | `sin(2πx)` family |
 | `multimodal` | `bimodal` `bimodal_ripple` `bi_wave` `bi_wave_ripple` | two-peak mix, `sin(4πx)` |
 | `chaotic` | `complex` | ≥ 5 extrema / inflections |
@@ -119,44 +161,74 @@ factorial of sample sizes × noise levels × ground-truth shapes:
 
 ``` r
 
-# Precomputed 2160-fit demo sweep — zero wait
-data("shape_sensitivity_demo")
-janusplot_shape_sensitivity_plot(shape_sensitivity_demo, "recovery_curves")
-janusplot_shape_sensitivity_plot(shape_sensitivity_demo, "confusion_archetype")
-
-# Run your own — full grid in parallel
-future::plan(future::multisession, workers = 4L)
-res <- janusplot_shape_sensitivity(parallel = TRUE)
+# Precomputed 2160-fit demo sweep
+plot(shape_sensitivity_demo, "recovery_curves")
 ```
 
-Four diagnostic plots (`"confusion_fine"` / `"confusion_archetype"` /
-`"accuracy_grid"` / `"recovery_curves"`) + summary aggregations at fine
-and archetype levels. Design, pre-registered hypotheses, and full
+![Archetype-recovery accuracy against noise level in the shipped demo
+sweep, one panel per ground-truth shape and one line per sample
+size.](reference/figures/README-sensitivity-1.png)
+
+``` r
+
+plot(shape_sensitivity_demo, "confusion_archetype")
+summary(shape_sensitivity_demo, level = "archetype")
+
+# Run your own: the full grid in parallel
+future::plan(future::multisession, workers = 4L)
+res <- janusplot_shape_sensitivity(parallel = TRUE)
+plot(res, "accuracy_grid")
+```
+
+Four diagnostic plots (`"confusion_fine"`, `"confusion_archetype"`,
+`"accuracy_grid"`, `"recovery_curves"`) and
+[`summary()`](https://rdrr.io/r/base/summary.html) at the fine and
+archetype levels. Design, pre-registered hypotheses, and full
 walk-through in the
 [`shape-recognition-sensitivity`](https://max578.github.io/janusplot/articles/shape-recognition-sensitivity.html)
 vignette.
 
 ## Key features
 
-- **Real GAM fits** via `mgcv` — EDF, F-test p-values, confidence
-  envelopes, random effects via `s(g, bs = "re")`.
-- **Asymmetric matrix** — upper / lower triangles carry the two
-  directional regressions.
-- **Three correlation flavours** computed per pair — Pearson (default),
-  Spearman, Kendall — surfaced in
-  [`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md)
-  output.
-- **`adjust =` formula** — propagate covariates and random effects into
-  every cell’s smooth.
-- **[`janusplot_data()`](https://max578.github.io/janusplot/reference/janusplot_data.md)**
-  — per-pair raw fits, correlations, EDFs, p-values, shape metrics +
-  hierarchy columns, without the plot.
-- **`janusplot(..., with_data = TRUE)`** — plot + tidy data frame in one
-  call.
+- **Fit once, view many**:
+  [`janusplot_fit()`](https://max578.github.io/janusplot/reference/janusplot_fit.md)
+  fits every ordered pair once;
+  [`print()`](https://rdrr.io/r/base/print.html),
+  [`summary()`](https://rdrr.io/r/base/summary.html) (one row per
+  directed cell) and
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html) (the matrix)
+  read the same object without refitting.
+
+- **[`janusplot_pair()`](https://max578.github.io/janusplot/reference/janusplot_pair.md)**:
+  the two directions of one or more pairs side by side, or overlaid in
+  one standardised panel (`display = "both"`).
+
+- **[`janusplot_compare()`](https://max578.github.io/janusplot/reference/janusplot_compare.md)**:
+  two fits of the same variables matched cell by cell, typically
+  marginal against adjusted, with the cells whose shape changed marked:
+
+  ``` r
+
+  fit_adj <- janusplot_fit(palmerpenguins::penguins, vars,
+                           adjust = ~ species)
+  plot(janusplot_compare(fit, fit_adj,
+                         labels = c("marginal", "species-adjusted")),
+       group = "species")
+  ```
+
+- **[`janusplot_direction()`](https://max578.github.io/janusplot/reference/janusplot_direction.md)**:
+  the residual-independence (HSIC) test that licenses a directional
+  reading of a pair, or abstains (needs the kernR package).
+
+- **Real GAM fits** via `mgcv`: EDF, F-test p-values with optional
+  `p_adjust = "BH"` or `"holm"` across the matrix, confidence bands,
+  derivatives, random effects via `s(g, bs = "re")` in `adjust =`.
+
 - **Parallel dispatch** via `future.apply` for large matrices and
   sensitivity sweeps.
-- **Deterministic** — seed `2026L` pins the shipped demo + vignette
-  figures; user sweeps accept `seed =`.
+
+- **Deterministic**: seed `2026L` pins the shipped demo; user sweeps
+  accept `seed =`.
 
 ## Why asymmetric?
 
@@ -182,10 +254,13 @@ scope and explicit non-claims.
 
 ## Status
 
-`R CMD check --as-cran` clean (0 errors, 0 warnings; 2
-local-environmental NOTEs only). Comprehensive `testthat` suite
-including `vdiffr` visual-regression snapshots; coverage tracked via the
-Codecov badge above.
+Version 1.0.0.
+[`API_STABILITY.md`](https://max578.github.io/janusplot/API_STABILITY.md)
+lists the exported functions and their lifecycle;
+[`NEWS.md`](https://max578.github.io/janusplot/NEWS.md) lists the
+changes from 0.2.0. The `testthat` suite includes `vdiffr`
+visual-regression snapshots, and the test-coverage workflow above
+reports line coverage.
 
 ## Contributing
 

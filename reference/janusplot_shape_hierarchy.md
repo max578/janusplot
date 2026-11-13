@@ -13,7 +13,7 @@ Hierarchy columns (finest -\> coarsest):
 
 - `category`:
 
-  24-way fine label (`linear_up`, `skewed_peak`, `bimodal`, ...).
+  27-way fine label (`linear_up`, `skewed_peak`, `bimodal`, ...).
   Computed per cell by
   [`janusplot()`](https://max578.github.io/janusplot/reference/janusplot.md).
 
@@ -43,6 +43,17 @@ shape categories (Calabrese 2008; Calabrese & Baldwin 2001). The
 `(T, I)` dispatch underlying each fine category is a coarsened
 Morse-theoretic critical-point classification (Milnor 1963).
 
+Curves with a single turning point are split by the type of that
+extremum, read from the sign of the first derivative on either side of
+it (negative then positive is a minimum, positive then negative a
+maximum), and then by the inflection count: a maximum gives
+`inverted_u`, `skewed_peak`, `broad_peak` or `rippled_peak` for 0, 1, 2
+or 3+ inflections; a minimum gives `u_shape`, `skewed_trough`,
+`broad_trough` or `rippled_trough`. The taxonomy is closed under
+reflecting `y` (replacing `y` with `-y` maps every single-extremum
+category onto its mirror), which is why each peak category has a trough
+counterpart.
+
 ## Usage
 
 ``` r
@@ -51,7 +62,7 @@ janusplot_shape_hierarchy()
 
 ## Value
 
-A data frame with 24 rows and columns `category`, `code`, `archetype`,
+A data frame with 27 rows and columns `category`, `code`, `archetype`,
 `monotonic`, `linear`, `glyph`, `ascii`, `label`, `gloss`.
 
 ## References
@@ -92,5 +103,5 @@ table(tax$archetype)
 #>         chaotic      degenerate monotone_curved monotone_linear      multimodal 
 #>               1               2               6               2               4 
 #>        unimodal            wave 
-#>               5               4 
+#>               8               4 
 ```

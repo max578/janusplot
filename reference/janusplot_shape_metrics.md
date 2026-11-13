@@ -101,13 +101,22 @@ A named list with components:
 
   `range(f) / sd(y)` – small values indicate a degenerate flat smooth.
 
+- `extremum_type`:
+
+  `"minimum"` or `"maximum"` when exactly one turning point is counted
+  (sign of `f'` negative then positive, or positive then negative,
+  across it); `NA` otherwise.
+
 - `shape_category`:
 
-  One of 24 labels from
+  One of 27 labels from
   [`janusplot_shape_hierarchy()`](https://max578.github.io/janusplot/reference/janusplot_shape_hierarchy.md)
-  dispatched on `(n_turning_points, n_inflections)` with
+  dispatched on `(n_turning_points, n_inflections)`, with
   `(monotonicity_index, convexity_index)` disambiguation for the
-  monotone case.
+  monotone case and `extremum_type` separating the peak family
+  (`inverted_u`, `skewed_peak`, `broad_peak`, `rippled_peak`) from the
+  trough family (`u_shape`, `skewed_trough`, `broad_trough`,
+  `rippled_trough`) for a single turning point.
 
 ## See also
 
@@ -144,6 +153,9 @@ janusplot_shape_metrics(fit, x_name = "x", newdata = d)
 #> 
 #> $flat_range_ratio
 #> [1] 3.161499
+#> 
+#> $extremum_type
+#> [1] NA
 #> 
 #> $shape_category
 #> [1] "concave_up"
