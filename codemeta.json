@@ -2,12 +2,12 @@
   "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
   "@type": "SoftwareSourceCode",
   "identifier": "janusplot",
-  "description": "Render a pairwise, asymmetric smoothed-association matrix of continuous variables. Each cell shows the fitted spline from an mgcv generalised additive model, with the upper triangle displaying gam(x_j ~ s(x_i)) and the lower triangle gam(x_i ~ s(x_j)). The intentional asymmetry reveals heteroscedasticity, leverage, and directional non-linearity that a single scalar correlation hides. An asymmetry index and a 24-category shape taxonomy quantify the directional difference and qualitative form of each fitted smooth. Motivated by the additive noise model of causal discovery; intended as a pre-discovery diagnostic, not a causal-inference procedure.",
+  "description": "Render a pairwise, asymmetric smoothed-association matrix of continuous variables. Each cell shows the fitted spline from an 'mgcv' generalised additive model, with the upper triangle displaying 'gam(x_i ~ s(x_j))' and the lower triangle 'gam(x_j ~ s(x_i))'. Unlike Pearson's correlation matrix, the visualisation is intentionally asymmetric, revealing heteroscedasticity, leverage, and directional non-linearity that a single scalar correlation hides. An asymmetry index and a 27-category shape taxonomy quantify the directional difference and qualitative form of each fitted smooth.",
   "name": "janusplot: Asymmetric Smoothed-Association Matrices via GAM Fits",
   "codeRepository": "https://github.com/max578/janusplot",
   "issueTracker": "https://github.com/max578/janusplot/issues",
   "license": "https://spdx.org/licenses/MIT",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "programmingLanguage": {
     "@type": "ComputerLanguage",
     "name": "R",
@@ -79,8 +79,7 @@
     "6": {
       "@type": "SoftwareApplication",
       "identifier": "lifecycle",
-      "name": "lifecycle",
-      "version": ">= 1.0.0"
+      "name": "lifecycle"
     },
     "7": {
       "@type": "SoftwareApplication",
@@ -91,6 +90,16 @@
       "@type": "SoftwareApplication",
       "identifier": "stats",
       "name": "stats"
+    },
+    "9": {
+      "@type": "SoftwareApplication",
+      "identifier": "grDevices",
+      "name": "grDevices"
+    },
+    "10": {
+      "@type": "SoftwareApplication",
+      "identifier": "tools",
+      "name": "tools"
     }
   },
   "relatedLink": "https://max578.github.io/janusplot/"
