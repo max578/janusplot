@@ -65,7 +65,7 @@ effects.
 `janusplot_fit()` fits every ordered pair once. Printing the fit gives
 an overview, and `plot()` draws the matrix.
 
-```{r quickstart, fig.cap = "Asymmetric association matrix for four mtcars traits. Each cell shows the row variable as a smooth function of the column variable; the border colour is the cell's non-linearity and the background its Pearson correlation.", fig.alt = "Four-by-four asymmetric smoothed-association matrix for mpg, hp, wt and qsec, with coloured cell borders and red or blue cell backgrounds."}
+```{r quickstart, fig.cap = "Asymmetric association matrix for four mtcars traits. Each cell shows the row variable as a smooth function of the column variable; the border colour is the cell's non-linearity and the background its Pearson correlation.", fig.alt = "Four-by-four asymmetric smoothed-association matrix for mpg, hp, wt and qsec, with coloured cell borders and blue to orange cell backgrounds."}
 library(janusplot)
 
 fit <- janusplot_fit(mtcars[, c("mpg", "hp", "wt", "qsec")])

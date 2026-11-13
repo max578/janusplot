@@ -15,7 +15,7 @@ both away.
 [![test-coverage](https://github.com/max578/janusplot/actions/workflows/test-coverage.yaml/badge.svg)](https://github.com/max578/janusplot/actions/workflows/test-coverage.yaml)
 [![pkgdown](https://github.com/max578/janusplot/actions/workflows/pkgdown.yaml/badge.svg)](https://max578.github.io/janusplot/)
 [![Lifecycle:
-experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
 <!-- badges: end -->
 
 Asymmetric, GAM-based smoothed-association matrices for continuous
@@ -29,7 +29,9 @@ Two novelties, paired with the asymmetry story:
 
 1.  **Asymmetry index**
     `A = |EDF_yx − EDF_xy| / (EDF_yx + EDF_xy) ∈ [0, 1]` — a
-    single-number summary of the directional disparity per pair.
+    single-number summary of the directional disparity per pair. It
+    varies a good deal from sample to sample, so `janusplot_reference()`
+    gives the size it reaches by chance for a pair.
 2.  **27-category shape taxonomy** — each fitted smooth is classified
     into one of 27 named shapes (`linear_up`, `skewed_peak`, `bimodal`,
     `bi_wave`, `rippled_monotone`, …) via a `(T, I)` dispatch on
@@ -62,21 +64,21 @@ directions differ and what shape each curve takes.
 # released version from CRAN
 install.packages("janusplot")
 
-# development version from GitHub
-pak::pak("max578/janusplot")
+# development version, with the vignettes built, from r-universe
+install.packages("janusplot",
+                 repos = c("https://max578.r-universe.dev",
+                           "https://cloud.r-project.org"))
 ```
 
-Installing from GitHub does not build the vignettes. To read them
-locally from a GitHub install, use
-`remotes::install_github("max578/janusplot", build_vignettes = TRUE, dependencies = TRUE)`.
-The CRAN release ships them built.
+`janusplot_direction()` needs the suggested package kernR, which is not
+on CRAN:
+`install.packages("kernR", repos = "https://max578.r-universe.dev")`.
 
 ## Quick start
 
-Fit once, then draw. The examples use the Palmer penguins data from
-the suggested package palmerpenguins
-(`install.packages("palmerpenguins")`). Any data frame with numeric
-columns works the same way, for example
+Fit once, then draw. The examples use the Palmer penguins data from the
+suggested package palmerpenguins (`install.packages("palmerpenguins")`).
+Any data frame with numeric columns works the same way, for example
 `janusplot_fit(mtcars[, c("mpg", "hp", "wt", "qsec")])`.
 
 ``` r
@@ -91,16 +93,16 @@ fit
 #> engine = bam, method = fREML, adjust = none
 #> no flags
 #> Largest asymmetries:
-#>   bill_length_mm <-> body_mass_g  A = 0.55  (rippled_monotone | linear_up)
-#>   bill_length_mm <-> bill_depth_mm  A = 0.10  (bimodal | bimodal)
-#>   flipper_length_mm <-> body_mass_g  A = 0.09  (s_shape | s_shape)
-#>   bill_depth_mm <-> body_mass_g  A = 0.08  (warped_wave | warped_wave)
-#>   bill_depth_mm <-> flipper_length_mm  A = 0.02  (warped_wave | warped_wave)
+#>   bill_length_mm <-> body_mass_g  A = 0.55  body_mass_g ~ bill_length_mm: EDF 3.4, p < 0.001, rippled_monotone | bill_length_mm ~ body_mass_g: EDF 1.0, p < 0.001, linear_up
+#>   bill_length_mm <-> bill_depth_mm  A = 0.10  bill_depth_mm ~ bill_length_mm: EDF 6.8, p < 0.001, bimodal | bill_length_mm ~ bill_depth_mm: EDF 5.6, p < 0.001, bimodal
+#>   flipper_length_mm <-> body_mass_g  A = 0.09  body_mass_g ~ flipper_length_mm: EDF 3.8, p < 0.001, s_shape | flipper_length_mm ~ body_mass_g: EDF 4.6, p < 0.001, s_shape
+#>   bill_depth_mm <-> body_mass_g  A = 0.08  body_mass_g ~ bill_depth_mm: EDF 7.4, p < 0.001, warped_wave | bill_depth_mm ~ body_mass_g: EDF 6.3, p < 0.001, warped_wave
+#>   bill_depth_mm <-> flipper_length_mm  A = 0.02  flipper_length_mm ~ bill_depth_mm: EDF 7.1, p < 0.001, warped_wave | bill_depth_mm ~ flipper_length_mm: EDF 7.4, p < 0.001, warped_wave
 #> Use summary() for the per-cell table and plot() for the matrix.
 plot(fit)
 ```
 
-<img src="man/figures/README-quickstart-1.png" alt="Four-by-four asymmetric association matrix for the Palmer penguins bill, flipper and body-mass traits, with coloured cell borders and red or blue cell backgrounds." width="100%" />
+<img src="man/figures/README-quickstart-1.png" alt="Four-by-four asymmetric association matrix for the Palmer penguins bill, flipper and body-mass traits, with coloured cell borders and blue to orange cell backgrounds." width="100%" />
 
 Each cell `[r, c]` shows `row ~ s(column)`, with the key in the top-left
 corner. By default:
@@ -112,9 +114,11 @@ corner. By default:
   (`background_by =` takes `"spearman"`, `"kendall"` or `"none"`). A fit
   with `adjust` draws no background, since its curves are adjusted and
   the correlation is marginal.
-- **Strip above each cell**: the asymmetry index `A` and the
-  significance glyph of the smooth’s F-test below eight variables, the
-  glyph alone from eight.
+- **Strip above each cell**: the significance glyph of the smooth’s
+  F-test and, in the upper triangle, the asymmetry index `A` of the
+  pair, written once because it belongs to the pair. From thirteen
+  variables the strip carries the glyph alone, and `A` is read from
+  `summary()`.
 - **Appearance**: every setting lives in `janusplot_style()`, passed as
   `style =`.
 
@@ -241,7 +245,7 @@ scope and explicit non-claims.
 Version 1.0.0. [`API_STABILITY.md`](API_STABILITY.md) lists the exported
 functions and their lifecycle; [`NEWS.md`](NEWS.md) lists the changes
 from 0.2.0. The `testthat` suite includes `vdiffr` visual-regression
-snapshots; coverage is tracked through the Codecov badge above.
+snapshots, and the test-coverage workflow above reports line coverage.
 
 ## Contributing
 
