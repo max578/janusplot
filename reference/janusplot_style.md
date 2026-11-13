@@ -356,12 +356,7 @@ janusplot_style(text_size = list(strip = 7, glossary = NULL, key = NULL))
 #> janusplot style: 1 non-default value
 #>   text_size = list(strip = 7, glossary = NULL, key = NULL)
 
-# The 0.2.0 look: Pearson r washed over the whole cell.
 fit <- janusplot_fit(mtcars[, c("mpg", "hp", "wt")], engine = "gam")
-plot(fit, colour_by = "pearson", background_by = "none",
-     style = janusplot_style(colour_channel = "fill"))
-
-
 # A figure for a printed page: legends under the matrix, level column
 # names, and no title or glossary, which the figure caption replaces.
 plot(fit, style = janusplot_style(

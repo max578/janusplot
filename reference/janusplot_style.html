@@ -396,19 +396,14 @@ object as <code>style</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> janusplot style: 1 non-default value</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   text_size = list(strip = 7, glossary = NULL, key = NULL)</span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># The 0.2.0 look: Pearson r washed over the whole cell.</span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="janusplot_fit.html">janusplot_fit</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mpg"</span>, <span class="st">"hp"</span>, <span class="st">"wt"</span><span class="op">)</span><span class="op">]</span>, engine <span class="op">=</span> <span class="st">"gam"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span>, colour_by <span class="op">=</span> <span class="st">"pearson"</span>, background_by <span class="op">=</span> <span class="st">"none"</span>,</span></span>
-<span class="r-in"><span>     style <span class="op">=</span> <span class="fu">janusplot_style</span><span class="op">(</span>colour_channel <span class="op">=</span> <span class="st">"fill"</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="janusplot_style-1.png" alt="" width="700" height="433"></span>
-<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># A figure for a printed page: legends under the matrix, level column</span></span></span>
 <span class="r-in"><span><span class="co"># names, and no title or glossary, which the figure caption replaces.</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span>, style <span class="op">=</span> <span class="fu">janusplot_style</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  legend_position <span class="op">=</span> <span class="st">"bottom"</span>, label_srt <span class="op">=</span> <span class="fl">0</span>, show_glossary <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
 <span class="r-in"><span>  text_size <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>title <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="janusplot_style-2.png" alt="" width="700" height="433"></span>
+<span class="r-plt img"><img src="janusplot_style-1.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

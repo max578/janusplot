@@ -175,28 +175,7 @@ fit <- janusplot_fit(airquality[, c("Ozone", "Temp", "Wind")],
                      engine = "gam")
 janusplot_pair(fit, "Temp", "Ozone")
 
-janusplot_pair(fit, "Temp", "Ozone", display = "both")
 
-
-# \donttest{
-# Three pairs, one block each, in one stack.
-janusplot_pair(fit, c("Temp", "Wind", "Wind"), c("Ozone", "Ozone", "Temp"))
-
-
-# The same pairs as a two-column data frame, in two stacks.
-pairs <- data.frame(x = c("Temp", "Wind", "Wind"),
-                    y = c("Ozone", "Ozone", "Temp"))
-janusplot_pair(fit, pairs, ncol = 2L)
-
-
-# The first derivative of each direction, computed at fit time.
-janusplot_pair(fit, "Temp", "Ozone", display = "d1")
-
-
-# Forward panels in the top row, reverse panels below, EDF alone in
-# the strips.
-janusplot_pair(fit, c("Temp", "Wind"), c("Ozone", "Ozone"),
-               arrange = "stacked", annotations = "edf")
-
-# }
+# Several pairs at once take vectors of x and y, or a two-column data
+# frame; vignette("janusplot") shows one such call and display = "both".
 ```
