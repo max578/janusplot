@@ -3,7 +3,7 @@
 # Every fit pins engine = "gam" so the drawn EDFs and curves are stable.
 
 pair_fit <- function(...) {
-  d <- make_nonlinear_data(n = 200L, seed = 2L)
+  d <- make_nonlinear_data(n = 200L, seed = 2L) # nolint: object_usage_linter.
   janusplot_fit(d, vars = c("x1", "x2", "x3"), engine = "gam", ...)
 }
 

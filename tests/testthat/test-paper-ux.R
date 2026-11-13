@@ -37,8 +37,9 @@ test_that("identity_line adds the y = x line to the overlay", {
   d <- make_linear_data(n = 120L)
   fit <- janusplot_fit(d[, c("x1", "x2")], engine = "gam",
                        derivatives = integer())
-  layers_of <- function(p) vapply(p$layers, function(l) class(l$geom)[1L],
-                                  character(1L))
+  layers_of <- function(p) {
+    vapply(p$layers, function(l) class(l$geom)[1L], character(1L))
+  }
   p_on <- janusplot_pair(fit, "x1", "x2", display = "both",
                          style = janusplot_style(identity_line = TRUE))
   p_off <- janusplot_pair(fit, "x1", "x2", display = "both")

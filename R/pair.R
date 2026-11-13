@@ -259,7 +259,7 @@ janusplot_pair <- function(
       i = "{.arg x} has {length(x)} name{?s}, {.arg y} has {length(y)}."
     ), call = call)
   }
-  label <- sprintf("%s ~ %s", y, x)
+  label <- sprintf("%s ~ %s", y, x) # nolint: object_usage_linter.
 
   unknown <- !(x %in% fit$vars & y %in% fit$vars)
   if (any(unknown)) {

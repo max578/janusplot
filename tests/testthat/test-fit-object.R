@@ -3,7 +3,7 @@
 # cleaned data copy, flags, the print() and summary() methods, and the
 # deprecated janusplot_data() alias. Exact values use engine = "gam".
 
-fit_three <- function(d = make_linear_data(n = 100L), ...) {
+fit_three <- function(d = make_linear_data(n = 100L), ...) { # nolint: object_usage_linter.
   janusplot_fit(d, vars = c("x1", "x2", "x3"), engine = "gam", ...)
 }
 
