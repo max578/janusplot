@@ -242,7 +242,7 @@ scope and explicit non-claims.
 
 ## Status
 
-Version 1.0.0. [`API_STABILITY.md`](API_STABILITY.md) lists the exported
+Version 1.0.0. [`API_STABILITY.md`](https://github.com/max578/janusplot/blob/main/API_STABILITY.md) lists the exported
 functions and their lifecycle; [`NEWS.md`](NEWS.md) lists the changes
 from 0.2.0. The `testthat` suite includes `vdiffr` visual-regression
 snapshots, and the test-coverage workflow above reports line coverage.
@@ -251,7 +251,7 @@ snapshots, and the test-coverage workflow above reports line coverage.
 
 Bug reports and suggestions are welcome through the [GitHub
 issues](https://github.com/max578/janusplot/issues). See
-[`CONTRIBUTING.md`](CONTRIBUTING.md) for how to propose a change.
+[`CONTRIBUTING.md`](https://github.com/max578/janusplot/blob/main/CONTRIBUTING.md) for how to propose a change.
 
 ## Citation
 
@@ -261,4 +261,4 @@ citation("janusplot")
 
 ## License
 
-MIT. See [`LICENSE.md`](LICENSE.md) for the full text.
+MIT. See [`LICENSE.md`](https://github.com/max578/janusplot/blob/main/LICENSE.md) for the full text.
