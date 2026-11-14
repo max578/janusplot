@@ -37,6 +37,7 @@ installed, and its tests skip without it. The main vignette runs its one
 - win-builder: R-devel (2026-11-12 r90881 ucrt) and R 4.6.2.
 - GitHub Actions: macOS (Apple Silicon) and Windows, R release; Ubuntu,
   R-devel, release and oldrel-1.
+- R-hub: Linux (R-devel) and Ubuntu next, via GitHub Actions.
 
 ## R CMD check results
 
