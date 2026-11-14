@@ -871,7 +871,7 @@ citation("janusplot")
 #> To cite janusplot in publications use:
 #> 
 #>   Moldovan M (2026). _janusplot: Asymmetric Smoothed-Association
-#>   Matrices via GAM Fits_. R package version 1.0.0,
+#>   Matrices via GAM Fits_. R package version 1.0.0.9000,
 #>   <https://github.com/max578/janusplot>.
 #> 
 #> A BibTeX entry for LaTeX users is
@@ -880,7 +880,7 @@ citation("janusplot")
 #>     title = {janusplot: Asymmetric Smoothed-Association Matrices via GAM Fits},
 #>     author = {Max Moldovan},
 #>     year = {2026},
-#>     note = {R package version 1.0.0},
+#>     note = {R package version 1.0.0.9000},
 #>     url = {https://github.com/max578/janusplot},
 #>   }
 ```

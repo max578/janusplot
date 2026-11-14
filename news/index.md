@@ -1,5 +1,7 @@
 # Changelog
 
+## janusplot (development version)
+
 ## janusplot 1.0.0
 
 janusplot 1.0.0 fits once and draws many times:
